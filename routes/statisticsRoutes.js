@@ -1,0 +1,18 @@
+const express = require('express');
+const router = express.Router();
+const statisticsController = require('../controllers/statisticsController');
+const authMiddleware = require('../middlewares/auth');
+const adminMiddleware = require('../middlewares/admin');
+
+// All statistics routes require authentication and admin role
+router.use(authMiddleware, adminMiddleware);
+
+// Get statistics by period
+router.get('/daily', statisticsController.getDailyStatistics);
+router.get('/weekly', statisticsController.getWeeklyStatistics);
+router.get('/monthly', statisticsController.getMonthlyStatistics);
+router.get('/yearly', statisticsController.getYearlyStatistics);
+router.get('/five-year', statisticsController.getFiveYearStatistics);
+router.get('/summary', statisticsController.getStatisticsSummary);
+
+module.exports = router;
