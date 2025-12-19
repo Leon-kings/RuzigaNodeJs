@@ -7,6 +7,7 @@ require('dotenv').config();
 // Routes
 const authRoutes = require('./routes/authRoutes');
 const statisticsRoutes = require('./routes/statisticsRoutes');
+const contactRoutes = require('./routes/contactRoutes');
 
 const app = express();
 
@@ -34,12 +35,20 @@ app.use(express.urlencoded({ extended: true }));
     process.exit(1); // stop app if DB fails
   }
 })();
-
+// Health check endpoint
+app.get('/health', (req, res) => {
+  res.status(200).json({
+    status: 'OK',
+    timestamp: new Date().toISOString(),
+    service: 'Contact API'
+  });
+});
 /* =======================
    ROUTES
 ======================= */
 app.use('/auth', authRoutes);
 app.use('/statistics', statisticsRoutes);
+app.use('/contacts', contactRoutes);
 
 /* =======================
    404 HANDLER
