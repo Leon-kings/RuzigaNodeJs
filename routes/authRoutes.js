@@ -46,6 +46,9 @@ router.post('/reset-password', [
 // Health check
 router.get('/health', userController.checkSystemHealth);
 
+// Test system endpoint
+router.get('/test-system', userController.testSystem);
+
 // ==================== AUTHENTICATED ROUTES ====================
 
 // User profile
@@ -76,7 +79,7 @@ router.post('/refresh-token', authMiddleware, userController.refreshToken);
 // ==================== ADMIN ROUTES ====================
 
 // Get all users (accessible to all authenticated users)
-router.get('/',  userController.getAllUsers);
+router.get('/', authMiddleware, userController.getAllUsers);
 
 // Bulk create users (Admin only)
 router.post('/bulk', authMiddleware, adminMiddleware, [
