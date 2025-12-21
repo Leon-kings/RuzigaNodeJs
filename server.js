@@ -117,6 +117,12 @@ const server = app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
 });
 
+console.log('SMTP config check:', {
+  SMTP_HOST: process.env.SMTP_HOST ? 'Set' : 'Missing',
+  SMTP_USER: process.env.SMTP_USER ? 'Set' : 'Missing',
+  SMTP_PASSWORD: process.env.SMTP_PASS ? 'Set' : 'Missing'
+});
+
 /* =======================
    GRACEFUL SHUTDOWN
 ======================= */
