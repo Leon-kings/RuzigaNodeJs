@@ -124,59 +124,94 @@ exports.getTestimonial = async (req, res) => {
 // @desc    Create new testimonial
 // @route   POST /api/testimonials
 // @access  Public
-exports.createTestimonial = async (req, res) => {
+// Create new testimonial
+const handleCreate = async () => {
   try {
-    // Validate input
-    const { error } = testimonialValidation.createTestimonial.validate(req.body);
-    if (error) {
-      return res.status(400).json({
-        success: false,
-        message: error.details[0].message,
-      });
+    // Validate required fields
+    const requiredFields = ['name', 'email', 'country', 'university', 'program', 'duration', 'content'];
+    const missingFields = requiredFields.filter(field => !newTestimonial[field] || newTestimonial[field].trim() === '');
+    
+    if (missingFields.length > 0) {
+      showModal('error', 'Validation Error', `Missing required fields: ${missingFields.join(', ')}`);
+      return;
     }
 
-    // Check if image was uploaded
-    if (!req.file) {
-      return res.status(400).json({
-        success: false,
-        message: 'Please upload an image',
-      });
+    // Validate content length
+    if (newTestimonial.content.length < 50) {
+      showModal('error', 'Validation Error', 'Content must be at least 50 characters long');
+      return;
     }
 
-    // Create testimonial
-    const testimonial = await Testimonial.create({
-      ...req.body,
-      image: {
-        public_id: req.file.public_id,
-        url: req.file.path,
-      },
+    // Validate image
+    if (!imageFile) {
+      showModal('error', 'Image Required', 'Please upload a profile image');
+      return;
+    }
+
+    // Validate image type and size
+    const validImageTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/gif'];
+    if (!validImageTypes.includes(imageFile.type)) {
+      showModal('error', 'Invalid Image', 'Please upload a valid image (JPEG, PNG, JPG, GIF)');
+      return;
+    }
+
+    if (imageFile.size > 5 * 1024 * 1024) { // 5MB limit
+      showModal('error', 'Image Too Large', 'Image size should be less than 5MB');
+      return;
+    }
+
+    const formData = new FormData();
+    
+    // Add all fields to formData
+    Object.keys(newTestimonial).forEach(key => {
+      if (key !== 'image') {
+        formData.append(key, newTestimonial[key]);
+      }
     });
 
-    // Send confirmation email to student
-    await sendEmail({
-      email: testimonial.email,
-      subject: 'Testimonial Submitted Successfully',
-      html: emailTemplates.testimonialSubmitted(testimonial.name),
+    // Add image - CRITICAL: Must be 'image' field (matches multer config)
+    formData.append('image', imageFile);
+
+    console.log('Creating testimonial with:', {
+      name: newTestimonial.name,
+      email: newTestimonial.email,
+      hasImage: !!imageFile,
+      imageName: imageFile.name,
+      imageSize: imageFile.size
     });
 
-    // Send notification to admin (in real app, get admin email from DB)
-    await sendEmail({
-      email: process.env.ADMIN_EMAIL || 'admin@testimonials.com',
-      subject: 'New Testimonial Submission',
-      html: emailTemplates.adminNotification(testimonial),
-    });
+    const response = await axios.post(
+      `${API_URL}/testimonials`,
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      }
+    );
 
-    res.status(201).json({
-      success: true,
-      message: 'Testimonial submitted successfully. You will receive a confirmation email.',
-      data: testimonial,
+    if (response.data.success) {
+      showModal('success', 'Create Successful', 'Testimonial has been created successfully!');
+      fetchTestimonials();
+      setIsAddModalOpen(false);
+      resetNewTestimonialForm();
+      setImageFile(null);
+      setImagePreview('');
+    }
+  } catch (err) {
+    console.error('Create error details:', {
+      message: err.message,
+      response: err.response?.data,
+      status: err.response?.status
     });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Server Error',
-      error: error.message,
-    });
+    
+    if (err.response?.status === 400 && err.response?.data?.message === 'Please upload an image') {
+      showModal('error', 'Image Required', 'Please select a profile image to upload');
+    } else if (err.response?.data?.message) {
+      showModal('error', 'Create Failed', err.response.data.message);
+    } else {
+      showModal('error', 'Server Error', 'Failed to connect to server. Please try again.');
+    }
   }
 };
 
