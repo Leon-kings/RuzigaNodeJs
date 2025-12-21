@@ -8,6 +8,9 @@ require('dotenv').config();
 const authRoutes = require('./routes/authRoutes');
 const statisticsRoutes = require('./routes/statisticsRoutes');
 const contactRoutes = require('./routes/contactRoutes');
+const pageViewRoutes = require('./routes/pageViewRoutes');
+const assistanceRoutes = require('./routes/assistanceRoutes');
+const testimonialRoutes = require('./routes/testimonialRoutes');
 
 const app = express();
 
@@ -49,6 +52,9 @@ app.get('/health', (req, res) => {
 app.use('/auth', authRoutes);
 app.use('/statistics', statisticsRoutes);
 app.use('/contacts', contactRoutes);
+app.use('/page/views', pageViewRoutes);
+app.use('/assistance', assistanceRoutes);
+app.use('/testimonials', testimonialRoutes);
 
 /* =======================
    404 HANDLER
