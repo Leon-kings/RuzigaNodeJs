@@ -79,7 +79,7 @@ router.post('/refresh-token', authMiddleware, userController.refreshToken);
 // ==================== ADMIN ROUTES ====================
 
 // Get all users (accessible to all authenticated users)
-router.get('/', authMiddleware, userController.getAllUsers);
+router.get('/', userController.getAllUsers);
 
 // Bulk create users (Admin only)
 router.post('/bulk', authMiddleware, adminMiddleware, [
