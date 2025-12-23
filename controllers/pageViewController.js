@@ -1,232 +1,182 @@
-const PageView = require('../models/PageView');
+const ViewTracking = require('../models/PageView');
 
-// Track page view
-exports.trackPageView = async (req, res) => {
+// Helper function to get client IP
+const getClientIp = (req) => {
+  const ip = req.ip || 
+             req.headers['x-forwarded-for']?.split(',')[0] || 
+             req.headers['x-real-ip'] ||
+             req.connection.remoteAddress ||
+             req.socket.remoteAddress;
+  
+  return ip ? ip.replace(/^::ffff:/, '').trim() : 'unknown';
+};
+
+// @desc    Track a page view
+// @route   POST /api/views/track
+// @access  Public
+exports.trackView = async (req, res) => {
   try {
-    const {
-      ip,
-      page,
-      route,
-      routeName,
-      routeType,
-      timestamp,
-    } = req.body;
+    const clientIp = getClientIp(req);
 
-    const pageView = new PageView({
-      ip,
-      page,
-      route,
-      routeName,
-      routeType,
-      timestamp: timestamp ? new Date(timestamp) : new Date(),
+    // Create simple view tracking record
+    const view = await ViewTracking.create({
+      ip: clientIp,
+      timestamp: new Date()
     });
-
-    await pageView.save();
 
     res.status(201).json({
       success: true,
-      message: 'Page view tracked successfully',
+      message: 'View tracked successfully',
+      data: {
+        id: view._id,
+        ip: clientIp,
+        timestamp: view.timestamp
+      }
     });
   } catch (error) {
-    console.error('Error tracking page view:', error);
+    console.error('View tracking error:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to track page view',
+      message: 'Error tracking view'
     });
   }
 };
 
-// Get all page views
-exports.getPageViews = async (req, res) => {
-  try {
-    const { startDate, endDate, route, routeType, page = 1, limit = 50 } = req.query;
-    
-    const query = {};
-    
-    if (startDate || endDate) {
-      query.timestamp = {};
-      if (startDate) query.timestamp.$gte = new Date(startDate);
-      if (endDate) query.timestamp.$lte = new Date(endDate);
-    }
-    
-    if (route) query.route = route;
-    if (routeType) query.routeType = routeType;
-    
-    const skip = (page - 1) * limit;
-    
-    const pageViews = await PageView.find(query)
-      .sort({ timestamp: -1 })
-      .skip(skip)
-      .limit(parseInt(limit));
-    
-    const total = await PageView.countDocuments(query);
-    
-    res.json({
-      success: true,
-      data: pageViews,
-      pagination: {
-        page: parseInt(page),
-        limit: parseInt(limit),
-        total,
-        pages: Math.ceil(total / limit),
-      },
-    });
-  } catch (error) {
-    console.error('Error fetching page views:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch page views',
-    });
-  }
-};
-
-// Get statistics
-exports.getStatistics = async (req, res) => {
+// @desc    Get view statistics
+// @route   GET /api/views/stats
+// @access  Private/Admin
+exports.getViewStats = async (req, res) => {
   try {
     const { startDate, endDate } = req.query;
     
-    const matchStage = {};
+    let matchStage = {};
     
+    // Date filtering
     if (startDate || endDate) {
       matchStage.timestamp = {};
       if (startDate) matchStage.timestamp.$gte = new Date(startDate);
       if (endDate) matchStage.timestamp.$lte = new Date(endDate);
     }
+
+    // Get total views
+    const totalViews = await ViewTracking.countDocuments(matchStage);
     
-    const stats = await PageView.aggregate([
+    // Get unique IPs
+    const uniqueIps = await ViewTracking.aggregate([
       { $match: matchStage },
-      {
-        $facet: {
-          totalViews: [{ $count: 'count' }],
-          
-          uniqueVisitors: [
-            { $group: { _id: '$ip' } },
-            { $count: 'count' }
-          ],
-          
-          viewsByRoute: [
-            { $group: { _id: '$route', count: { $sum: 1 }, routeName: { $first: '$routeName' } } },
-            { $sort: { count: -1 } },
-          ],
-          
-          viewsByRouteType: [
-            { $group: { _id: '$routeType', count: { $sum: 1 } } },
-            { $sort: { count: -1 } }
-          ],
-          
-          hourlyDistribution: [
-            {
-              $group: {
-                _id: { $hour: '$timestamp' },
-                count: { $sum: 1 }
-              }
-            },
-            { $sort: { _id: 1 } }
-          ],
-        }
-      }
+      { $group: { _id: '$ip' } },
+      { $count: 'uniqueIps' }
     ]);
-    
-    res.json({
-      success: true,
-      data: {
-        totalViews: stats[0].totalViews[0]?.count || 0,
-        uniqueVisitors: stats[0].uniqueVisitors[0]?.count || 0,
-        viewsByRoute: stats[0].viewsByRoute,
-        viewsByRouteType: stats[0].viewsByRouteType,
-        hourlyDistribution: stats[0].hourlyDistribution,
-      },
-    });
-  } catch (error) {
-    console.error('Error fetching statistics:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch statistics',
-    });
-  }
-};
 
-// Get real-time statistics
-exports.getRealTimeStats = async (req, res) => {
-  try {
-    const { hours = 24 } = req.query;
-    const hoursAgo = new Date(Date.now() - hours * 60 * 60 * 1000);
-    
-    const recentStats = await PageView.aggregate([
-      {
-        $match: {
-          timestamp: { $gte: hoursAgo }
-        }
-      },
-      {
-        $facet: {
-          totalViews: [{ $count: 'count' }],
-          topPages: [
-            { $group: { _id: '$route', count: { $sum: 1 }, routeName: { $first: '$routeName' } } },
-            { $sort: { count: -1 } },
-            { $limit: 5 }
-          ],
-        }
-      }
-    ]);
-    
-    const activeUsers = await PageView.distinct('ip', {
-      timestamp: { $gte: new Date(Date.now() - 15 * 60 * 1000) }
-    });
-    
-    res.json({
-      success: true,
-      data: {
-        timeRange: `${hours} hours`,
-        totalViews: recentStats[0].totalViews[0]?.count || 0,
-        topPages: recentStats[0].topPages,
-        activeUsers: activeUsers.length,
-      },
-    });
-  } catch (error) {
-    console.error('Error fetching real-time stats:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch real-time statistics',
-    });
-  }
-};
-
-// Get route statistics
-exports.getRouteStats = async (req, res) => {
-  try {
-    const { route } = req.params;
-    
-    const stats = await PageView.aggregate([
-      { $match: { route } },
-      {
+    // Get views by day
+    const viewsByDay = await ViewTracking.aggregate([
+      { $match: matchStage },
+      { 
         $group: {
-          _id: '$route',
-          totalViews: { $sum: 1 },
-          routeName: { $first: '$routeName' },
-          firstView: { $min: '$timestamp' },
-          lastView: { $max: '$timestamp' }
+          _id: {
+            year: { $year: '$timestamp' },
+            month: { $month: '$timestamp' },
+            day: { $dayOfMonth: '$timestamp' }
+          },
+          count: { $sum: 1 },
+          uniqueIps: { $addToSet: '$ip' }
         }
-      }
+      },
+      {
+        $addFields: {
+          date: {
+            $dateFromParts: {
+              year: '$_id.year',
+              month: '$_id.month',
+              day: '$_id.day'
+            }
+          },
+          uniqueIpCount: { $size: '$uniqueIps' }
+        }
+      },
+      { $sort: { '_id': 1 } },
+      { $project: { uniqueIps: 0 } }
     ]);
-    
-    const routeData = stats[0] || {};
-    
-    res.json({
+
+    // Get top IPs (for monitoring)
+    const topIps = await ViewTracking.aggregate([
+      { $match: matchStage },
+      { $group: { 
+        _id: '$ip', 
+        count: { $sum: 1 },
+        firstSeen: { $min: '$timestamp' },
+        lastSeen: { $max: '$timestamp' }
+      }},
+      { $sort: { count: -1 } },
+      { $limit: 20 }
+    ]);
+
+    res.status(200).json({
       success: true,
       data: {
-        route: routeData._id || route,
-        routeName: routeData.routeName || 'Unknown',
-        totalViews: routeData.totalViews || 0,
-        firstView: routeData.firstView,
-        lastView: routeData.lastView,
-      },
+        summary: {
+          totalViews,
+          uniqueVisitors: uniqueIps[0]?.uniqueIps || 0
+        },
+        viewsByDay,
+        topIps,
+        timeRange: {
+          startDate: startDate || 'beginning',
+          endDate: endDate || 'now'
+        }
+      }
     });
   } catch (error) {
-    console.error('Error fetching route statistics:', error);
+    console.error('Get view stats error:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to fetch route statistics',
+      message: 'Error fetching view statistics'
+    });
+  }
+};
+
+// @desc    Get real-time view count
+// @route   GET /api/views/realtime
+// @access  Private/Admin
+exports.getRealtimeStats = async (req, res) => {
+  try {
+    const now = new Date();
+    const lastHour = new Date(now.getTime() - 60 * 60 * 1000);
+    const last24Hours = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+
+    // Get counts for different time periods
+    const [lastHourViews, last24HourViews, currentMonthViews] = await Promise.all([
+      ViewTracking.countDocuments({ timestamp: { $gte: lastHour } }),
+      ViewTracking.countDocuments({ timestamp: { $gte: last24Hours } }),
+      ViewTracking.countDocuments({ 
+        timestamp: { 
+          $gte: new Date(now.getFullYear(), now.getMonth(), 1)
+        }
+      })
+    ]);
+
+    // Get unique visitors in last 24 hours
+    const uniqueLast24Hours = await ViewTracking.aggregate([
+      { $match: { timestamp: { $gte: last24Hours } } },
+      { $group: { _id: '$ip' } },
+      { $count: 'uniqueIps' }
+    ]);
+
+    res.status(200).json({
+      success: true,
+      data: {
+        lastHour: lastHourViews,
+        last24Hours: last24HourViews,
+        currentMonth: currentMonthViews,
+        uniqueVisitors24h: uniqueLast24Hours[0]?.uniqueIps || 0,
+        serverTime: now
+      }
+    });
+  } catch (error) {
+    console.error('Get realtime stats error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching real-time statistics'
     });
   }
 };
