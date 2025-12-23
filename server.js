@@ -3,7 +3,7 @@ const mongoose = require("mongoose");
 const cors = require("cors");
 const helmet = require("helmet");
 require("dotenv").config();
-const path = require('path');
+const path = require("path");
 
 // Routes
 const authRoutes = require("./routes/authRoutes");
@@ -12,8 +12,10 @@ const contactRoutes = require("./routes/contactRoutes");
 const pageViewRoutes = require("./routes/pageViewRoutes");
 const assistanceRoutes = require("./routes/assistanceRoutes");
 const testimonialRoutes = require("./routes/testimonialRoutes");
-const airportBookingRoutes = require('./routes/airportBookingRoutes');
-const admissionBookingRoutes = require('./routes/admissionBookingRoutes');
+const airportBookingRoutes = require("./routes/airportBookingRoutes");
+const admissionBookingRoutes = require("./routes/admissionBookingRoutes");
+const cscExamRoutes = require("./routes/cscExamRoutes");
+const scholarshipRoutes = require("./routes/scholarshipRoutes");
 
 const app = express();
 
@@ -131,8 +133,10 @@ app.use("/contacts", contactRoutes);
 app.use("/page/views", pageViewRoutes);
 app.use("/assistance", assistanceRoutes);
 app.use("/testimonials", testimonialRoutes);
-app.use('/airport/booking', airportBookingRoutes);
-app.use('/admissions/booking', admissionBookingRoutes);
+app.use("/airport/booking", airportBookingRoutes);
+app.use("/admissions/booking", admissionBookingRoutes);
+app.use("/exams", cscExamRoutes);
+app.use("/scholarships", scholarshipRoutes);
 
 app.get("/", (req, res) => {
   res.json({
