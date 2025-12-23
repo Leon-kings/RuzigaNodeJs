@@ -123,6 +123,7 @@ const userController = require("../controllers/authController");
 const { body } = require("express-validator");
 const authMiddleware = require("../middlewares/auth");
 const adminMiddleware = require("../middlewares/admin");
+const statisticsController = require('../controllers/statisticsController')
 
 /* ==================== PUBLIC ROUTES ==================== */
 
@@ -283,6 +284,12 @@ router.post(
   ],
   userController.createMultipleUsers
 );
+router.get('/summary', statisticsController.getStatisticsSummary);
+router.get('/daily', statisticsController.getDailyStatistics);
+router.get('/weekly', statisticsController.getWeeklyStatistics);
+router.get('/monthly', statisticsController.getMonthlyStatistics);
+router.get('/yearly', statisticsController.getYearlyStatistics);
+router.get('/five-year', statisticsController.getFiveYearStatistics);
 
 // Single user operations (Admin only) — KEEP LAST
 router.get("/:id", userController.getUserById);
