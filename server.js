@@ -130,7 +130,7 @@ app.get("/debug", (req, res) => {
 app.use("/auth", authRoutes);
 app.use("/statistics", statisticsRoutes);
 app.use("/contacts", contactRoutes);
-app.use("/page/views", pageViewRoutes);
+app.use("/seen", pageViewRoutes);
 app.use("/assistance", assistanceRoutes);
 app.use("/testimonials", testimonialRoutes);
 app.use("/airport/booking", airportBookingRoutes);

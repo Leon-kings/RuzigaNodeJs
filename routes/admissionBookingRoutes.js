@@ -45,6 +45,10 @@ router.get('/search', admissionBookingController.searchApplications);
 // Protected routes (require authentication)
 // router.use(authenticate);
 
+// Statistics routes
+router.get('/statistics', admissionBookingController.getStatistics);
+router.get('/admission-rates', admissionBookingController.getAdmissionRates);
+
 // Application CRUD routes
 router.get('/',  admissionBookingController.getAllApplications);
 router.get('/:id',  admissionBookingController.getApplication);
@@ -68,9 +72,7 @@ router.patch('/:id/documents/:docId/verify',
   admissionBookingController.verifyDocument
 );
 
-// Statistics routes
-router.get('/statistics', admissionBookingController.getStatistics);
-router.get('/admission-rates', admissionBookingController.getAdmissionRates);
+
 
 // Email routes
 router.post('/send-email', validateEmail, admissionBookingController.sendEmail);

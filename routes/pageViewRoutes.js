@@ -1,16 +1,16 @@
 const express = require('express');
 const router = express.Router();
-const analyticsController = require('../controllers/pageViewController');
+const {
+  trackView,
+  getViewStats,
+  getRealtimeStats
+} = require('../controllers/pageViewController');
 
-// Track page view
-router.post('/', analyticsController.trackPageView);
+// Public routes
+router.post('/track', trackView);
 
-// Get all page views
-router.get('/', analyticsController.getPageViews);
-
-// Get statistics
-router.get('/stats', analyticsController.getStatistics);
-router.get('/stats/realtime', analyticsController.getRealTimeStats);
-router.get('/stats/:route', analyticsController.getRouteStats);
+// Stats routes (add auth if needed)
+router.get('/stats', getViewStats);
+router.get('/realtime', getRealtimeStats);
 
 module.exports = router;
