@@ -1,11 +1,6 @@
 const express = require('express');
 const router = express.Router();
 const statisticsController = require('../controllers/statisticsController');
-const authMiddleware = require('../middlewares/auth');
-const adminMiddleware = require('../middlewares/admin');
-
-// All statistics routes require authentication and admin role
-router.use(authMiddleware, adminMiddleware);
 
 // Get statistics by period
 router.get('/daily', statisticsController.getDailyStatistics);
