@@ -16,6 +16,8 @@ const airportBookingRoutes = require("./routes/airportBookingRoutes");
 const admissionBookingRoutes = require("./routes/admissionBookingRoutes");
 const cscExamRoutes = require("./routes/cscExamRoutes");
 const scholarshipRoutes = require("./routes/scholarshipRoutes");
+const enquiryRoutes = require('./routes/enquiryRoutes');
+const serviceRoutes = require('./routes/servicesRoutes');
 
 const app = express();
 
@@ -137,6 +139,8 @@ app.use("/airport/booking", airportBookingRoutes);
 app.use("/admissions/booking", admissionBookingRoutes);
 app.use("/exams", cscExamRoutes);
 app.use("/scholarships", scholarshipRoutes);
+app.use('/enquiries', enquiryRoutes);
+app.use('/bookings', serviceRoutes);
 
 app.get("/", (req, res) => {
   res.json({
