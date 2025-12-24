@@ -502,48 +502,211 @@ exports.addNote = async (req, res) => {
   }
 };
 
-// Get statistics
+// Get enhanced statistics with timeline
 exports.getStatistics = async (req, res) => {
   try {
+    // Get date filters from query params
+    const { 
+      startDate, 
+      endDate, 
+      interval = 'day', // day, week, month, year
+      groupBy = 'status' // status, country, university, programLevel, etc.
+    } = req.query;
+
+    // Base statistics
     const statistics = await AdmissionBooking.getStatistics();
     
-    // Calculate additional statistics
+    // Calculate date ranges
     const today = new Date();
+    const startOfWeek = new Date(today);
+    startOfWeek.setDate(today.getDate() - today.getDay());
+    startOfWeek.setHours(0, 0, 0, 0);
+    
     const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
     const startOfYear = new Date(today.getFullYear(), 0, 1);
 
-    const monthlyStats = await AdmissionBooking.aggregate([
-      {
-        $match: {
-          createdAt: { $gte: startOfMonth }
-        }
-      },
-      {
-        $group: {
-          _id: null,
-          monthlyApplications: { $sum: 1 },
-          monthlyAccepted: {
-            $sum: { $cond: [{ $eq: ['$status', 'accepted'] }, 1, 0] }
+    // Time-based statistics
+    const [monthlyStats, yearlyStats, weeklyStats] = await Promise.all([
+      // Monthly stats
+      AdmissionBooking.aggregate([
+        {
+          $match: {
+            createdAt: { $gte: startOfMonth }
+          }
+        },
+        {
+          $group: {
+            _id: null,
+            monthlyApplications: { $sum: 1 },
+            monthlyAccepted: {
+              $sum: { $cond: [{ $eq: ['$status', 'accepted'] }, 1, 0] }
+            },
+            monthlyPending: {
+              $sum: { $cond: [{ $eq: ['$status', 'pending'] }, 1, 0] }
+            },
+            monthlyRevenue: { $sum: '$statistics.applicationScore' }
           }
         }
-      }
+      ]),
+
+      // Yearly stats
+      AdmissionBooking.aggregate([
+        {
+          $match: {
+            createdAt: { $gte: startOfYear }
+          }
+        },
+        {
+          $group: {
+            _id: null,
+            yearlyApplications: { $sum: 1 },
+            yearlyAccepted: {
+              $sum: { $cond: [{ $eq: ['$status', 'accepted'] }, 1, 0] }
+            },
+            yearlyRevenue: { $sum: '$statistics.applicationScore' }
+          }
+        }
+      ]),
+
+      // Weekly stats
+      AdmissionBooking.aggregate([
+        {
+          $match: {
+            createdAt: { $gte: startOfWeek }
+          }
+        },
+        {
+          $group: {
+            _id: null,
+            weeklyApplications: { $sum: 1 },
+            weeklyAccepted: {
+              $sum: { $cond: [{ $eq: ['$status', 'accepted'] }, 1, 0] }
+            }
+          }
+        }
+      ])
     ]);
 
-    const yearlyStats = await AdmissionBooking.aggregate([
+    // Timeline statistics - applications over time
+    let dateFormat;
+    switch(interval) {
+      case 'hour':
+        dateFormat = { 
+          year: { $year: '$createdAt' },
+          month: { $month: '$createdAt' },
+          day: { $dayOfMonth: '$createdAt' },
+          hour: { $hour: '$createdAt' }
+        };
+        break;
+      case 'week':
+        dateFormat = { 
+          year: { $year: '$createdAt' },
+          week: { $week: '$createdAt' }
+        };
+        break;
+      case 'month':
+        dateFormat = { 
+          year: { $year: '$createdAt' },
+          month: { $month: '$createdAt' }
+        };
+        break;
+      case 'year':
+        dateFormat = { year: { $year: '$createdAt' } };
+        break;
+      default: // day
+        dateFormat = { 
+          year: { $year: '$createdAt' },
+          month: { $month: '$createdAt' },
+          day: { $dayOfMonth: '$createdAt' }
+        };
+    }
+
+    // Build match stage for timeline
+    let matchStage = {};
+    if (startDate || endDate) {
+      matchStage.createdAt = {};
+      if (startDate) matchStage.createdAt.$gte = new Date(startDate);
+      if (endDate) matchStage.createdAt.$lte = new Date(endDate);
+    }
+
+    // Timeline aggregation
+    const timelineStats = await AdmissionBooking.aggregate([
+      { $match: matchStage },
       {
-        $match: {
-          createdAt: { $gte: startOfYear }
+        $group: {
+          _id: dateFormat,
+          count: { $sum: 1 },
+          accepted: {
+            $sum: { $cond: [{ $eq: ['$status', 'accepted'] }, 1, 0] }
+          },
+          pending: {
+            $sum: { $cond: [{ $eq: ['$status', 'pending'] }, 1, 0] }
+          },
+          rejected: {
+            $sum: { $cond: [{ $eq: ['$status', 'rejected'] }, 1, 0] }
+          },
+          avgScore: { $avg: '$statistics.applicationScore' },
+          totalRevenue: { $sum: '$statistics.applicationScore' }
         }
       },
       {
-        $group: {
-          _id: null,
-          yearlyApplications: { $sum: 1 },
-          yearlyAccepted: {
-            $sum: { $cond: [{ $eq: ['$status', 'accepted'] }, 1, 0] }
+        $addFields: {
+          acceptanceRate: {
+            $cond: [
+              { $gt: ['$count', 0] },
+              { $multiply: [{ $divide: ['$accepted', '$count'] }, 100] },
+              0
+            ]
           }
         }
-      }
+      },
+      { $sort: { '_id': 1 } }
+    ]);
+
+    // Group by different categories
+    let groupByField;
+    switch(groupBy) {
+      case 'country':
+        groupByField = '$targetCountry';
+        break;
+      case 'university':
+        groupByField = '$targetUniversity';
+        break;
+      case 'programLevel':
+        groupByField = '$programLevel';
+        break;
+      case 'intakeSeason':
+        groupByField = '$intakeSeason';
+        break;
+      default:
+        groupByField = '$status';
+    }
+
+    const groupedStats = await AdmissionBooking.aggregate([
+      { $match: matchStage },
+      {
+        $group: {
+          _id: groupByField,
+          count: { $sum: 1 },
+          accepted: {
+            $sum: { $cond: [{ $eq: ['$status', 'accepted'] }, 1, 0] }
+          },
+          avgScore: { $avg: '$statistics.applicationScore' },
+          avgProcessingTime: { $avg: '$statistics.processingTime' }
+        }
+      },
+      {
+        $addFields: {
+          acceptanceRate: {
+            $cond: [
+              { $gt: ['$count', 0] },
+              { $multiply: [{ $divide: ['$accepted', '$count'] }, 100] },
+              0
+            ]
+          }
+        }
+      },
+      { $sort: { count: -1 } }
     ]);
 
     // Get counselor performance
@@ -561,14 +724,100 @@ exports.getStatistics = async (req, res) => {
           accepted: {
             $sum: { $cond: [{ $eq: ['$status', 'accepted'] }, 1, 0] }
           },
-          avgApplicationScore: { $avg: '$statistics.applicationScore' }
+          avgApplicationScore: { $avg: '$statistics.applicationScore' },
+          avgProcessingTime: { $avg: '$statistics.processingTime' }
         }
       },
       {
         $addFields: {
-          acceptanceRate: { $multiply: [{ $divide: ['$accepted', '$total'] }, 100] }
+          acceptanceRate: { 
+            $cond: [
+              { $gt: ['$total', 0] },
+              { $multiply: [{ $divide: ['$accepted', '$total'] }, 100] },
+              0
+            ]
+          },
+          efficiencyScore: {
+            $cond: [
+              { $gt: ['$avgProcessingTime', 0] },
+              { $divide: ['$accepted', '$avgProcessingTime'] },
+              0
+            ]
+          }
+        }
+      },
+      { $sort: { acceptanceRate: -1 } }
+    ]);
+
+    // Get conversion funnel
+    const conversionFunnel = await AdmissionBooking.aggregate([
+      {
+        $group: {
+          _id: null,
+          totalApplications: { $sum: 1 },
+          submitted: {
+            $sum: { $cond: [{ $eq: ['$status', 'submitted'] }, 1, 0] }
+          },
+          underReview: {
+            $sum: { $cond: [{ $eq: ['$status', 'under_review'] }, 1, 0] }
+          },
+          interview: {
+            $sum: { $cond: [{ $eq: ['$status', 'interview'] }, 1, 0] }
+          },
+          accepted: {
+            $sum: { $cond: [{ $eq: ['$status', 'accepted'] }, 1, 0] }
+          },
+          enrolled: {
+            $sum: { $cond: [{ $eq: ['$status', 'enrolled'] }, 1, 0] }
+          }
         }
       }
+    ]);
+
+    // Performance metrics over time (last 30 days)
+    const last30Days = new Date();
+    last30Days.setDate(last30Days.getDate() - 30);
+
+    const performanceMetrics = await AdmissionBooking.aggregate([
+      {
+        $match: {
+          createdAt: { $gte: last30Days }
+        }
+      },
+      {
+        $group: {
+          _id: {
+            year: { $year: '$createdAt' },
+            month: { $month: '$createdAt' },
+            day: { $dayOfMonth: '$createdAt' }
+          },
+          applications: { $sum: 1 },
+          accepted: {
+            $sum: { $cond: [{ $eq: ['$status', 'accepted'] }, 1, 0] }
+          },
+          avgScore: { $avg: '$statistics.applicationScore' },
+          avgResponseTime: { $avg: '$statistics.processingTime' }
+        }
+      },
+      {
+        $addFields: {
+          acceptanceRate: {
+            $cond: [
+              { $gt: ['$applications', 0] },
+              { $multiply: [{ $divide: ['$accepted', '$applications'] }, 100] },
+              0
+            ]
+          },
+          date: {
+            $dateFromParts: {
+              year: '$_id.year',
+              month: '$_id.month',
+              day: '$_id.day'
+            }
+          }
+        }
+      },
+      { $sort: { '_id': 1 } }
     ]);
 
     res.status(200).json({
@@ -576,10 +825,32 @@ exports.getStatistics = async (req, res) => {
       data: {
         ...statistics,
         timeframeStats: {
-          monthly: monthlyStats[0] || { monthlyApplications: 0, monthlyAccepted: 0 },
-          yearly: yearlyStats[0] || { yearlyApplications: 0, yearlyAccepted: 0 }
+          weekly: weeklyStats[0] || { weeklyApplications: 0, weeklyAccepted: 0 },
+          monthly: monthlyStats[0] || { monthlyApplications: 0, monthlyAccepted: 0, monthlyPending: 0, monthlyRevenue: 0 },
+          yearly: yearlyStats[0] || { yearlyApplications: 0, yearlyAccepted: 0, yearlyRevenue: 0 }
+        },
+        timelineStats: {
+          interval,
+          data: timelineStats,
+          timeRange: {
+            startDate: startDate || 'all',
+            endDate: endDate || 'now'
+          }
+        },
+        groupedStats: {
+          by: groupBy,
+          data: groupedStats
         },
         counselorStats,
+        conversionFunnel: conversionFunnel[0] || {
+          totalApplications: 0,
+          submitted: 0,
+          underReview: 0,
+          interview: 0,
+          accepted: 0,
+          enrolled: 0
+        },
+        performanceMetrics,
         calculatedAt: new Date()
       }
     });
@@ -605,6 +876,206 @@ exports.getAdmissionRates = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Error fetching admission rates',
+      error: error.message
+    });
+  }
+};
+
+// Get timeline statistics for dashboard
+exports.getTimelineStatistics = async (req, res) => {
+  try {
+    const { 
+      timeframe = '30d', // 7d, 30d, 90d, 1y, all
+      type = 'applications' // applications, conversions, revenue
+    } = req.query;
+
+    let startDate;
+    const endDate = new Date();
+
+    switch(timeframe) {
+      case '7d':
+        startDate = new Date();
+        startDate.setDate(startDate.getDate() - 7);
+        break;
+      case '30d':
+        startDate = new Date();
+        startDate.setDate(startDate.getDate() - 30);
+        break;
+      case '90d':
+        startDate = new Date();
+        startDate.setDate(startDate.getDate() - 90);
+        break;
+      case '1y':
+        startDate = new Date();
+        startDate.setFullYear(startDate.getFullYear() - 1);
+        break;
+      default:
+        startDate = null;
+    }
+
+    const matchStage = startDate ? { createdAt: { $gte: startDate, $lte: endDate } } : {};
+
+    let pipeline = [];
+    
+    if (type === 'conversions') {
+      // Conversion rate over time
+      pipeline = [
+        { $match: matchStage },
+        {
+          $group: {
+            _id: {
+              year: { $year: '$createdAt' },
+              month: { $month: '$createdAt' },
+              day: { $dayOfMonth: '$createdAt' }
+            },
+            total: { $sum: 1 },
+            converted: {
+              $sum: {
+                $cond: [
+                  { $in: ['$status', ['accepted', 'enrolled']] },
+                  1,
+                  0
+                ]
+              }
+            }
+          }
+        },
+        {
+          $addFields: {
+            conversionRate: {
+              $cond: [
+                { $gt: ['$total', 0] },
+                { $multiply: [{ $divide: ['$converted', '$total'] }, 100] },
+                0
+              ]
+            },
+            date: {
+              $dateFromParts: {
+                year: '$_id.year',
+                month: '$_id.month',
+                day: '$_id.day'
+              }
+            }
+          }
+        },
+        { $sort: { '_id': 1 } },
+        { $project: { _id: 0, date: 1, conversionRate: 1, total: 1, converted: 1 } }
+      ];
+    } else if (type === 'revenue') {
+      // Revenue over time (using applicationScore as proxy for revenue)
+      pipeline = [
+        { $match: matchStage },
+        {
+          $group: {
+            _id: {
+              year: { $year: '$createdAt' },
+              month: { $month: '$createdAt' },
+              day: { $dayOfMonth: '$createdAt' }
+            },
+            totalRevenue: { $sum: '$statistics.applicationScore' },
+            count: { $sum: 1 },
+            avgRevenue: { $avg: '$statistics.applicationScore' }
+          }
+        },
+        {
+          $addFields: {
+            date: {
+              $dateFromParts: {
+                year: '$_id.year',
+                month: '$_id.month',
+                day: '$_id.day'
+              }
+            }
+          }
+        },
+        { $sort: { '_id': 1 } },
+        { $project: { _id: 0, date: 1, totalRevenue: 1, count: 1, avgRevenue: 1 } }
+      ];
+    } else {
+      // Applications over time (default)
+      pipeline = [
+        { $match: matchStage },
+        {
+          $group: {
+            _id: {
+              year: { $year: '$createdAt' },
+              month: { $month: '$createdAt' },
+              day: { $dayOfMonth: '$createdAt' }
+            },
+            applications: { $sum: 1 },
+            accepted: {
+              $sum: { $cond: [{ $eq: ['$status', 'accepted'] }, 1, 0] }
+            },
+            pending: {
+              $sum: { $cond: [{ $eq: ['$status', 'pending'] }, 1, 0] }
+            }
+          }
+        },
+        {
+          $addFields: {
+            date: {
+              $dateFromParts: {
+                year: '$_id.year',
+                month: '$_id.month',
+                day: '$_id.day'
+              }
+            }
+          }
+        },
+        { $sort: { '_id': 1 } },
+        { $project: { _id: 0, date: 1, applications: 1, accepted: 1, pending: 1 } }
+      ];
+    }
+
+    const timelineData = await AdmissionBooking.aggregate(pipeline);
+
+    // Calculate summary
+    let summary = {};
+    if (timelineData.length > 0) {
+      if (type === 'conversions') {
+        const total = timelineData.reduce((sum, day) => sum + day.total, 0);
+        const converted = timelineData.reduce((sum, day) => sum + day.converted, 0);
+        summary = {
+          total,
+          converted,
+          overallConversionRate: total > 0 ? (converted / total) * 100 : 0
+        };
+      } else if (type === 'revenue') {
+        const totalRevenue = timelineData.reduce((sum, day) => sum + day.totalRevenue, 0);
+        const totalCount = timelineData.reduce((sum, day) => sum + day.count, 0);
+        summary = {
+          totalRevenue,
+          totalCount,
+          averageRevenue: totalCount > 0 ? totalRevenue / totalCount : 0
+        };
+      } else {
+        const totalApplications = timelineData.reduce((sum, day) => sum + day.applications, 0);
+        const totalAccepted = timelineData.reduce((sum, day) => sum + day.accepted, 0);
+        summary = {
+          totalApplications,
+          totalAccepted,
+          acceptanceRate: totalApplications > 0 ? (totalAccepted / totalApplications) * 100 : 0
+        };
+      }
+    }
+
+    res.status(200).json({
+      success: true,
+      data: {
+        timeframe,
+        type,
+        timeline: timelineData,
+        summary,
+        dateRange: {
+          start: startDate,
+          end: endDate
+        }
+      }
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching timeline statistics',
       error: error.message
     });
   }
