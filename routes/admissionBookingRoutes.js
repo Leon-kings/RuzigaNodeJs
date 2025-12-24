@@ -1,84 +1,120 @@
+// const express = require('express');
+// const router = express.Router();
+// const {
+//   getAllApplications,
+//   getApplication,
+//   createApplication,
+//   updateApplication,
+//   deleteApplication,
+//   submitApplication,
+//   updateStatus,
+//   uploadDocument,
+//   verifyDocument,
+//   addNote,
+//   getStatistics,
+//   getAdmissionRates,
+//   sendEmail,
+//   bulkUpdate,
+//   exportApplications,
+//   searchApplications,
+//   getTimelineStatistics // New function added
+// } = require('../controllers/admissionBookingController');
+// const upload = require('../services/documentService'); // For file uploads
+
+// // Public routes
+// router.post('/', createApplication);
+
+// // Basic CRUD routes
+// router.get('/', getAllApplications);
+// router.get('/search', searchApplications);
+// router.get('/:id', getApplication);
+// router.put('/:id', updateApplication);
+// router.delete('/:id', deleteApplication);
+
+// // Application workflow routes
+// router.post('/:id/submit', submitApplication);
+// router.put('/:id/status', updateStatus);
+
+// // Document management routes
+// router.post('/:id/documents', upload.single('document'), uploadDocument);
+// router.put('/:id/documents/:docId/verify', verifyDocument);
+
+// // Notes management
+// router.post('/:id/notes', addNote);
+
+// // Statistics routes
+// router.get('/statistics/all', getStatistics);
+// router.get('/statistics/timeline', getTimelineStatistics);
+// router.get('/statistics/admission-rates', getAdmissionRates);
+
+// // Email routes
+// router.post('/:id/send-email', sendEmail);
+
+// // Bulk operations (admin only)
+// router.post('/bulk/update', bulkUpdate);
+
+// // Export routes
+// router.get('/export/data', exportApplications);
+
+// module.exports = router;
 const express = require('express');
 const router = express.Router();
-const multer = require('multer');
-const admissionBookingController = require('../controllers/admissionBookingController');
-const { validateApplication, validateEmail, validateDocument } = require('../validators/admissionValidator');
+const {
+  getAllApplications,
+  getApplication,
+  createApplication,
+  updateApplication,
+  deleteApplication,
+  submitApplication,
+  updateStatus,
+  uploadDocument,
+  verifyDocument,
+  addNote,
+  getStatistics,
+  getAdmissionRates,
+  sendEmail,
+  bulkUpdate,
+  exportApplications,
+  searchApplications,
+  getTimelineStatistics
+} = require('../controllers/admissionBookingController');
 
+// CORRECT: Import multer middleware, NOT documentService
+const upload = require('../services/documentService'); // This is the multer middleware
 
-// Configure multer for file uploads
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, 'uploads/documents/');
-  },
-  filename: function (req, file, cb) {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, file.fieldname + '-' + uniqueSuffix + '-' + file.originalname);
-  }
-});
+// Public routes
+router.post('/', createApplication);
 
-const upload = multer({
-  storage: storage,
-  limits: {
-    fileSize: 10 * 1024 * 1024 // 10MB limit
-  },
-  fileFilter: (req, file, cb) => {
-    const allowedTypes = [
-      'application/pdf',
-      'image/jpeg',
-      'image/png',
-      'application/msword',
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-    ];
-    
-    if (allowedTypes.includes(file.mimetype)) {
-      cb(null, true);
-    } else {
-      cb(new Error('Invalid file type. Only PDF, JPG, PNG, DOC, and DOCX files are allowed.'));
-    }
-  }
-});
+// Basic CRUD routes
+router.get('/', getAllApplications);
+router.get('/search', searchApplications);
+router.get('/:id', getApplication);
+router.put('/:id', updateApplication);
+router.delete('/:id', deleteApplication);
 
-// Public routes (no authentication required)
-router.post('/', validateApplication, admissionBookingController.createApplication);
-router.get('/search', admissionBookingController.searchApplications);
+// Application workflow routes
+router.post('/:id/submit', submitApplication);
+router.put('/:id/status', updateStatus);
 
-// Protected routes (require authentication)
-// router.use(authenticate);
+// Document management routes - upload.single() will work now
+router.post('/:id/documents', upload.single('document'), uploadDocument);
+router.put('/:id/documents/:docId/verify', verifyDocument);
+
+// Notes management
+router.post('/:id/notes', addNote);
 
 // Statistics routes
-router.get('/statistics', admissionBookingController.getStatistics);
-router.get('/admission-rates', admissionBookingController.getAdmissionRates);
-
-// Application CRUD routes
-router.get('/',  admissionBookingController.getAllApplications);
-router.get('/:id',  admissionBookingController.getApplication);
-router.put('/:id', validateApplication, admissionBookingController.updateApplication);
-router.delete('/:id', admissionBookingController.deleteApplication);
-
-// Application actions
-router.post('/:id/submit',  admissionBookingController.submitApplication);
-router.patch('/:id/status', admissionBookingController.updateStatus);
-router.post('/:id/notes', admissionBookingController.addNote);
-
-// Document management
-router.post('/:id/documents', 
-  
-  upload.single('document'),
-  admissionBookingController.uploadDocument
-);
-
-router.patch('/:id/documents/:docId/verify', 
- 
-  admissionBookingController.verifyDocument
-);
-
-
+router.get('/statistics/all', getStatistics);
+router.get('/statistics/timeline', getTimelineStatistics);
+router.get('/statistics/admission-rates', getAdmissionRates);
 
 // Email routes
-router.post('/send-email', validateEmail, admissionBookingController.sendEmail);
+router.post('/:id/send-email', sendEmail);
 
-// Bulk operations
-router.post('/bulk/update',  admissionBookingController.bulkUpdate);
-router.get('/export', admissionBookingController.exportApplications);
+// Bulk operations (admin only)
+router.post('/bulk/update', bulkUpdate);
+
+// Export routes
+router.get('/export/data', exportApplications);
 
 module.exports = router;

@@ -406,6 +406,41 @@ const cloudinary = require('../cloudinary/cloudinary');
  * CREATE TESTIMONIAL
  * =========================
  */
+// exports.createTestimonial = async (req, res) => {
+//   try {
+//     if (!req.file) {
+//       return res.status(400).json({
+//         success: false,
+//         message: 'Image is required',
+//       });
+//     }
+
+//     const testimonial = await Testimonial.create({
+//       name: req.body.name,
+//       country: req.body.country,
+//       university: req.body.university,
+//       program: req.body.program,
+//       rating: req.body.rating,
+//       duration: req.body.duration,
+//       content: req.body.content,
+//       email: req.body.email,
+//       image: {
+//         public_id: req.file.filename,
+//         url: req.file.path,
+//       },
+//     });
+
+//     res.status(201).json({
+//       success: true,
+//       data: testimonial,
+//     });
+//   } catch (error) {
+//     res.status(400).json({
+//       success: false,
+//       message: error.message,
+//     });
+//   }
+// };
 exports.createTestimonial = async (req, res) => {
   try {
     if (!req.file) {
@@ -415,33 +450,37 @@ exports.createTestimonial = async (req, res) => {
       });
     }
 
-    const testimonial = await Testimonial.create({
+    const testimonialData = {
       name: req.body.name,
       country: req.body.country,
       university: req.body.university,
       program: req.body.program,
-      rating: req.body.rating,
+      rating: req.body.rating || 5, // default value
       duration: req.body.duration,
       content: req.body.content,
       email: req.body.email,
+      verified: req.body.verified === 'true' || req.body.verified === true, // Handle both string and boolean
+      status: req.body.status || 'pending', // Add status with default
       image: {
         public_id: req.file.filename,
         url: req.file.path,
       },
-    });
+    };
+
+    const testimonial = await Testimonial.create(testimonialData);
 
     res.status(201).json({
       success: true,
       data: testimonial,
     });
   } catch (error) {
+    console.error('Create testimonial error:', error);
     res.status(400).json({
       success: false,
       message: error.message,
     });
   }
 };
-
 /**
  * =========================
  * GET ALL APPROVED TESTIMONIALS
