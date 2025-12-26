@@ -481,79 +481,206 @@ class FAQController {
     }
   }
 
-  // UPDATED: Submit question - matches frontend data structure
-  async submitQuestion(req, res) {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
+  // UPDATED: Submit question - matches frontend data structure AND your schema
+  // async submitQuestion(req, res) {
+  //   const errors = validationResult(req);
+  //   if (!errors.isEmpty()) {
+  //     return res.status(400).json({
+  //       success: false,
+  //       errors: errors.array()
+  //     });
+  //   }
+    
+  //   try {
+  //     // Extract data from request body (matches frontend structure)
+  //     const { question, email, timestamp, source = "faq-page" } = req.body;
+      
+  //     console.log('📥 Received request:', { question, email, timestamp, source });
+      
+  //     // Optional: Extract name from email or use default
+  //     const emailParts = email.split('@')[0];
+  //     const name = emailParts.charAt(0).toUpperCase() + emailParts.slice(1);
+      
+  //     // CRITICAL FIX: Match your schema exactly
+  //     const questionData = {
+  //       question: question.trim(),
+  //       email: email.trim(),
+  //       name: name || 'User', // Use extracted name or default
+  //       source: source || 'faq-page',
+  //       // Both timestamp AND createdAt fields as per your schema
+  //       timestamp: timestamp ? new Date(timestamp) : new Date(),
+  //       // The schema has default for createdAt, but we can set it explicitly
+  //       createdAt: timestamp ? new Date(timestamp) : new Date()
+  //     };
+      
+  //     console.log('📝 Creating question with data:', questionData);
+      
+  //     // Save question to database
+  //     const newQuestion = await Question.create(questionData);
+      
+  //     console.log('✅ Question saved successfully!');
+  //     console.log('📊 Question ID:', newQuestion._id);
+  //     console.log('📄 Full document:', newQuestion);
+      
+  //     // Verify it was actually saved
+  //     const verify = await Question.findById(newQuestion._id);
+  //     if (!verify) {
+  //       console.error('❌ ERROR: Question not found after saving!');
+  //       throw new Error('Question not persisted to database');
+  //     }
+      
+  //     console.log('🔍 Verification: Document found in DB');
+      
+  //     // Send confirmation email
+  //     try {
+  //       const emailResult = await this.sendQuestionConfirmation(email, newQuestion);
+  //       if (emailResult.success) {
+  //         console.log('📧 Confirmation email sent successfully');
+  //         await this.recordEmailStat('confirmation', true);
+  //       } else {
+  //         console.error('❌ Email sending failed:', emailResult.error);
+  //         await this.recordEmailStat('confirmation', false);
+  //       }
+  //     } catch (emailError) {
+  //       console.error('Error sending confirmation email:', emailError);
+  //       await this.recordEmailStat('confirmation', false);
+  //     }
+      
+  //     // Update statistics
+  //     await this.updateStatistics();
+      
+  //     res.status(201).json({
+  //       success: true,
+  //       message: 'Question submitted successfully',
+  //       data: {
+  //         id: newQuestion._id,
+  //         question: newQuestion.question,
+  //         status: newQuestion.status,
+  //         timestamp: newQuestion.timestamp,
+  //         createdAt: newQuestion.createdAt,
+  //         confirmation: 'A confirmation email has been sent to your email address'
+  //       }
+  //     });
+      
+  //   } catch (error) {
+  //     console.error('❌ Error submitting question:', error);
+  //     console.error('❌ Error name:', error.name);
+  //     console.error('❌ Error message:', error.message);
+  //     console.error('❌ Error stack:', error.stack);
+      
+  //     // Log the full error for debugging
+  //     if (error.name === 'ValidationError') {
+  //       console.error('❌ Validation errors:', error.errors);
+  //     }
+      
+  //     res.status(500).json({
+  //       success: false,
+  //       message: 'Server error while submitting question',
+  //       error: process.env.NODE_ENV === 'development' ? error.message : undefined,
+  //       errorType: error.name
+  //     });
+  //   }
+  // }
+  // UPDATED: Submit question - matches the updated schema
+async submitQuestion(req, res) {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({
+      success: false,
+      errors: errors.array()
+    });
+  }
+  
+  try {
+    // Extract data from request body
+    const { question, email, timestamp, source = "faq-page" } = req.body;
+    
+    console.log('📥 Received request:', { question, email, timestamp, source });
+    
+    // Extract name from email
+    const emailParts = email.split('@')[0];
+    const name = emailParts.charAt(0).toUpperCase() + emailParts.slice(1);
+    
+    // Match the updated schema
+    const questionData = {
+      question: question.trim(),
+      email: email.trim().toLowerCase(),
+      name: name || 'User',
+      source: source || 'faq-page',
+      timestamp: timestamp ? new Date(timestamp) : new Date(),
+      createdAt: timestamp ? new Date(timestamp) : new Date(),
+      metadata: {
+        ipAddress: req.ip || req.headers['x-forwarded-for'] || req.connection.remoteAddress,
+        userAgent: req.headers['user-agent'],
+        referrer: req.headers.referer
+      }
+    };
+    
+    console.log('📝 Creating question with data:', questionData);
+    
+    // Save question to database
+    const newQuestion = await Question.create(questionData);
+    
+    console.log('✅ Question saved successfully!');
+    console.log('📊 Question ID:', newQuestion._id);
+    
+    // Send confirmation email
+    try {
+      const emailResult = await this.sendQuestionConfirmation(email, newQuestion);
+      if (emailResult.success) {
+        console.log('📧 Confirmation email sent successfully');
+        await this.recordEmailStat('confirmation', true);
+      } else {
+        console.error('❌ Email sending failed:', emailResult.error);
+        await this.recordEmailStat('confirmation', false);
+      }
+    } catch (emailError) {
+      console.error('Error sending confirmation email:', emailError);
+      await this.recordEmailStat('confirmation', false);
+    }
+    
+    // Update statistics
+    await this.updateStatistics();
+    
+    res.status(201).json({
+      success: true,
+      message: 'Question submitted successfully',
+      data: {
+        id: newQuestion._id,
+        question: newQuestion.question,
+        status: newQuestion.status,
+        confirmation: 'A confirmation email has been sent to your email address'
+      }
+    });
+    
+  } catch (error) {
+    console.error('❌ Error submitting question:', error);
+    console.error('❌ Error name:', error.name);
+    console.error('❌ Error message:', error.message);
+    
+    if (error.name === 'ValidationError') {
+      console.error('❌ Validation errors:', error.errors);
       return res.status(400).json({
         success: false,
-        errors: errors.array()
+        message: 'Validation error',
+        errors: Object.values(error.errors).map(err => err.message)
       });
     }
     
-    try {
-      // Extract data from request body (matches frontend structure)
-      const { question, email, timestamp, source = "faq-page" } = req.body;
-      
-      // Optional: Extract name from email or use default
-      const emailParts = email.split('@')[0];
-      const name = emailParts.charAt(0).toUpperCase() + emailParts.slice(1);
-      
-      // Save question to database
-      const newQuestion = await Question.create({
-        question: question.trim(),
-        email: email.trim(),
-        name,
-        category: 'general', // Default category since not provided
-        source: source || 'faq-page',
-        metadata: {
-          ipAddress: req.ip,
-          userAgent: req.headers['user-agent'],
-          referrer: req.headers.referer
-        },
-        createdAt: timestamp ? new Date(timestamp) : new Date()
-      });
-      
-      // Send confirmation email
-      try {
-        const emailResult = await this.sendQuestionConfirmation(email, newQuestion);
-        if (emailResult.success) {
-          await this.recordEmailStat('confirmation', true);
-        } else {
-          await this.recordEmailStat('confirmation', false);
-        }
-      } catch (emailError) {
-        console.error('Error sending confirmation email:', emailError);
-        await this.recordEmailStat('confirmation', false);
-      }
-      
-      // Update statistics
-      await this.updateStatistics();
-      
-      res.status(201).json({
-        success: true,
-        message: 'Question submitted successfully',
-        data: {
-          id: newQuestion._id,
-          question: newQuestion.question,
-          status: newQuestion.status,
-          confirmation: 'A confirmation email has been sent to your email address'
-        }
-      });
-    } catch (error) {
-      console.error('Error submitting question:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Server error while submitting question'
-      });
-    }
+    res.status(500).json({
+      success: false,
+      message: 'Server error while submitting question'
+    });
   }
+}
 
-  // UPDATED: Alternative submit method that accepts the exact frontend format
+  // UPDATED: Alternative submit method that matches your schema
   async submitQuestionV2(req, res) {
     try {
       // Direct mapping from frontend data structure
       const { question, email, timestamp, source = "faq-page" } = req.body;
+      
+      console.log('📥 submitQuestionV2 received:', { question, email, timestamp, source });
       
       // Basic validation
       if (!question || !question.trim()) {
@@ -579,20 +706,29 @@ class FAQController {
         });
       }
       
-      // Save question to database
-      const newQuestion = await Question.create({
+      // Extract name from email
+      const emailParts = email.split('@')[0];
+      const name = emailParts.charAt(0).toUpperCase() + emailParts.slice(1);
+      
+      // Save question to database - MATCHING YOUR SCHEMA
+      const questionData = {
         question: question.trim(),
         email: email.trim(),
-        name: 'User', // Default name
-        category: 'general',
+        name: name || 'User',
         source: source || 'faq-page',
-        metadata: {
-          ipAddress: req.ip,
-          userAgent: req.headers['user-agent'],
-          referrer: req.headers.referer
-        },
+        timestamp: timestamp ? new Date(timestamp) : new Date(),
         createdAt: timestamp ? new Date(timestamp) : new Date()
-      });
+      };
+      
+      console.log('📝 Creating question with data:', questionData);
+      
+      const newQuestion = await Question.create(questionData);
+      
+      console.log('✅ Question saved! ID:', newQuestion._id);
+      
+      // Verify save
+      const verify = await Question.findById(newQuestion._id);
+      console.log(verify ? '✅ Verified in DB' : '❌ NOT found in DB');
       
       // Send confirmation email
       try {
@@ -613,14 +749,18 @@ class FAQController {
           id: newQuestion._id,
           question: newQuestion.question,
           status: newQuestion.status,
+          timestamp: newQuestion.timestamp,
           confirmation: 'A confirmation email has been sent to your email address'
         }
       });
     } catch (error) {
-      console.error('Error submitting question:', error);
+      console.error('❌ Error in submitQuestionV2:', error);
+      console.error('❌ Error details:', error.message);
+      
       res.status(500).json({
         success: false,
-        message: 'Server error while submitting question'
+        message: 'Server error while submitting question',
+        error: process.env.NODE_ENV === 'development' ? error.message : undefined
       });
     }
   }
@@ -703,7 +843,6 @@ class FAQController {
       question.answer = answer;
       question.status = 'answered';
       question.answeredAt = new Date();
-      question.isRead = true;
       
       await question.save();
       

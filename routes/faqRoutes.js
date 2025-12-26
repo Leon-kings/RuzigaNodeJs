@@ -14,21 +14,29 @@ const faqValidation = [
   body('isPublished').optional().isBoolean().withMessage('isPublished must be a boolean')
 ];
 
-// Question validation
+// Question validation (updated for your frontend format)
 const questionValidation = [
-  body('question').notEmpty().withMessage('Question is required'),
-  body('email').isEmail().withMessage('Valid email is required')
+  body('question').notEmpty().trim().withMessage('Question is required'),
+  body('email').isEmail().withMessage('Valid email is required'),
+  body('timestamp').optional().isISO8601().withMessage('Invalid timestamp format'),
+  body('source').optional().isString().trim().withMessage('Source must be a string')
+];
+
+// Alternative question validation (more flexible)
+const questionValidationV2 = [
+  body('question').notEmpty().trim().withMessage('Question is required'),
+  body('email').notEmpty().trim().isEmail().withMessage('Valid email is required')
 ];
 
 // Answer validation
 const answerValidation = [
-  body('answer').notEmpty().withMessage('Answer is required')
+  body('answer').notEmpty().trim().withMessage('Answer is required')
 ];
 
 // ==================== PUBLIC ROUTES (No Authentication Required) ====================
 
 // Get all published FAQs with pagination
-router.get('/', 
+router.get('/faqs', 
   [
     query('page').optional().isInt({ min: 1 }).withMessage('Page must be a positive integer'),
     query('limit').optional().isInt({ min: 1, max: 100 }).withMessage('Limit must be between 1 and 100'),
@@ -47,26 +55,94 @@ router.get('/faqs/:id',
   faqController.getFAQById
 );
 
-// Submit a question (public)
-router.post('/questions',
+// Submit a question (public) - matches your frontend POST request
+router.post('/faqs/questions',
   questionValidation,
   faqController.submitQuestion
 );
 
-// Alternative submit question endpoint
-router.post('/questions/v2',
+// Alternative submit question endpoint (no validation)
+router.post('/faqs/questions/v2',
   faqController.submitQuestionV2
 );
 
-// Get statistics (public, but you might want to protect this)
-router.get('/statistics',
+// Get statistics (public)
+router.get('/faqs/statistics',
   [
     query('period').optional().isIn(['today', 'week', 'month', 'year']).withMessage('Invalid period')
   ],
   faqController.getStatistics
 );
 
-// ==================== ADMIN ROUTES (Protected - Add Authentication Middleware) ====================
+// Health check endpoint
+router.get('/faqs/health', (req, res) => {
+  res.status(200).json({
+    success: true,
+    message: 'FAQ System is running',
+    timestamp: new Date().toISOString(),
+    version: '1.0.0'
+  });
+});
+
+// Test endpoint for database connection
+router.get('/faqs/test-db', async (req, res) => {
+  try {
+    const mongoose = require('mongoose');
+    
+    // Check connection state
+    const states = ['disconnected', 'connected', 'connecting', 'disconnecting'];
+    const connectionState = states[mongoose.connection.readyState];
+    
+    // Test database operations
+    const { Question } = require('../models/FAQ');
+    
+    // Count documents
+    const count = await Question.countDocuments();
+    
+    // Try to insert a test document
+    const testDoc = await Question.create({
+      question: `Test question at ${Date.now()}`,
+      email: 'test@example.com',
+      name: 'Test User',
+      source: 'test-route'
+    });
+    
+    // Find the test document
+    const foundDoc = await Question.findById(testDoc._id);
+    
+    // Clean up test document
+    await Question.findByIdAndDelete(testDoc._id);
+    
+    res.json({
+      success: true,
+      connection: {
+        state: connectionState,
+        readyState: mongoose.connection.readyState,
+        host: mongoose.connection.host,
+        port: mongoose.connection.port,
+        name: mongoose.connection.name
+      },
+      database: {
+        totalQuestions: count,
+        testInsert: {
+          success: !!testDoc._id,
+          id: testDoc._id,
+          verified: !!foundDoc,
+          cleanedUp: true
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Database test error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
+  }
+});
+
+// ==================== ADMIN ROUTES (Protected) ====================
 
 // Get all questions (admin only)
 router.get('/admin/questions',
@@ -78,7 +154,7 @@ router.get('/admin/questions',
     query('startDate').optional().isISO8601().withMessage('Invalid start date'),
     query('endDate').optional().isISO8601().withMessage('Invalid end date')
   ],
-  // Add authentication middleware here
+  // TODO: Add authentication middleware here
   // Example: requireAuth, requireAdmin
   faqController.getAllQuestions
 );
@@ -88,14 +164,14 @@ router.put('/admin/questions/:id/answer',
   [
     param('id').isMongoId().withMessage('Invalid question ID')
   ].concat(answerValidation),
-  // Add authentication middleware here
+  // TODO: Add authentication middleware here
   faqController.answerQuestion
 );
 
 // Create FAQ (admin only)
 router.post('/admin/faqs',
   faqValidation,
-  // Add authentication middleware here
+  // TODO: Add authentication middleware here
   faqController.createFAQ
 );
 
@@ -104,7 +180,7 @@ router.put('/admin/faqs/:id',
   [
     param('id').isMongoId().withMessage('Invalid FAQ ID')
   ].concat(faqValidation.map(validation => validation.optional())),
-  // Add authentication middleware here
+  // TODO: Add authentication middleware here
   faqController.updateFAQ
 );
 
@@ -113,13 +189,13 @@ router.delete('/admin/faqs/:id',
   [
     param('id').isMongoId().withMessage('Invalid FAQ ID')
   ],
-  // Add authentication middleware here
+  // TODO: Add authentication middleware here
   faqController.deleteFAQ
 );
 
 // Get dashboard data (admin only)
 router.get('/admin/dashboard',
-  // Add authentication middleware here
+  // TODO: Add authentication middleware here
   faqController.getDashboardData
 );
 
@@ -130,13 +206,13 @@ router.get('/admin/statistics',
     query('startDate').optional().isISO8601().withMessage('Invalid start date'),
     query('endDate').optional().isISO8601().withMessage('Invalid end date')
   ],
-  // Add authentication middleware here
+  // TODO: Add authentication middleware here
   faqController.getStatistics
 );
 
 // Get popular categories
 router.get('/admin/categories/popular',
-  // Add authentication middleware here
+  // TODO: Add authentication middleware here
   async (req, res) => {
     try {
       const popularCategories = await faqController.getPopularCategories();
@@ -158,7 +234,7 @@ router.get('/admin/categories/popular',
 
 // Update statistics (can be called via cron job)
 router.post('/internal/update-statistics',
-  // Add API key authentication or internal auth here
+  // TODO: Add API key authentication or internal auth here
   async (req, res) => {
     try {
       const stats = await faqController.updateStatistics();
@@ -177,23 +253,28 @@ router.post('/internal/update-statistics',
   }
 );
 
-// Health check endpoint
-router.get('/health', (req, res) => {
-  res.status(200).json({
-    success: true,
-    message: 'FAQ System is running',
-    timestamp: new Date().toISOString(),
-    version: '1.0.0'
-  });
-});
-
 // ==================== ERROR HANDLING MIDDLEWARE ====================
 
 // 404 handler for FAQ routes
 router.use((req, res) => {
   res.status(404).json({
     success: false,
-    message: `FAQ route not found: ${req.method} ${req.originalUrl}`
+    message: `FAQ route not found: ${req.method} ${req.originalUrl}`,
+    availableRoutes: [
+      'GET    /faqs',
+      'GET    /faqs/:id',
+      'POST   /faqs/questions',
+      'GET    /faqs/statistics',
+      'GET    /faqs/health',
+      'GET    /faqs/test-db',
+      'GET    /admin/questions',
+      'PUT    /admin/questions/:id/answer',
+      'POST   /admin/faqs',
+      'PUT    /admin/faqs/:id',
+      'DELETE /admin/faqs/:id',
+      'GET    /admin/dashboard',
+      'GET    /admin/statistics'
+    ]
   });
 });
 
@@ -201,7 +282,16 @@ router.use((req, res) => {
 router.use((error, req, res, next) => {
   console.error('FAQ Route Error:', error);
   
-  // Validation errors
+  // Validation errors from express-validator
+  if (error.errors && Array.isArray(error.errors)) {
+    return res.status(400).json({
+      success: false,
+      message: 'Validation Error',
+      errors: error.errors.map(err => err.msg)
+    });
+  }
+  
+  // Mongoose ValidationError
   if (error.name === 'ValidationError') {
     return res.status(400).json({
       success: false,
@@ -229,7 +319,8 @@ router.use((error, req, res, next) => {
   // Default error
   res.status(error.status || 500).json({
     success: false,
-    message: error.message || 'Internal server error'
+    message: error.message || 'Internal server error',
+    stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
   });
 });
 
