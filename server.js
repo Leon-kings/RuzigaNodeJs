@@ -16,8 +16,10 @@ const airportBookingRoutes = require("./routes/airportBookingRoutes");
 const admissionBookingRoutes = require("./routes/admissionBookingRoutes");
 const cscExamRoutes = require("./routes/cscExamRoutes");
 const scholarshipRoutes = require("./routes/scholarshipRoutes");
-const enquiryRoutes = require('./routes/enquiryRoutes');
-const serviceRoutes = require('./routes/servicesRoutes');
+const enquiryRoutes = require("./routes/enquiryRoutes");
+const serviceRoutes = require("./routes/servicesRoutes");
+const ServiceMainRoutes = require("./routes/ServicesmainRoutes");
+const faqRoutes = require("./routes/faqRoutes");
 
 const app = express();
 
@@ -139,8 +141,10 @@ app.use("/airport/booking", airportBookingRoutes);
 app.use("/admissions/booking", admissionBookingRoutes);
 app.use("/exams", cscExamRoutes);
 app.use("/scholarships", scholarshipRoutes);
-app.use('/enquiries', enquiryRoutes);
-app.use('/bookings', serviceRoutes);
+app.use("/enquiries", enquiryRoutes);
+app.use("/bookings", serviceRoutes);
+app.use("/main/services", ServiceMainRoutes);
+app.use("/faqs", faqRoutes);
 
 app.get("/", (req, res) => {
   res.json({
