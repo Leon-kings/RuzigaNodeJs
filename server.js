@@ -27,8 +27,22 @@ const app = express();
    GLOBAL MIDDLEWARE
 ======================= */
 
+// app.use(helmet());
+// app.use(cors());
+// app.use(express.json());
+// app.use(express.urlencoded({ extended: true }));
 app.use(helmet());
-app.use(cors());
+
+// Universal CORS with credentials support
+app.use(cors({
+  origin: (origin, callback) => {
+    // Allow all origins
+    callback(null, true);
+  },
+  credentials: true,
+  optionsSuccessStatus: 200 // For legacy browser support
+}));
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
