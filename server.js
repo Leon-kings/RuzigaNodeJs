@@ -221,6 +221,8 @@ const faqRoutes = require("./routes/faqRoutes");
 const newsletterRoutes = require("./routes/newsletterRoutes");
 const CSCEBookingRoutes = require("./routes/CSCEBookingRoutes");
 const blogRoutes = require("./routes/blogRoutes");
+const commentRoutes = require('./routes/commentRoutes');
+const bookingRoutes = require('./routes/bookingRoutes');
 
 const app = express();
 
@@ -329,6 +331,8 @@ app.use("/frequent/question", faqRoutes);
 app.use("/newsletter", newsletterRoutes);
 app.use("/csce", CSCEBookingRoutes);
 app.use("/blogs", blogRoutes);
+app.use('/comments', commentRoutes);
+app.use('/bookings', bookingRoutes);
 
 app.get("/", (req, res) => {
   res.json({

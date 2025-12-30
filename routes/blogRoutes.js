@@ -2,53 +2,51 @@ const express = require('express');
 const router = express.Router();
 const blogController = require('../controllers/blogControllers');
 
+
 // =========== PUBLIC ROUTES ===========
 
-// Blog routes
+// Get all published blogs (with optional filters)
 router.get('/', blogController.getAllBlogs);
-router.get('/trending', blogController.getTrendingBlogs);
+
+// Get blog by ID
 router.get('/:id', blogController.getBlogById);
+
+// Get trending blogs
+router.get('/trending/posts', blogController.getTrendingBlogs);
+
+// Search blogs
+router.get('/search/all', blogController.searchBlogs);
+
+// Like a blog
 router.post('/:id/like', blogController.likeBlog);
 
-// Comment routes
-router.get('/:postId/comments', blogController.getComments);
-router.post('/:postId/comments', blogController.createComment);
+// =========== PROTECTED ADMIN ROUTES ===========
 
-// Image upload routes (public)
-router.post('/upload/image', blogController.uploadImage);
-router.post('/upload/images', blogController.uploadMultipleImages);
+// Statistics route - MUST come before /:id to avoid conflict
+router.get('/admin/statistics/all', blogController.getStatistics);
 
-// Booking routes
-router.post('/bookings', blogController.createBooking);
+// Create new blog
+router.post('/admin/create', blogController.createBlog);
 
-// Contact and newsletter
-router.post('/contact', blogController.sendContactEmail);
-router.post('/newsletter/subscribe', blogController.subscribeNewsletter);
+// Update blog
+router.put('/admin/:id/update', blogController.updateBlog);
 
-// =========== ADMIN/PROTECTED ROUTES ===========
+// Soft delete (archive) blog
+router.delete('/admin/:id/archive', blogController.deleteBlog);
 
-// Blog management
-router.post('/', blogController.createBlog);
-router.put('/:id', blogController.updateBlog);
-router.delete('/:id', blogController.deleteBlog);
-router.delete('/:id/hard', blogController.hardDeleteBlog);
-router.put('/:id/image', blogController.updateBlogImage);
+// Hard delete blog
+router.delete('/admin/:id/permanent', blogController.hardDeleteBlog);
 
-// Comment management
-router.get('/comments', blogController.getAllComments);
-router.put('/comments/:id/status', blogController.updateCommentStatus);
-router.delete('/comments/:id', blogController.deleteComment);
+// Restore blog
+router.put('/admin/:id/restore', blogController.restoreBlog);
 
-// Booking management
-router.get('/bookings', blogController.getAllBookings);
-router.get('/bookings/:id', blogController.getBookingById);
-router.put('/bookings/:id/status', blogController.updateBookingStatus);
+// Update blog image only
+router.put('/admin/:id/image', blogController.updateBlogImage);
 
-// Statistics and analytics
-router.get('/statistics', blogController.getStatistics);
-router.get('/analytics', blogController.getAnalytics);
+// Upload image
+router.post('/admin/upload/image', blogController.uploadImage);
 
-// Email testing
-router.post('/test-email', blogController.testEmail);
+// Upload multiple images
+router.post('/admin/upload/images', blogController.uploadMultipleImages);
 
 module.exports = router;
