@@ -67,7 +67,6 @@
 //   }
 // };
 
-
 // /* =======================
 //    HEALTH CHECKS
 // ======================= */
@@ -220,7 +219,8 @@ const serviceRoutes = require("./routes/servicesRoutes");
 const ServiceMainRoutes = require("./routes/ServicesmainRoutes");
 const faqRoutes = require("./routes/faqRoutes");
 const newsletterRoutes = require("./routes/newsletterRoutes");
-const CSCEBookingRoutes = require('./routes/CSCEBookingRoutes');
+const CSCEBookingRoutes = require("./routes/CSCEBookingRoutes");
+const blogRoutes = require("./routes/blogRoutes");
 
 const app = express();
 
@@ -292,8 +292,7 @@ app.get("/health/detailed", async (req, res) => {
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
     services: {
-      database:
-        mongoose.connection.readyState === 1 ? "healthy" : "unhealthy",
+      database: mongoose.connection.readyState === 1 ? "healthy" : "unhealthy",
       api: "healthy",
     },
   });
@@ -328,7 +327,8 @@ app.use("/bookings", serviceRoutes);
 app.use("/main/services", ServiceMainRoutes);
 app.use("/frequent/question", faqRoutes);
 app.use("/newsletter", newsletterRoutes);
-app.use('/csce', CSCEBookingRoutes);
+app.use("/csce", CSCEBookingRoutes);
+app.use("/blogs", blogRoutes);
 
 app.get("/", (req, res) => {
   res.json({
