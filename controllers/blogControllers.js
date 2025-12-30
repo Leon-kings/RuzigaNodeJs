@@ -1,6 +1,36 @@
 const models = require('../models/Blog');
 const nodemailer = require('nodemailer');
 const mongoose = require('mongoose');
+const cloudinary = require('cloudinary').v2;
+const multer = require('multer');
+const streamifier = require('streamifier');
+
+// Cloudinary configuration
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET
+});
+
+// Multer configuration for file upload
+const storage = multer.memoryStorage();
+const upload = multer({ 
+  storage: storage,
+  limits: {
+    fileSize: 1 * 1024 * 1024, // 5MB limit
+  },
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = /jpeg|jpg|png|gif|webp/;
+    const extname = allowedTypes.test(file.originalname.toLowerCase());
+    const mimetype = allowedTypes.test(file.mimetype);
+    
+    if (extname && mimetype) {
+      return cb(null, true);
+    } else {
+      cb(new Error('Only image files are allowed!'));
+    }
+  }
+});
 
 // Helper functions
 const generateSlug = (text) => {
@@ -14,6 +44,41 @@ const calculateReadTime = (content) => {
   const wordsPerMinute = 200;
   const wordCount = content.split(/\s+/).length;
   return Math.ceil(wordCount / wordsPerMinute);
+};
+
+// Cloudinary upload function
+const uploadToCloudinary = (fileBuffer, folder = 'blog-images') => {
+  return new Promise((resolve, reject) => {
+    const uploadStream = cloudinary.uploader.upload_stream(
+      {
+        folder: folder,
+        transformation: [
+          { width: 1200, height: 630, crop: 'fill', gravity: 'auto' },
+          { quality: 'auto:good' }
+        ]
+      },
+      (error, result) => {
+        if (error) {
+          reject(error);
+        } else {
+          resolve(result);
+        }
+      }
+    );
+    
+    streamifier.createReadStream(fileBuffer).pipe(uploadStream);
+  });
+};
+
+// Delete from Cloudinary
+const deleteFromCloudinary = async (publicId) => {
+  try {
+    const result = await cloudinary.uploader.destroy(publicId);
+    return result;
+  } catch (error) {
+    console.error('Cloudinary delete error:', error);
+    return null;
+  }
 };
 
 // Email transporter
@@ -72,7 +137,85 @@ const trackEvent = async (type, data = {}, req = null) => {
   }
 };
 
-// Blog Controllers
+// =========== IMAGE UPLOAD CONTROLLERS ===========
+
+// Upload single image
+exports.uploadImage = [
+  upload.single('image'),
+  async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({
+          success: false,
+          message: 'No image file provided'
+        });
+      }
+
+      const result = await uploadToCloudinary(req.file.buffer);
+      
+      res.json({
+        success: true,
+        data: {
+          url: result.secure_url,
+          public_id: result.public_id,
+          width: result.width,
+          height: result.height,
+          format: result.format
+        }
+      });
+    } catch (error) {
+      console.error('Upload image error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error uploading image'
+      });
+    }
+  }
+];
+
+// Upload multiple images
+exports.uploadMultipleImages = [
+  upload.array('images', 10),
+  async (req, res) => {
+    try {
+      if (!req.files || req.files.length === 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'No images provided'
+        });
+      }
+
+      const uploadPromises = req.files.map(file => 
+        uploadToCloudinary(file.buffer, 'blog-gallery')
+      );
+
+      const results = await Promise.all(uploadPromises);
+
+      const imageData = results.map(result => ({
+        url: result.secure_url,
+        public_id: result.public_id,
+        width: result.width,
+        height: result.height
+      }));
+
+      res.json({
+        success: true,
+        message: `${req.files.length} images uploaded successfully`,
+        data: imageData
+      });
+    } catch (error) {
+      console.error('Bulk upload error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error uploading images'
+      });
+    }
+  }
+];
+
+// =========== BLOG CONTROLLERS ===========
+
+// Get all blogs
 exports.getAllBlogs = async (req, res) => {
   try {
     const { page = 1, limit = 10, category, search } = req.query;
@@ -116,6 +259,7 @@ exports.getAllBlogs = async (req, res) => {
   }
 };
 
+// Get blog by ID
 exports.getBlogById = async (req, res) => {
   try {
     const { id } = req.params;
@@ -149,77 +293,142 @@ exports.getBlogById = async (req, res) => {
   }
 };
 
-exports.createBlog = async (req, res) => {
-  try {
-    const { title, excerpt, content, category, tags, author, featured, image } = req.body;
-    
-    const blog = new models.Blog({
-      title,
-      slug: generateSlug(title),
-      excerpt,
-      content,
-      category,
-      tags: tags || [],
-      author,
-      readTime: calculateReadTime(content),
-      featured: featured || false,
-      image: image || {
+// Create blog with image upload
+exports.createBlog = [
+  upload.single('image'),
+  async (req, res) => {
+    try {
+      const { title, excerpt, content, category, tags, author, featured } = req.body;
+      
+      let imageData = {
         url: 'https://images.unsplash.com/photo-1503676260728-1c00da094a0b?auto=format&fit=crop&w=800&q=80',
         alt: title
+      };
+
+      // Upload image to Cloudinary if provided
+      if (req.file) {
+        const uploadResult = await uploadToCloudinary(req.file.buffer);
+        imageData = {
+          url: uploadResult.secure_url,
+          public_id: uploadResult.public_id,
+          alt: title
+        };
       }
-    });
 
-    await blog.save();
+      const blog = new models.Blog({
+        title,
+        slug: generateSlug(title),
+        excerpt,
+        content,
+        category,
+        tags: tags ? (Array.isArray(tags) ? tags : tags.split(',')) : [],
+        author,
+        readTime: calculateReadTime(content),
+        featured: featured === 'true' || featured === true,
+        image: imageData
+      });
 
-    res.status(201).json({
-      success: true,
-      message: 'Blog created',
-      data: blog
-    });
-  } catch (error) {
-    console.error('Create blog error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error creating blog'
-    });
-  }
-};
+      await blog.save();
 
-exports.updateBlog = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const updates = req.body;
-
-    if (updates.title) updates.slug = generateSlug(updates.title);
-    if (updates.content) updates.readTime = calculateReadTime(updates.content);
-
-    const blog = await models.Blog.findByIdAndUpdate(id, updates, { new: true });
-
-    if (!blog) {
-      return res.status(404).json({
+      res.status(201).json({
+        success: true,
+        message: 'Blog created successfully',
+        data: blog
+      });
+    } catch (error) {
+      console.error('Create blog error:', error);
+      res.status(500).json({
         success: false,
-        message: 'Blog not found'
+        message: 'Error creating blog'
       });
     }
-
-    res.json({
-      success: true,
-      message: 'Blog updated',
-      data: blog
-    });
-  } catch (error) {
-    console.error('Update blog error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error updating blog'
-    });
   }
-};
+];
 
+// Update blog with optional image update
+exports.updateBlog = [
+  upload.single('image'),
+  async (req, res) => {
+    try {
+      const { id } = req.params;
+      const updates = req.body;
+
+      const existingBlog = await models.Blog.findById(id);
+      if (!existingBlog) {
+        return res.status(404).json({
+          success: false,
+          message: 'Blog not found'
+        });
+      }
+
+      // Update slug if title changed
+      if (updates.title) {
+        updates.slug = generateSlug(updates.title);
+      }
+
+      // Update read time if content changed
+      if (updates.content) {
+        updates.readTime = calculateReadTime(updates.content);
+      }
+
+      // Handle image update
+      if (req.file) {
+        // Delete old image from Cloudinary if it exists
+        if (existingBlog.image && existingBlog.image.public_id) {
+          await deleteFromCloudinary(existingBlog.image.public_id);
+        }
+
+        // Upload new image
+        const uploadResult = await uploadToCloudinary(req.file.buffer);
+        updates.image = {
+          url: uploadResult.secure_url,
+          public_id: uploadResult.public_id,
+          alt: updates.title || existingBlog.title
+        };
+      } else if (updates.imageUrl) {
+        // If image is provided as URL (for existing images)
+        updates.image = {
+          url: updates.imageUrl,
+          alt: updates.title || existingBlog.title
+        };
+        delete updates.imageUrl;
+      }
+
+      // Parse tags if provided as string
+      if (updates.tags && typeof updates.tags === 'string') {
+        updates.tags = updates.tags.split(',');
+      }
+
+      const blog = await models.Blog.findByIdAndUpdate(
+        id,
+        updates,
+        { new: true, runValidators: true }
+      );
+
+      res.json({
+        success: true,
+        message: 'Blog updated successfully',
+        data: blog
+      });
+    } catch (error) {
+      console.error('Update blog error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error updating blog'
+      });
+    }
+  }
+];
+
+// Soft delete (archive) blog
 exports.deleteBlog = async (req, res) => {
   try {
     const { id } = req.params;
-    const blog = await models.Blog.findByIdAndUpdate(id, { status: 'archived' }, { new: true });
+    const blog = await models.Blog.findByIdAndUpdate(
+      id, 
+      { status: 'archived' }, 
+      { new: true }
+    );
 
     if (!blog) {
       return res.status(404).json({
@@ -230,7 +439,7 @@ exports.deleteBlog = async (req, res) => {
 
     res.json({
       success: true,
-      message: 'Blog archived'
+      message: 'Blog archived successfully'
     });
   } catch (error) {
     console.error('Delete blog error:', error);
@@ -241,11 +450,50 @@ exports.deleteBlog = async (req, res) => {
   }
 };
 
+// Hard delete blog with image removal
+exports.hardDeleteBlog = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const blog = await models.Blog.findById(id);
+
+    if (!blog) {
+      return res.status(404).json({
+        success: false,
+        message: 'Blog not found'
+      });
+    }
+
+    // Delete image from Cloudinary if it exists
+    if (blog.image && blog.image.public_id) {
+      await deleteFromCloudinary(blog.image.public_id);
+    }
+
+    // Delete blog from database
+    await models.Blog.findByIdAndDelete(id);
+
+    // Delete related comments
+    await models.Comment.deleteMany({ post: id });
+
+    res.json({
+      success: true,
+      message: 'Blog permanently deleted'
+    });
+  } catch (error) {
+    console.error('Hard delete error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error deleting blog'
+    });
+  }
+};
+
+// Get trending blogs
 exports.getTrendingBlogs = async (req, res) => {
   try {
     const blogs = await models.Blog.find({ status: 'published' })
       .sort({ views: -1, likes: -1 })
-      .limit(5);
+      .limit(5)
+      .select('title excerpt image category views likes createdAt slug');
 
     res.json({
       success: true,
@@ -260,6 +508,7 @@ exports.getTrendingBlogs = async (req, res) => {
   }
 };
 
+// Like a blog
 exports.likeBlog = async (req, res) => {
   try {
     const { id } = req.params;
@@ -291,12 +540,70 @@ exports.likeBlog = async (req, res) => {
   }
 };
 
-// Comment Controllers
+// Update blog image only
+exports.updateBlogImage = [
+  upload.single('image'),
+  async (req, res) => {
+    try {
+      const { id } = req.params;
+      
+      if (!req.file) {
+        return res.status(400).json({
+          success: false,
+          message: 'No image file provided'
+        });
+      }
+
+      const blog = await models.Blog.findById(id);
+      if (!blog) {
+        return res.status(404).json({
+          success: false,
+          message: 'Blog not found'
+        });
+      }
+
+      // Delete old image from Cloudinary
+      if (blog.image && blog.image.public_id) {
+        await deleteFromCloudinary(blog.image.public_id);
+      }
+
+      // Upload new image
+      const uploadResult = await uploadToCloudinary(req.file.buffer);
+      
+      blog.image = {
+        url: uploadResult.secure_url,
+        public_id: uploadResult.public_id,
+        alt: blog.title
+      };
+
+      await blog.save();
+
+      res.json({
+        success: true,
+        message: 'Blog image updated successfully',
+        data: {
+          image: blog.image
+        }
+      });
+    } catch (error) {
+      console.error('Update blog image error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error updating blog image'
+      });
+    }
+  }
+];
+
+// =========== COMMENT CONTROLLERS ===========
+
+// Get comments for a blog post
 exports.getComments = async (req, res) => {
   try {
     const { postId } = req.params;
     const comments = await models.Comment.find({ post: postId, isApproved: true })
-      .sort('-createdAt');
+      .sort('-createdAt')
+      .select('-email');
 
     res.json({
       success: true,
@@ -311,6 +618,7 @@ exports.getComments = async (req, res) => {
   }
 };
 
+// Create comment
 exports.createComment = async (req, res) => {
   try {
     const { postId } = req.params;
@@ -341,11 +649,15 @@ exports.createComment = async (req, res) => {
     // Send email notification
     if (process.env.ADMIN_EMAIL) {
       const emailHtml = `
-        <div>
-          <h2>New Comment on "${post.title}"</h2>
-          <p>Author: ${comment.author}</p>
-          <p>Comment: ${comment.content}</p>
-          <p>Date: ${new Date().toLocaleString()}</p>
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #333;">New Comment on "${post.title}"</h2>
+          <div style="background: #f5f5f5; padding: 20px; border-radius: 5px; margin: 20px 0;">
+            <p><strong>Author:</strong> ${comment.author}</p>
+            <p><strong>Email:</strong> ${comment.email}</p>
+            <p><strong>Comment:</strong> ${comment.content}</p>
+            <p><strong>Date:</strong> ${new Date().toLocaleString()}</p>
+          </div>
+          <p>Post URL: ${process.env.FRONTEND_URL || 'https://yourdomain.com'}/blog/${post.slug}</p>
         </div>
       `;
       
@@ -358,7 +670,7 @@ exports.createComment = async (req, res) => {
 
     res.status(201).json({
       success: true,
-      message: 'Comment added',
+      message: 'Comment added successfully',
       data: comment
     });
   } catch (error) {
@@ -370,7 +682,107 @@ exports.createComment = async (req, res) => {
   }
 };
 
-// Booking Controllers
+// Admin: Get all comments (including unapproved)
+exports.getAllComments = async (req, res) => {
+  try {
+    const { page = 1, limit = 20, approved } = req.query;
+    const query = {};
+
+    if (approved !== undefined) {
+      query.isApproved = approved === 'true';
+    }
+
+    const comments = await models.Comment.find(query)
+      .populate('post', 'title slug')
+      .sort('-createdAt')
+      .skip((page - 1) * limit)
+      .limit(parseInt(limit));
+
+    const total = await models.Comment.countDocuments(query);
+
+    res.json({
+      success: true,
+      data: comments,
+      total,
+      totalPages: Math.ceil(total / limit),
+      currentPage: parseInt(page)
+    });
+  } catch (error) {
+    console.error('Get all comments error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching comments'
+    });
+  }
+};
+
+// Admin: Update comment status
+exports.updateCommentStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { isApproved } = req.body;
+
+    const comment = await models.Comment.findByIdAndUpdate(
+      id,
+      { isApproved },
+      { new: true }
+    ).populate('post', 'title');
+
+    if (!comment) {
+      return res.status(404).json({
+        success: false,
+        message: 'Comment not found'
+      });
+    }
+
+    res.json({
+      success: true,
+      message: `Comment ${isApproved ? 'approved' : 'rejected'}`,
+      data: comment
+    });
+  } catch (error) {
+    console.error('Update comment status error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error updating comment status'
+    });
+  }
+};
+
+// Admin: Delete comment
+exports.deleteComment = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const comment = await models.Comment.findByIdAndDelete(id);
+
+    if (!comment) {
+      return res.status(404).json({
+        success: false,
+        message: 'Comment not found'
+      });
+    }
+
+    // Decrement comment count on blog post
+    await models.Blog.findByIdAndUpdate(comment.post, {
+      $inc: { comments: -1 }
+    });
+
+    res.json({
+      success: true,
+      message: 'Comment deleted successfully'
+    });
+  } catch (error) {
+    console.error('Delete comment error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error deleting comment'
+    });
+  }
+};
+
+// =========== BOOKING CONTROLLERS ===========
+
+// Create booking
 exports.createBooking = async (req, res) => {
   try {
     const { name, email, phone, country, service, date, message, postTitle, postId } = req.body;
@@ -397,14 +809,18 @@ exports.createBooking = async (req, res) => {
 
     // Send confirmation email to user
     const userEmailHtml = `
-      <div>
-        <h2>Booking Confirmation</h2>
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #333;">Booking Confirmation</h2>
         <p>Dear ${name},</p>
-        <p>Thank you for booking with RECAPPLY.</p>
-        <p><strong>Service:</strong> ${service}</p>
-        <p><strong>Date:</strong> ${new Date(date).toLocaleDateString()}</p>
-        <p><strong>Country:</strong> ${country}</p>
-        <p>We will contact you within 24 hours.</p>
+        <div style="background: #f5f5f5; padding: 20px; border-radius: 5px; margin: 20px 0;">
+          <p><strong>Service:</strong> ${service}</p>
+          <p><strong>Date:</strong> ${new Date(date).toLocaleDateString()}</p>
+          <p><strong>Country:</strong> ${country}</p>
+          <p><strong>Phone:</strong> ${phone}</p>
+          ${message ? `<p><strong>Message:</strong> ${message}</p>` : ''}
+        </div>
+        <p>Thank you for booking with RECAPPLY. We will contact you within 24 hours.</p>
+        <p>Best regards,<br>RECAPPLY Team</p>
       </div>
     `;
 
@@ -413,12 +829,19 @@ exports.createBooking = async (req, res) => {
     // Send notification to admin
     if (process.env.ADMIN_EMAIL) {
       const adminEmailHtml = `
-        <div>
-          <h2>New Booking Request</h2>
-          <p><strong>Name:</strong> ${name}</p>
-          <p><strong>Email:</strong> ${email}</p>
-          <p><strong>Phone:</strong> ${phone}</p>
-          <p><strong>Service:</strong> ${service}</p>
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #333;">New Booking Request</h2>
+          <div style="background: #f5f5f5; padding: 20px; border-radius: 5px; margin: 20px 0;">
+            <p><strong>Name:</strong> ${name}</p>
+            <p><strong>Email:</strong> ${email}</p>
+            <p><strong>Phone:</strong> ${phone}</p>
+            <p><strong>Country:</strong> ${country}</p>
+            <p><strong>Service:</strong> ${service}</p>
+            <p><strong>Date:</strong> ${new Date(date).toLocaleDateString()}</p>
+            ${postTitle ? `<p><strong>Related Post:</strong> ${postTitle}</p>` : ''}
+            ${message ? `<p><strong>Message:</strong> ${message}</p>` : ''}
+          </div>
+          <p><strong>Booking ID:</strong> ${booking._id}</p>
         </div>
       `;
 
@@ -443,12 +866,35 @@ exports.createBooking = async (req, res) => {
   }
 };
 
+// Get all bookings (admin)
 exports.getAllBookings = async (req, res) => {
   try {
-    const bookings = await models.Booking.find().sort('-createdAt');
+    const { page = 1, limit = 20, status, startDate, endDate } = req.query;
+    const query = {};
+
+    if (status && status !== 'all') {
+      query.status = status;
+    }
+
+    if (startDate || endDate) {
+      query.date = {};
+      if (startDate) query.date.$gte = new Date(startDate);
+      if (endDate) query.date.$lte = new Date(endDate);
+    }
+
+    const bookings = await models.Booking.find(query)
+      .sort('-createdAt')
+      .skip((page - 1) * limit)
+      .limit(parseInt(limit));
+
+    const total = await models.Booking.countDocuments(query);
+
     res.json({
       success: true,
-      data: bookings
+      data: bookings,
+      total,
+      totalPages: Math.ceil(total / limit),
+      currentPage: parseInt(page)
     });
   } catch (error) {
     console.error('Get bookings error:', error);
@@ -459,6 +905,7 @@ exports.getAllBookings = async (req, res) => {
   }
 };
 
+// Update booking status
 exports.updateBookingStatus = async (req, res) => {
   try {
     const { id } = req.params;
@@ -479,10 +926,19 @@ exports.updateBookingStatus = async (req, res) => {
 
     // Send status update email
     const statusEmail = `
-      <div>
-        <h2>Booking Status Update</h2>
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #333;">Booking Status Update</h2>
         <p>Dear ${booking.name},</p>
-        <p>Your booking status has been updated to: <strong>${status}</strong></p>
+        <div style="background: #f5f5f5; padding: 20px; border-radius: 5px; margin: 20px 0;">
+          <p><strong>Service:</strong> ${booking.service}</p>
+          <p><strong>Booking ID:</strong> ${booking._id}</p>
+          <p><strong>New Status:</strong> <span style="color: ${
+            status === 'confirmed' ? 'green' : 
+            status === 'cancelled' ? 'red' : 
+            'orange'
+          }">${status.toUpperCase()}</span></p>
+        </div>
+        <p>Best regards,<br>RECAPPLY Team</p>
       </div>
     `;
 
@@ -490,7 +946,7 @@ exports.updateBookingStatus = async (req, res) => {
 
     res.json({
       success: true,
-      message: 'Booking status updated',
+      message: 'Booking status updated successfully',
       data: booking
     });
   } catch (error) {
@@ -502,10 +958,64 @@ exports.updateBookingStatus = async (req, res) => {
   }
 };
 
-// Statistics Controllers
+// Get booking by ID
+exports.getBookingById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const booking = await models.Booking.findById(id);
+
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        message: 'Booking not found'
+      });
+    }
+
+    res.json({
+      success: true,
+      data: booking
+    });
+  } catch (error) {
+    console.error('Get booking error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching booking'
+    });
+  }
+};
+
+// =========== STATISTICS CONTROLLERS ===========
+
+// Get statistics
 exports.getStatistics = async (req, res) => {
   try {
+    const { period = '30d' } = req.query;
+    let startDate = new Date();
+    
+    switch (period) {
+      case '7d':
+        startDate.setDate(startDate.getDate() - 7);
+        break;
+      case '30d':
+        startDate.setDate(startDate.getDate() - 30);
+        break;
+      case '90d':
+        startDate.setDate(startDate.getDate() - 90);
+        break;
+      case '1y':
+        startDate.setFullYear(startDate.getFullYear() - 1);
+        break;
+      default:
+        startDate.setDate(startDate.getDate() - 30);
+    }
+
+    // Get event counts
     const stats = await models.Statistics.aggregate([
+      {
+        $match: {
+          timestamp: { $gte: startDate }
+        }
+      },
       {
         $group: {
           _id: '$type',
@@ -514,21 +1024,61 @@ exports.getStatistics = async (req, res) => {
       }
     ]);
 
+    // Get total views
     const totalViews = await models.Blog.aggregate([
       { $group: { _id: null, total: { $sum: '$views' } } }
     ]);
 
+    // Get popular posts
     const popularPosts = await models.Blog.find({ status: 'published' })
       .sort({ views: -1 })
       .limit(5)
-      .select('title views category');
+      .select('title slug views category image createdAt');
+
+    // Get traffic sources
+    const trafficSources = await models.Statistics.aggregate([
+      {
+        $match: {
+          timestamp: { $gte: startDate },
+          type: 'post_view'
+        }
+      },
+      {
+        $group: {
+          _id: '$browser',
+          count: { $sum: 1 }
+        }
+      },
+      { $sort: { count: -1 } },
+      { $limit: 10 }
+    ]);
+
+    // Get top countries from bookings
+    const topCountries = await models.Booking.aggregate([
+      {
+        $match: {
+          createdAt: { $gte: startDate }
+        }
+      },
+      {
+        $group: {
+          _id: '$country',
+          count: { $sum: 1 }
+        }
+      },
+      { $sort: { count: -1 } },
+      { $limit: 10 }
+    ]);
 
     res.json({
       success: true,
       data: {
-        stats,
+        eventStats: stats,
         totalViews: totalViews[0]?.total || 0,
-        popularPosts
+        popularPosts,
+        trafficSources,
+        topCountries,
+        period
       }
     });
   } catch (error) {
@@ -540,7 +1090,81 @@ exports.getStatistics = async (req, res) => {
   }
 };
 
-// Email Controllers
+// Get detailed analytics
+exports.getAnalytics = async (req, res) => {
+  try {
+    const { days = 30 } = req.query;
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - parseInt(days));
+
+    // Get daily views
+    const dailyViews = await models.Statistics.aggregate([
+      {
+        $match: {
+          type: 'post_view',
+          timestamp: { $gte: startDate }
+        }
+      },
+      {
+        $group: {
+          _id: {
+            $dateToString: { format: "%Y-%m-%d", date: "$timestamp" }
+          },
+          count: { $sum: 1 }
+        }
+      },
+      { $sort: { _id: 1 } }
+    ]);
+
+    // Get category distribution
+    const categoryStats = await models.Blog.aggregate([
+      {
+        $match: {
+          status: 'published'
+        }
+      },
+      {
+        $group: {
+          _id: '$category',
+          count: { $sum: 1 },
+          totalViews: { $sum: '$views' },
+          avgViews: { $avg: '$views' }
+        }
+      },
+      { $sort: { totalViews: -1 } }
+    ]);
+
+    // Get top performing posts
+    const topPosts = await models.Blog.find({ status: 'published' })
+      .sort({ views: -1 })
+      .limit(10)
+      .select('title slug category views likes comments createdAt');
+
+    res.json({
+      success: true,
+      data: {
+        dailyViews,
+        categoryStats,
+        topPosts,
+        timeRange: {
+          startDate,
+          endDate: new Date(),
+          days: parseInt(days)
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Analytics error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching analytics'
+    });
+  }
+};
+
+// =========== EMAIL CONTROLLERS ===========
+
+// Send contact email
 exports.sendContactEmail = async (req, res) => {
   try {
     const { name, email, subject, message } = req.body;
@@ -549,12 +1173,15 @@ exports.sendContactEmail = async (req, res) => {
 
     // Send to admin
     const adminEmailHtml = `
-      <div>
-        <h2>New Contact Form Submission</h2>
-        <p><strong>Name:</strong> ${name}</p>
-        <p><strong>Email:</strong> ${email}</p>
-        <p><strong>Subject:</strong> ${subject}</p>
-        <p><strong>Message:</strong> ${message}</p>
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #333;">New Contact Form Submission</h2>
+        <div style="background: #f5f5f5; padding: 20px; border-radius: 5px; margin: 20px 0;">
+          <p><strong>Name:</strong> ${name}</p>
+          <p><strong>Email:</strong> ${email}</p>
+          <p><strong>Subject:</strong> ${subject}</p>
+          <p><strong>Message:</strong> ${message}</p>
+          <p><strong>Time:</strong> ${new Date().toLocaleString()}</p>
+        </div>
       </div>
     `;
 
@@ -566,10 +1193,15 @@ exports.sendContactEmail = async (req, res) => {
 
     // Send confirmation to user
     const userEmailHtml = `
-      <div>
-        <h2>Message Received</h2>
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #333;">Message Received</h2>
         <p>Dear ${name},</p>
-        <p>Thank you for contacting RECAPPLY. We will get back to you within 24 hours.</p>
+        <p>Thank you for contacting RECAPPLY. We have received your message and will get back to you within 24 hours.</p>
+        <div style="background: #f5f5f5; padding: 20px; border-radius: 5px; margin: 20px 0;">
+          <p><strong>Subject:</strong> ${subject}</p>
+          <p><strong>Message:</strong> ${message}</p>
+        </div>
+        <p>Best regards,<br>RECAPPLY Team</p>
       </div>
     `;
 
@@ -588,15 +1220,21 @@ exports.sendContactEmail = async (req, res) => {
   }
 };
 
+// Test email
 exports.testEmail = async (req, res) => {
   try {
     const { to } = req.body;
 
     const testHtml = `
-      <div>
-        <h2>Test Email</h2>
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #333;">Test Email</h2>
         <p>This is a test email from RECAPPLY Blog API.</p>
-        <p>Timestamp: ${new Date().toISOString()}</p>
+        <div style="background: #f5f5f5; padding: 20px; border-radius: 5px; margin: 20px 0;">
+          <p><strong>Timestamp:</strong> ${new Date().toISOString()}</p>
+          <p><strong>API Version:</strong> 1.0.0</p>
+          <p><strong>Environment:</strong> ${process.env.NODE_ENV || 'development'}</p>
+        </div>
+        <p>If you received this email, your email configuration is working correctly.</p>
       </div>
     `;
 
@@ -626,3 +1264,45 @@ exports.testEmail = async (req, res) => {
     });
   }
 };
+
+// Newsletter subscription
+exports.subscribeNewsletter = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    // Here you would typically save to a newsletter database
+    // For now, we'll just send a confirmation email
+
+    const confirmationHtml = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #333;">Welcome to RECAPPLY Newsletter!</h2>
+        <p>Thank you for subscribing to our newsletter.</p>
+        <p>You'll now receive updates about:</p>
+        <ul>
+          <li>New blog posts and articles</li>
+          <li>Latest trends and insights</li>
+          <li>Special offers and promotions</li>
+          <li>Upcoming events and webinars</li>
+        </ul>
+        <p>If you didn't subscribe, please ignore this email.</p>
+        <p>Best regards,<br>RECAPPLY Team</p>
+      </div>
+    `;
+
+    await sendEmail(email, 'Welcome to RECAPPLY Newsletter!', confirmationHtml);
+
+    res.json({
+      success: true,
+      message: 'Subscribed to newsletter successfully'
+    });
+  } catch (error) {
+    console.error('Newsletter error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error subscribing to newsletter'
+    });
+  }
+};
+
+// Export upload middleware
+exports.upload = upload;

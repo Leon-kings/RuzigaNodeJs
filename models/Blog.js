@@ -1,52 +1,60 @@
 const mongoose = require('mongoose');
 
-// Blog Schema
-const blogSchema = new mongoose.Schema({
+// Check if models already exist to prevent overwriting
+const Blog = mongoose.models.Blog || mongoose.model('Blog', new mongoose.Schema({
   title: {
     type: String,
     required: true,
-    trim: true,
-    maxlength: 200
+    trim: true
   },
   slug: {
     type: String,
+    required: true,
     unique: true,
-    lowercase: true,
-    trim: true
+    lowercase: true
   },
   excerpt: {
     type: String,
     required: true,
-    trim: true,
-    maxlength: 500
+    maxlength: 200
   },
   content: {
     type: String,
     required: true
   },
-  author: {
-    type: String,
-    required: true,
-    trim: true
-  },
   category: {
     type: String,
-    enum: ['admissions', 'visa', 'accommodation', 'travel', 'culture'],
-    required: true
+    required: true,
+    enum: ['technology', 'business', 'health', 'education', 'lifestyle', 'other']
   },
   tags: [{
     type: String,
     trim: true
   }],
-  image: {
-    url: String,
-    publicId: String,
-    alt: String
+  author: {
+    type: String,
+    required: true
   },
   readTime: {
     type: Number,
-    default: 5,
-    min: 1
+    required: true
+  },
+  featured: {
+    type: Boolean,
+    default: false
+  },
+  image: {
+    url: {
+      type: String,
+      required: true
+    },
+    public_id: {
+      type: String
+    },
+    alt: {
+      type: String,
+      default: 'Blog image'
+    }
   },
   views: {
     type: Number,
@@ -60,42 +68,19 @@ const blogSchema = new mongoose.Schema({
     type: Number,
     default: 0
   },
-  featured: {
-    type: Boolean,
-    default: false
-  },
   status: {
     type: String,
     enum: ['draft', 'published', 'archived'],
     default: 'published'
-  },
-  publishedAt: {
-    type: Date,
-    default: Date.now
   }
 }, {
   timestamps: true
-});
+}));
 
-// Generate slug before saving
-blogSchema.pre('save', function(next) {
-  if (!this.isModified('title')) return next();
-  
-  this.slug = this.title
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/(^-|-$)/g, '');
-  
-  next();
-});
-
-// Comment Schema
-const commentSchema = new mongoose.Schema({
+const Comment = mongoose.models.Comment || mongoose.model('Comment', new mongoose.Schema({
   content: {
     type: String,
-    required: true,
-    trim: true,
-    maxlength: 1000
+    required: true
   },
   post: {
     type: mongoose.Schema.Types.ObjectId,
@@ -104,106 +89,100 @@ const commentSchema = new mongoose.Schema({
   },
   author: {
     type: String,
-    required: true,
-    trim: true
+    required: true
   },
   email: {
     type: String,
-    trim: true
-  },
-  likes: {
-    type: Number,
-    default: 0
+    required: true
   },
   isApproved: {
     type: Boolean,
     default: true
-  },
-  parentComment: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Comment'
   }
 }, {
   timestamps: true
-});
+}));
 
-// Booking Schema
-const bookingSchema = new mongoose.Schema({
+const Booking = mongoose.models.Booking || mongoose.model('Booking', new mongoose.Schema({
   name: {
     type: String,
-    required: true,
-    trim: true
+    required: true
   },
   email: {
     type: String,
-    required: true,
-    lowercase: true,
-    trim: true
+    required: true
   },
   phone: {
     type: String,
-    required: true,
-    trim: true
+    required: true
   },
   country: {
     type: String,
-    required: true,
-    trim: true
+    required: true
   },
   service: {
     type: String,
-    required: true,
-    trim: true
+    required: true
   },
   date: {
     type: Date,
     required: true
   },
-  message: String,
-  postTitle: String,
+  message: {
+    type: String
+  },
+  postTitle: {
+    type: String
+  },
   postId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Blog'
   },
   status: {
     type: String,
-    enum: ['pending', 'confirmed', 'completed', 'cancelled'],
+    enum: ['pending', 'confirmed', 'cancelled', 'completed'],
     default: 'pending'
-  },
-  notes: String
+  }
 }, {
   timestamps: true
-});
+}));
 
-// Statistics Schema
-const statisticsSchema = new mongoose.Schema({
+const Statistics = mongoose.models.Statistics || mongoose.model('Statistics', new mongoose.Schema({
   type: {
     type: String,
-    enum: ['page_view', 'post_view', 'booking', 'comment', 'like', 'search', 'contact'],
-    required: true
+    required: true,
+    enum: ['post_view', 'like', 'comment', 'search', 'booking', 'contact']
   },
-  page: String,
   post: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Blog'
   },
-  userAgent: String,
-  ip: String,
-  country: String,
-  device: String,
-  browser: String,
   query: String,
   category: String,
-  metadata: mongoose.Schema.Types.Mixed
-}, {
-  timestamps: true
-});
+  service: String,
+  country: String,
+  name: String,
+  email: String,
+  subject: String,
+  ip: String,
+  userAgent: String,
+  browser: String,
+  device: String,
+  timestamp: {
+    type: Date,
+    default: Date.now
+  }
+}));
 
-// Create models with checks to prevent overwrites
-const Blog = mongoose.models.Blog || mongoose.model('Blog', blogSchema);
-const Comment = mongoose.models.Comment || mongoose.model('Comment', commentSchema);
-const Booking = mongoose.models.Booking || mongoose.model('Booking', bookingSchema);
-const Statistics = mongoose.models.Statistics || mongoose.model('Statistics', statisticsSchema);
+// Create indexes (only if the model is being created for the first time)
+if (!mongoose.models.Blog) {
+  Blog.schema.index({ slug: 1 });
+  Blog.schema.index({ category: 1, status: 1, createdAt: -1 });
+  Blog.schema.index({ views: -1 });
+  Blog.schema.index({ featured: 1, status: 1 });
+  Comment.schema.index({ post: 1, createdAt: -1 });
+  Statistics.schema.index({ type: 1, timestamp: -1 });
+}
 
 module.exports = {
   Blog,
