@@ -4,6 +4,7 @@ const ExcelJS = require('exceljs');
 const PDFDocument = require('pdfkit');
 const Exam = require('../models/Exam');
 const User = require('../models/User');
+const Notification = require('../models/Notification');
 
 // Email Service Setup
 const emailTransporter = nodemailer.createTransport({
@@ -121,38 +122,50 @@ class CSEController {
   }
 
   // Create exam
-  async createExam(req, res) {
-    try {
-      const examData = {
-        ...req.body,
-        createdBy: req.user._id,
-        code: await this.generateExamCode(req.body.type)
-      };
 
-      const exam = new Exam(examData);
-      await exam.save();
 
-      // Send notification to admin
-      await this.sendAdminNotification({
-        type: 'exam_created',
-        exam: exam.name,
-        createdBy: req.user.name
-      });
+async createExam(req, res) {
+  try {
+    const examData = {
+      ...req.body,
+      createdBy: req.user._id,
+      code: await this.generateExamCode(req.body.type)
+    };
 
-      res.status(201).json({
-        success: true,
-        data: exam,
-        message: 'Exam created successfully'
-      });
-    } catch (error) {
-      console.error('Create exam error:', error);
-      res.status(400).json({
-        success: false,
-        message: 'Error creating exam',
-        error: error.message
-      });
-    }
+    const exam = new Exam(examData);
+    await exam.save();
+
+    // ✅ Existing admin notification (AS-IS)
+    await this.sendAdminNotification({
+      type: 'exam_created',
+      exam: exam.name,
+      createdBy: req.user.name
+    });
+
+    // 🔔 ADD NOTIFICATION (NEW – does NOT break anything)
+    await Notification.create({
+      userId: req.user._id,
+      title: 'Exam Created',
+      message: `You created a new exam: ${exam.name}`,
+      type: 'exam',
+      exam: exam._id
+    });
+
+    res.status(201).json({
+      success: true,
+      data: exam,
+      message: 'Exam created successfully'
+    });
+
+  } catch (error) {
+    console.error('Create exam error:', error);
+    res.status(400).json({
+      success: false,
+      message: 'Error creating exam',
+      error: error.message
+    });
   }
+}
 
   // Update exam
   async updateExam(req, res) {

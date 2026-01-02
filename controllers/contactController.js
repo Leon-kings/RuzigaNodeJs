@@ -1,69 +1,92 @@
 const Contact = require('../models/Contact');
 const emailService = require('../mails/sendEmail');
+const User = require('../models/User');
+const Notification = require('../models/Notification');
 const mongoose = require('mongoose');
 
 class ContactController {
   // ========== CRUD OPERATIONS ==========
   
-  // CREATE - Create new contact submission
-  async createContact(req, res) {
-    try {
-      const { name, email, subject, message } = req.body;
+// CREATE - Create new contact submission
+async createContact(req, res) {
+  try {
+    const { name, email, subject, message } = req.body;
 
-      // Check for duplicate recent submissions
-      const recentSubmission = await Contact.findOne({
-        email,
-        subject,
-        createdAt: { $gte: new Date(Date.now() - 24 * 60 * 60 * 1000) } // Last 24 hours
-      });
+    // Check for duplicate recent submissions
+    const recentSubmission = await Contact.findOne({
+      email,
+      subject,
+      createdAt: { $gte: new Date(Date.now() - 24 * 60 * 60 * 1000) } // Last 24 hours
+    });
 
-      if (recentSubmission) {
-        return res.status(400).json({
-          success: false,
-          message: 'You have already submitted a similar message recently.'
-        });
-      }
-      // Create contact record
-      const contact = await Contact.create({
-        name,
-        email,
-        subject,
-        message,
-        ipAddress: req.ip,
-        userAgent: req.get('User-Agent')
-      });
-
-      // Send notification to admin
-      await emailService.sendContactNotification({
-        name,
-        email,
-        subject,
-        message
-      });
-
-      // Send auto-acknowledgement to user
-      await emailService.sendAutoAcknowledgement(email, name);
-
-      res.status(201).json({
-        success: true,
-        message: 'Thank you for contacting us! We will get back to you soon.',
-        data: {
-          id: contact._id,
-          name: contact.name,
-          email: contact.email,
-          subject: contact.subject,
-          createdAt: contact.createdAt
-        }
-      });
-    } catch (error) {
-      console.error('Create contact error:', error);
-      res.status(500).json({
+    if (recentSubmission) {
+      return res.status(400).json({
         success: false,
-        message: 'Failed to submit contact form',
-        error: process.env.NODE_ENV === 'development' ? error.message : undefined
+        message: 'You have already submitted a similar message recently.'
       });
     }
+
+    // Create contact record
+    const contact = await Contact.create({
+      name,
+      email,
+      subject,
+      message,
+      ipAddress: req.ip,
+      userAgent: req.get('User-Agent')
+    });
+
+    // ✅ Existing email notification to admin (AS-IS)
+    await emailService.sendContactNotification({
+      name,
+      email,
+      subject,
+      message
+    });
+
+    // ✅ Existing auto-acknowledgement (AS-IS)
+    await emailService.sendAutoAcknowledgement(email, name);
+
+    // 🔔 ADD NOTIFICATIONS FOR ADMINS (NEW)
+    const admins = await User.find({ role: 'admin' }).select('_id');
+
+    if (admins.length > 0) {
+      await Notification.insertMany(
+        admins.map(admin => ({
+          userId: admin._id,
+          title: 'New Contact Message',
+          message: `New message from ${name}: ${subject}`,
+          type: 'system',
+          relatedModel: 'Contact',
+          relatedId: contact._id
+        }))
+      );
+    }
+
+    res.status(201).json({
+      success: true,
+      message: 'Thank you for contacting us! We will get back to you soon.',
+      data: {
+        id: contact._id,
+        name: contact.name,
+        email: contact.email,
+        subject: contact.subject,
+        createdAt: contact.createdAt
+      }
+    });
+
+  } catch (error) {
+    console.error('Create contact error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to submit contact form',
+      error: process.env.NODE_ENV === 'development'
+        ? error.message
+        : undefined
+    });
   }
+}
+
 
   // READ - Get all contacts (with filters, search, and pagination)
   async getAllContacts(req, res) {
