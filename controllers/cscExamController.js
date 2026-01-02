@@ -2,6 +2,7 @@ const Exam = require('../models/Exam');
 const nodemailer = require('nodemailer');
 const cloudinary = require('../cloudinary/cloudinary');
 const { v4: uuidv4 } = require('uuid');
+const Notification = require('../models/Notification');
 
 // Email configuration
 const emailTransporter = nodemailer.createTransport({
@@ -490,6 +491,8 @@ exports.getSystemStatistics = async (req, res) => {
 // ======================================
 
 // Register for exam
+
+
 exports.registerForExam = async (req, res) => {
   try {
     const { name, email, phone, organization } = req.body;
@@ -537,8 +540,19 @@ exports.registerForExam = async (req, res) => {
     exam.statistics.totalRegistrations = exam.registrations.length;
     await exam.save();
 
-    // Send registration confirmation email
+    // ✅ Send registration confirmation email (AS-IS)
     await sendRegistrationConfirmation(email, name, exam);
+
+    // 🔔 ADD NOTIFICATION (NEW – SAFE)
+    if (req.user?.id) {
+      await Notification.create({
+        userId: req.user.id,
+        title: 'Exam Registration Successful',
+        message: `You have successfully registered for ${exam.name}`,
+        type: 'exam',
+        exam: exam._id
+      });
+    }
 
     res.status(200).json({
       success: true,
@@ -548,9 +562,12 @@ exports.registerForExam = async (req, res) => {
         examName: exam.name,
         examDate: exam.nextExamDate,
         registrationDeadline: exam.registrationDeadline,
-        examImage: exam.image ? generateOptimizedUrl(exam.image, 400, 300) : null
+        examImage: exam.image
+          ? generateOptimizedUrl(exam.image, 400, 300)
+          : null
       }
     });
+
   } catch (error) {
     console.error('Registration error:', error);
     res.status(500).json({
@@ -559,6 +576,73 @@ exports.registerForExam = async (req, res) => {
     });
   }
 };
+
+
+exports.getMyRegisteredExams = async (req, res) => {
+  try {
+    const exams = await Exam.find({
+      'registrations.userId': req.user.id
+    }).select('name nextExamDate registrations');
+
+    const registeredExams = exams.map(exam => {
+      const registration = exam.registrations.find(
+        r => r.userId?.toString() === req.user.id
+      );
+
+      return {
+        examId: exam._id,
+        examName: exam.name,
+        examDate: exam.nextExamDate,
+        status: registration.status,
+        paymentStatus: registration.paymentStatus,
+        registrationDate: registration.registrationDate
+      };
+    });
+
+    res.status(200).json({
+      success: true,
+      count: registeredExams.length,
+      data: registeredExams
+    });
+  } catch (error) {
+    console.error('Get my exams error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching registered exams'
+    });
+  }
+};
+
+// GET exam registrations
+exports.getExamRegistrations = async (req, res) => {
+  try {
+    const exam = await Exam.findById(req.params.id).select(
+      'name registrations statistics'
+    );
+
+    if (!exam) {
+      return res.status(404).json({
+        success: false,
+        message: 'Exam not found'
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      examName: exam.name,
+      totalRegistrations: exam.statistics.totalRegistrations,
+      data: exam.registrations
+    });
+  } catch (error) {
+    console.error('Get registrations error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching exam registrations'
+    });
+  }
+};
+
+
 
 // Send bulk email
 exports.sendBulkEmail = async (req, res) => {
