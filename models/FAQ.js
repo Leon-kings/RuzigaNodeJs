@@ -137,8 +137,7 @@
   // module.exports = { FAQ, Question, Statistics };
 
 
-
-  const mongoose = require('mongoose');
+ const mongoose = require('mongoose');
 
 const faqSchema = new mongoose.Schema(
   {
