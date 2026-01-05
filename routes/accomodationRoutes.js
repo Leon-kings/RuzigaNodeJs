@@ -1,47 +1,70 @@
+// const express = require('express');
+// const router = express.Router();
+// const {
+//   accommodationController,
+//   bookingController,
+//   dashboardController,
+//   uploadMultipleImages
+// } = require('../controllers/AccommodationControllers');
+
+// // Accommodation Routes
+// router.post('/create', 
+//   uploadMultipleImages, 
+//   accommodationController.createAccommodation
+// );
+
+// router.get('/accomodations', accommodationController.getAllAccommodations);
+// router.get('/accomodations/featured', accommodationController.getFeaturedAccommodations);
+// router.get('/accomodations/:id', accommodationController.getAccommodation);
+// router.put('/accomodations/:id', accommodationController.updateAccommodation);
+// router.delete('/accomodations/:id', accommodationController.deleteAccommodation);
+
+// // Accommodation Image Routes
+// router.post('/:id/images',
+//   uploadMultipleImages,
+//   accommodationController.uploadAccommodationImages
+// );
+
+// router.delete('/:id/images/:imageId', 
+//   accommodationController.deleteAccommodationImage
+// );
+
+// router.put('/:id/images/order',
+//   accommodationController.updateImagesOrder
+// );
+
+// // Booking Routes
+// router.post('/', bookingController.createBooking);
+// router.get('/booking', bookingController.getAllBookings);
+// router.get('/:id', bookingController.getBooking);
+// router.put('/:id/status', bookingController.updateBookingStatus);
+// router.put('/:id/cancel', bookingController.cancelBooking); 
+// router.get('/email/:email', bookingController.getBookingsByEmail);
+
+// // Dashboard Routes
+// router.get('/dashboard/statistics', dashboardController.getStatistics);
+// router.get('/dashboard/analytics', dashboardController.getBookingAnalytics);
+// module.exports = router; 
+
+
+
 const express = require('express');
 const router = express.Router();
-const {
-  accommodationController,
-  bookingController,
-  dashboardController,
-  uploadMultipleImages
-} = require('../controllers/AccommodationControllers');
+const { accommodationController } = require('../controllers/AccommodationControllers');
 
-// Accommodation Routes
-router.post('/create', 
-  uploadMultipleImages, 
-  accommodationController.createAccommodation
-);
+// Create accommodation
+router.post('/create', accommodationController.createAccommodation);
 
-router.get('/accomodations', accommodationController.getAllAccommodations);
-router.get('/accomodations/featured', accommodationController.getFeaturedAccommodations);
-router.get('/accomodations/:id', accommodationController.getAccommodation);
-router.put('/accomodations/:id', accommodationController.updateAccommodation);
-router.delete('/accomodations/:id', accommodationController.deleteAccommodation);
+// Get all accommodations
+router.get('/', accommodationController.getAllAccommodations);
 
-// Accommodation Image Routes
-router.post('/:id/images',
-  uploadMultipleImages,
-  accommodationController.uploadAccommodationImages
-);
+// Get single accommodation
+router.get('/:id', accommodationController.getAccommodation);
 
-router.delete('/:id/images/:imageId', 
-  accommodationController.deleteAccommodationImage
-);
+// Update accommodation
+router.put('/:id', accommodationController.updateAccommodation);
 
-router.put('/:id/images/order',
-  accommodationController.updateImagesOrder
-);
+// Delete accommodation
+router.delete('/:id', accommodationController.deleteAccommodation);
 
-// Booking Routes
-router.post('/', bookingController.createBooking);
-router.get('/', bookingController.getAllBookings);
-router.get('/:id', bookingController.getBooking);
-router.put('/:id/status', bookingController.updateBookingStatus);
-router.put('/:id/cancel', bookingController.cancelBooking); 
-router.get('/email/:email', bookingController.getBookingsByEmail);
-
-// Dashboard Routes
-router.get('/dashboard/statistics', dashboardController.getStatistics);
-router.get('/dashboard/analytics', dashboardController.getBookingAnalytics);
-module.exports = router; 
+module.exports = router;
