@@ -8,16 +8,16 @@ const {
 } = require('../controllers/AccommodationControllers');
 
 // Accommodation Routes
-router.post('/', 
+router.post('/create', 
   uploadMultipleImages, 
   accommodationController.createAccommodation
 );
 
-router.get('/', accommodationController.getAllAccommodations);
-router.get('/featured', accommodationController.getFeaturedAccommodations);
-router.get('/:id', accommodationController.getAccommodation);
-router.put('/:id', accommodationController.updateAccommodation);
-router.delete('/:id', accommodationController.deleteAccommodation);
+router.get('/accomodations', accommodationController.getAllAccommodations);
+router.get('/accomodations/featured', accommodationController.getFeaturedAccommodations);
+router.get('/accomodations/:id', accommodationController.getAccommodation);
+router.put('/accomodations/:id', accommodationController.updateAccommodation);
+router.delete('/accomodations/:id', accommodationController.deleteAccommodation);
 
 // Accommodation Image Routes
 router.post('/:id/images',
@@ -38,11 +38,10 @@ router.post('/', bookingController.createBooking);
 router.get('/', bookingController.getAllBookings);
 router.get('/:id', bookingController.getBooking);
 router.put('/:id/status', bookingController.updateBookingStatus);
-router.put('/:id/cancel', bookingController.cancelBooking);
+router.put('/:id/cancel', bookingController.cancelBooking); 
 router.get('/email/:email', bookingController.getBookingsByEmail);
 
 // Dashboard Routes
 router.get('/dashboard/statistics', dashboardController.getStatistics);
 router.get('/dashboard/analytics', dashboardController.getBookingAnalytics);
-
-module.exports = router;
+module.exports = router; 
