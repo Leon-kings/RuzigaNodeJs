@@ -1102,8 +1102,42 @@ exports.getApplicationById = async (req, res) => {
   }
 };
 
+// exports.createScholarship = async (req, res) => {
+//   try {
+//     const validatedData = validateScholarshipData(req.body);
+
+//     let imageData = null;
+
+//     if (req.file) {
+//       imageData = { url: req.file.path, publicId: req.file.filename };
+//     } else if (req.body.image) {
+//       imageData = await handleImageUpload(req.body.image);
+//     }
+
+//     if (imageData) {
+//       validatedData.image = imageData.url;
+//       validatedData.imagePublicId = imageData.publicId;
+//     }
+
+//     const scholarship = await Scholarship.create(validatedData);
+
+//     res.status(201).json({ success: true, data: scholarship });
+//   } catch (error) {
+//     if (req.file?.filename) await deleteFromCloudinary(req.file.filename);
+//     res.status(400).json({ success: false, error: error.message });
+//   }
+// };
 exports.createScholarship = async (req, res) => {
   try {
+    // ✅ FIX studyLevel FIRST
+    if (typeof req.body.studyLevel === 'string') {
+      try {
+        req.body.studyLevel = JSON.parse(req.body.studyLevel);
+      } catch {
+        req.body.studyLevel = [req.body.studyLevel];
+      }
+    }
+
     const validatedData = validateScholarshipData(req.body);
 
     let imageData = null;
@@ -1127,6 +1161,7 @@ exports.createScholarship = async (req, res) => {
     res.status(400).json({ success: false, error: error.message });
   }
 };
+
 
 exports.updateScholarship = async (req, res) => {
   try {
