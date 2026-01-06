@@ -8,10 +8,17 @@ const mongoose = require('mongoose');
 const SKIP_EMAIL_ON_LIMIT = true; // Set to false when Gmail resets tomorrow
 
 // Generate JWT Token
+// const generateToken = (userId) => {
+//   return jwt.sign({ userId }, process.env.JWT_SECRET, {
+//     expiresIn: '7d'
+//   });
+// };
 const generateToken = (userId) => {
-  return jwt.sign({ userId }, process.env.JWT_SECRET, {
-    expiresIn: '7d'
-  });
+  return jwt.sign(
+    { userId }, // ✅ payload key
+    process.env.JWT_SECRET,
+    { expiresIn: '1d' }
+  );
 };
 
 // Helper function to check email service health
