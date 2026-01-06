@@ -91,29 +91,80 @@
 
 
 
-const multer = require('multer');
-const path = require('path');
-const cloudinary = require('cloudinary').v2;
+// const multer = require('multer');
+// const path = require('path');
+// const cloudinary = require('cloudinary').v2;
 
-// Cloudinary config
+// // Cloudinary config
+// cloudinary.config({
+//   cloud_name: process.env.CLOUD_NAME,
+//   api_key: process.env.CLOUDINARY_API_KEY,
+//   api_secret: process.env.CLOUDINARY_API_SECRET
+// });
+
+// // Multer storage (memory)
+// const storage = multer.memoryStorage();
+// const uploadMultipleImages = multer({ storage }).array('images', 10); // max 10 files
+// const uploadSingleImage = multer({ storage }).single('image');
+
+// // Utility functions
+// const generateThumbnailUrl = (url) => {
+//   return url; // implement if needed
+// };
+
+// const deleteImageFromCloudinary = async (publicId) => {
+//   return await cloudinary.uploader.destroy(publicId);
+// };
+
+// module.exports = { uploadMultipleImages, uploadSingleImage, cloudinary, generateThumbnailUrl, deleteImageFromCloudinary };
+
+
+
+
+
+const multer = require('multer');
+const cloudinary = require('cloudinary').v2;
+const { CloudinaryStorage } = require('multer-storage-cloudinary');
+
+// -------------------- CLOUDINARY CONFIG --------------------
 cloudinary.config({
   cloud_name: process.env.CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET
 });
 
-// Multer storage (memory)
-const storage = multer.memoryStorage();
-const uploadMultipleImages = multer({ storage }).array('images', 10); // max 10 files
+// -------------------- CLOUDINARY STORAGE FOR MULTER --------------------
+const storage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: 'accommodations', // folder in Cloudinary
+    allowed_formats: ['jpg', 'jpeg', 'png', 'webp'],
+    transformation: [{ width: 800, height: 600, crop: 'limit' }] // optional
+  }
+});
+
+// -------------------- MULTER UPLOAD --------------------
+const uploadMultipleImages = multer({ storage }).array('images', 10); // max 10 images
 const uploadSingleImage = multer({ storage }).single('image');
 
-// Utility functions
+// -------------------- UTILITY FUNCTIONS --------------------
 const generateThumbnailUrl = (url) => {
-  return url; // implement if needed
+  // You can add transformation for thumbnail if needed
+  return url;
 };
 
 const deleteImageFromCloudinary = async (publicId) => {
-  return await cloudinary.uploader.destroy(publicId);
+  try {
+    return await cloudinary.uploader.destroy(publicId);
+  } catch (err) {
+    console.error('Error deleting image:', err);
+  }
 };
 
-module.exports = { uploadMultipleImages, uploadSingleImage, cloudinary, generateThumbnailUrl, deleteImageFromCloudinary };
+module.exports = {
+  uploadMultipleImages,
+  uploadSingleImage,
+  cloudinary,
+  generateThumbnailUrl,
+  deleteImageFromCloudinary
+};
