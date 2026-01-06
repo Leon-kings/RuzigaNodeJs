@@ -2096,7 +2096,7 @@
 // };
 
 // controllers/bookingPlaneController.js
-const AirportBooking = require("../models/AirportBooking");
+const { AirportBooking } = require("../models/AirportBooking");
 const { Plane } = require("../models/AirportBooking"); // Fixed import
 const { validationResult } = require("express-validator");
 const cloudinary = require("cloudinary").v2;

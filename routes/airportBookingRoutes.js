@@ -171,25 +171,169 @@
 
 
 
-// routes/bookingPlaneRoutes.js
+// // routes/bookingPlaneRoutes.js
+// const express = require('express');
+// const router = express.Router();
+// const { body, param, query } = require('express-validator');
+// const controller = require('../controllers/airportBookingController');
+
+// // =========================
+// // BOOKING ROUTES
+// // =========================
+
+// // Get all bookings
+// router.get('/bookings', controller.getAllBookings);
+
+// // Get single booking
+// router.get('/bookings/:id', [
+//   param('id').isMongoId()
+// ], controller.getBooking);
+
+// // Create booking
+// router.post('/bookings', [
+//   body('firstName').notEmpty().trim(),
+//   body('lastName').notEmpty().trim(),
+//   body('email').isEmail().normalizeEmail(),
+//   body('phone').notEmpty().trim(),
+//   body('flightNumber').notEmpty().trim(),
+//   body('airline').notEmpty().trim(),
+//   body('arrivalDate').isISO8601(),
+//   body('arrivalTime').notEmpty(),
+//   body('departureDate').isISO8601(),
+//   body('departureTime').notEmpty(),
+//   body('airport').notEmpty().trim(),
+//   body('terminal').notEmpty().trim(),
+//   body('numberOfPassengers').isInt({ min: 1, max: 50 })
+// ], controller.createBooking);
+
+// // Update booking
+// router.put('/bookings/:id', [
+//   param('id').isMongoId()
+// ], controller.updateBooking);
+
+// // Delete booking
+// router.delete('/bookings/:id', [
+//   param('id').isMongoId()
+// ], controller.deleteBooking);
+
+// // Get statistics
+// router.get('/bookings/stats/dashboard', controller.getDashboardStats);
+// router.get('/bookings/stats', controller.getStatistics);
+
+// // Update booking status
+// router.patch('/bookings/:id/status', [
+//   param('id').isMongoId(),
+//   body('status').isIn(['pending', 'confirmed', 'completed', 'cancelled', 'no_show'])
+// ], controller.updateStatus);
+
+// // Cancel booking
+// router.post('/bookings/:id/cancel', [
+//   param('id').isMongoId()
+// ], controller.cancelBooking);
+
+// // Send email to booking
+// router.post('/bookings/:id/send-email', [
+//   param('id').isMongoId(),
+//   body('emailType').isIn(['confirmation', 'reminder', 'cancellation', 'update'])
+// ], controller.sendEmailToBooking);
+
+// // Search bookings
+// router.get('/bookings/search', controller.searchBookings);
+
+// // Get bookings by email
+// router.get('/bookings/email/:email', controller.getBookingsByEmail);
+
+// // =========================
+// // PLANE ROUTES
+// // =========================
+
+// // Get all planes
+// router.get('/planes', controller.getAllPlanes);
+
+// // Get single plane
+// router.get('/planes/:id', [
+//   param('id').isMongoId()
+// ], controller.getPlane);
+
+// // Create plane
+// router.post('/planes', [
+//   body('registrationNumber').notEmpty().trim(),
+//   body('model').notEmpty().trim(),
+//   body('airline').notEmpty().trim(),
+//   body('manufacturer').notEmpty().trim(),
+//   body('yearOfManufacture').isInt({ min: 1950, max: new Date().getFullYear() })
+// ], controller.createPlane);
+
+// // Update plane
+// router.put('/planes/:id', [
+//   param('id').isMongoId()
+// ], controller.updatePlane);
+
+// // Delete plane
+// router.delete('/planes/:id', [
+//   param('id').isMongoId()
+// ], controller.deletePlane);
+
+// // Upload plane image
+// router.post('/planes/:id/upload-image', controller.uploadPlaneImage);
+
+// // Upload multiple plane images
+// router.post('/planes/:id/upload-images', controller.uploadMultiplePlaneImages);
+
+// // Delete plane image
+// router.delete('/planes/:planeId/images/:publicId', controller.deletePlaneImage);
+
+// // Set primary image
+// router.patch('/planes/:id/set-primary-image', [
+//   param('id').isMongoId(),
+//   body('publicId').notEmpty()
+// ], controller.setPrimaryImage);
+
+// // Search planes
+// router.get('/planes/search', controller.searchPlanes);
+
+// // Get available planes
+// router.get('/planes/available', controller.getAvailablePlanes);
+
+// // Update plane status
+// router.patch('/planes/:id/status', [
+//   param('id').isMongoId(),
+//   body('status').isIn(['active', 'maintenance', 'retired', 'grounded'])
+// ], controller.updatePlaneStatus);
+
+// module.exports = router;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 const express = require('express');
 const router = express.Router();
-const { body, param, query } = require('express-validator');
+const { body, param } = require('express-validator');
 const controller = require('../controllers/airportBookingController');
 
-// =========================
-// BOOKING ROUTES
-// =========================
+/* =========================
+   BOOKING ROUTES
+========================= */
 
-// Get all bookings
+// GET /airport/booking
 router.get('/bookings', controller.getAllBookings);
 
-// Get single booking
-router.get('/bookings/:id', [
+// GET /airport/booking/:id
+router.get('/booking/:id', [
   param('id').isMongoId()
 ], controller.getBooking);
 
-// Create booking
+// POST /airport/booking
 router.post('/bookings', [
   body('firstName').notEmpty().trim(),
   body('lastName').notEmpty().trim(),
@@ -206,56 +350,58 @@ router.post('/bookings', [
   body('numberOfPassengers').isInt({ min: 1, max: 50 })
 ], controller.createBooking);
 
-// Update booking
-router.put('/bookings/:id', [
+// PUT /airport/booking/:id
+router.put('/booking/:id', [
   param('id').isMongoId()
 ], controller.updateBooking);
 
-// Delete booking
-router.delete('/bookings/:id', [
+// DELETE /airport/booking/:id
+router.delete('/booking/:id', [
   param('id').isMongoId()
 ], controller.deleteBooking);
 
-// Get statistics
-router.get('/bookings/stats/dashboard', controller.getDashboardStats);
-router.get('/bookings/stats', controller.getStatistics);
-
-// Update booking status
-router.patch('/bookings/:id/status', [
+// PATCH /airport/booking/:id/status
+router.patch('/booking/:id/status', [
   param('id').isMongoId(),
   body('status').isIn(['pending', 'confirmed', 'completed', 'cancelled', 'no_show'])
 ], controller.updateStatus);
 
-// Cancel booking
-router.post('/bookings/:id/cancel', [
+// POST /airport/booking/:id/cancel
+router.post('/booking/:id/cancel', [
   param('id').isMongoId()
 ], controller.cancelBooking);
 
-// Send email to booking
-router.post('/bookings/:id/send-email', [
+// POST /airport/booking/:id/send-email
+router.post('/booking/:id/send-email', [
   param('id').isMongoId(),
   body('emailType').isIn(['confirmation', 'reminder', 'cancellation', 'update'])
 ], controller.sendEmailToBooking);
 
-// Search bookings
-router.get('/bookings/search', controller.searchBookings);
+// GET /airport/booking/search
+router.get('/booking/search', controller.searchBookings);
 
-// Get bookings by email
-router.get('/bookings/email/:email', controller.getBookingsByEmail);
+// GET /airport/booking/email/:email
+router.get('/booking/email/:email', controller.getBookingsByEmail);
 
-// =========================
-// PLANE ROUTES
-// =========================
+// GET /airport/booking/stats
+router.get('/booking/stats', controller.getStatistics);
 
-// Get all planes
+// GET /airport/booking/stats/dashboard
+router.get('/booking/stats/dashboard', controller.getDashboardStats);
+
+/* =========================
+   PLANE ROUTES
+========================= */
+
+// GET /airport/planes
 router.get('/planes', controller.getAllPlanes);
 
-// Get single plane
+// GET /airport/planes/:id
 router.get('/planes/:id', [
   param('id').isMongoId()
 ], controller.getPlane);
 
-// Create plane
+// POST /airport/planes
 router.post('/planes', [
   body('registrationNumber').notEmpty().trim(),
   body('model').notEmpty().trim(),
@@ -264,38 +410,38 @@ router.post('/planes', [
   body('yearOfManufacture').isInt({ min: 1950, max: new Date().getFullYear() })
 ], controller.createPlane);
 
-// Update plane
+// PUT /airport/planes/:id
 router.put('/planes/:id', [
   param('id').isMongoId()
 ], controller.updatePlane);
 
-// Delete plane
+// DELETE /airport/planes/:id
 router.delete('/planes/:id', [
   param('id').isMongoId()
 ], controller.deletePlane);
 
-// Upload plane image
+// POST /airport/planes/:id/upload-image
 router.post('/planes/:id/upload-image', controller.uploadPlaneImage);
 
-// Upload multiple plane images
+// POST /airport/planes/:id/upload-images
 router.post('/planes/:id/upload-images', controller.uploadMultiplePlaneImages);
 
-// Delete plane image
+// DELETE /airport/planes/:planeId/images/:publicId
 router.delete('/planes/:planeId/images/:publicId', controller.deletePlaneImage);
 
-// Set primary image
+// PATCH /airport/planes/:id/set-primary-image
 router.patch('/planes/:id/set-primary-image', [
   param('id').isMongoId(),
   body('publicId').notEmpty()
 ], controller.setPrimaryImage);
 
-// Search planes
+// GET /airport/planes/search
 router.get('/planes/search', controller.searchPlanes);
 
-// Get available planes
+// GET /airport/planes/available
 router.get('/planes/available', controller.getAvailablePlanes);
 
-// Update plane status
+// PATCH /airport/planes/:id/status
 router.patch('/planes/:id/status', [
   param('id').isMongoId(),
   body('status').isIn(['active', 'maintenance', 'retired', 'grounded'])
