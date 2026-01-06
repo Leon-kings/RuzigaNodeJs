@@ -51,9 +51,10 @@
 const express = require('express');
 const router = express.Router();
 const { accommodationController } = require('../controllers/AccommodationControllers');
+const { uploadMultipleImages } = require('../services/accomodationCloudinaryConfig');
 
 // Create accommodation
-router.post('/create', accommodationController.createAccommodation);
+router.post('/create', uploadMultipleImages, accommodationController.createAccommodation);
 
 // Get all accommodations
 router.get('/', accommodationController.getAllAccommodations);
