@@ -672,774 +672,5887 @@
 
 
 
-const Visa = require('../models/Visa');
+
+
+
+
+
+
+
+
+
+
+
+// const Visa = require('../models/Visa');
+// const nodemailer = require('nodemailer');
+
+// /* ===========================
+//    CONSTANTS & CONFIGURATION
+// =========================== */
+
+// const VISA_STATUS = {
+//   PENDING: 'pending',
+//   APPROVED: 'approved',
+//   REJECTED: 'rejected',
+//   IN_REVIEW: 'in-review'
+// };
+
+// const STATUS_TRANSITIONS = {
+//   [VISA_STATUS.PENDING]: [VISA_STATUS.IN_REVIEW, VISA_STATUS.REJECTED],
+//   [VISA_STATUS.IN_REVIEW]: [VISA_STATUS.APPROVED, VISA_STATUS.REJECTED, VISA_STATUS.PENDING],
+//   [VISA_STATUS.APPROVED]: [], // Terminal state
+//   [VISA_STATUS.REJECTED]: [VISA_STATUS.IN_REVIEW] // Allow re-review
+// };
+
+// /* ===========================
+//    EMAIL SERVICE
+// =========================== */
+
+// class EmailService {
+//   constructor() {
+//     this.transporter = nodemailer.createTransport({
+//       host: process.env.SMTP_HOST || 'smtp.gmail.com',
+//       port: process.env.SMTP_PORT || 587,
+//       secure: false,
+//       auth: {
+//         user: process.env.SMTP_USER,
+//         pass: process.env.SMTP_PASS
+//       }
+//     });
+//   }
+
+//   async sendStatusUpdateEmail(visa, oldStatus = null) {
+//     const messages = {
+//       [VISA_STATUS.APPROVED]: {
+//         subject: '🎉 Visa Application Approved',
+//         text: `Congratulations! Your ${visa.type} visa application (${visa.id}) has been approved.`
+//       },
+//       [VISA_STATUS.REJECTED]: {
+//         subject: 'Visa Application Update',
+//         text: `Your ${visa.type} visa application (${visa.id}) was not approved. Please contact our office for more information.`
+//       },
+//       [VISA_STATUS.IN_REVIEW]: {
+//         subject: 'Visa Application Under Review',
+//         text: `Your ${visa.type} visa application (${visa.id}) is currently under review. We will notify you once a decision is made.`
+//       },
+//       [VISA_STATUS.PENDING]: {
+//         subject: 'Visa Application Received',
+//         text: `We have received your ${visa.type} visa application (${visa.id}). It is now pending initial review.`
+//       }
+//     };
+
+//     const template = messages[visa.status] || {
+//       subject: 'Visa Application Update',
+//       text: `There is an update on your ${visa.type} visa application (${visa.id}).`
+//     };
+
+//     return this.sendMail(
+//       visa.email,
+//       `${template.subject} - ${visa.id}`,
+//       `Dear ${visa.applicant},\n\n${template.text}\n\nThank you,\nVisa Processing Team`
+//     );
+//   }
+
+//   async sendMail(to, subject, text) {
+//     try {
+//       await this.transporter.sendMail({
+//         from: process.env.SMTP_USER,
+//         to,
+//         subject,
+//         text,
+//         html: `<p>${text.replace(/\n/g, '<br>')}</p>`
+//       });
+//       return { success: true, message: 'Email sent successfully' };
+//     } catch (err) {
+//       console.error('Email error:', err);
+//       return { success: false, message: 'Failed to send email' };
+//     }
+//   }
+// }
+
+// const emailService = new EmailService();
+
+// /* ===========================
+//    STATISTICS SERVICE
+// =========================== */
+
+// class StatisticsService {
+//   async getOverallStatistics() {
+//     const total = await Visa.countDocuments();
+
+//     const counts = await Visa.aggregate([
+//       { $group: { _id: '$status', count: { $sum: 1 } } }
+//     ]);
+
+//     const mapCount = status =>
+//       counts.find(c => c._id === status)?.count || 0;
+
+//     const pending = mapCount(VISA_STATUS.PENDING);
+//     const approved = mapCount(VISA_STATUS.APPROVED);
+//     const rejected = mapCount(VISA_STATUS.REJECTED);
+//     const inReview = mapCount(VISA_STATUS.IN_REVIEW);
+
+//     return {
+//       total,
+//       pending,
+//       approved,
+//       rejected,
+//       inReview,
+//       percentages: {
+//         pending: total ? ((pending / total) * 100).toFixed(2) : 0,
+//         approved: total ? ((approved / total) * 100).toFixed(2) : 0,
+//         rejected: total ? ((rejected / total) * 100).toFixed(2) : 0,
+//         inReview: total ? ((inReview / total) * 100).toFixed(2) : 0
+//       },
+//       byType: await this.groupByField('type'),
+//       byPriority: await this.groupByField('priority'),
+//       byCountry: await this.getTopCountries(),
+//       monthlyStats: await this.getMonthlyStats()
+//     };
+//   }
+
+//   async groupByField(field) {
+//     return Visa.aggregate([
+//       { $group: { _id: `$${field}`, count: { $sum: 1 } } },
+//       { $sort: { count: -1 } }
+//     ]);
+//   }
+
+//   async getTopCountries() {
+//     return Visa.aggregate([
+//       { $group: { _id: '$country', count: { $sum: 1 } } },
+//       { $sort: { count: -1 } },
+//       { $limit: 10 }
+//     ]);
+//   }
+
+//   async getMonthlyStats() {
+//     return Visa.aggregate([
+//       {
+//         $group: {
+//           _id: {
+//             year: { $year: '$createdAt' },
+//             month: { $month: '$createdAt' }
+//           },
+//           count: { $sum: 1 },
+//           approved: {
+//             $sum: {
+//               $cond: [{ $eq: ['$status', VISA_STATUS.APPROVED] }, 1, 0]
+//             }
+//           },
+//           pending: {
+//             $sum: {
+//               $cond: [{ $eq: ['$status', VISA_STATUS.PENDING] }, 1, 0]
+//             }
+//           }
+//         }
+//       },
+//       { $sort: { '_id.year': 1, '_id.month': 1 } }
+//     ]);
+//   }
+
+//   async getRevenueStatistics() {
+//     // Helper to parse amount string to number
+//     const parseAmount = {
+//       $toDouble: {
+//         $substr: [
+//           '$amount',
+//           1,
+//           { $subtract: [{ $strLenCP: '$amount' }, 1] }
+//         ]
+//       }
+//     };
+
+//     const [stats] = await Visa.aggregate([
+//       {
+//         $group: {
+//           _id: null,
+//           totalRevenue: { $sum: parseAmount },
+//           avgRevenue: { $avg: parseAmount },
+//           minRevenue: { $min: parseAmount },
+//           maxRevenue: { $max: parseAmount }
+//         }
+//       }
+//     ]);
+
+//     return stats || {
+//       totalRevenue: 0,
+//       avgRevenue: 0,
+//       minRevenue: 0,
+//       maxRevenue: 0
+//     };
+//   }
+
+//   async getStatusChangeHistory() {
+//     return Visa.aggregate([
+//       { $match: { statusHistory: { $exists: true, $ne: [] } } },
+//       { $unwind: '$statusHistory' },
+//       {
+//         $group: {
+//           _id: {
+//             from: '$statusHistory.from',
+//             to: '$statusHistory.to'
+//           },
+//           count: { $sum: 1 },
+//           avgTimeHours: { $avg: '$statusHistory.timeInStatusHours' }
+//         }
+//       },
+//       { $sort: { count: -1 } }
+//     ]);
+//   }
+// }
+
+// const statisticsService = new StatisticsService();
+
+// /* ===========================
+//    INVENTORY SERVICE
+// =========================== */
+
+// class InventoryService {
+//   async getInventoryOverview() {
+//     const inventory = await Visa.aggregate([
+//       {
+//         $group: {
+//           _id: { status: '$status', type: '$type' },
+//           count: { $sum: 1 },
+//           documents: { $sum: '$documents' }
+//         }
+//       },
+//       {
+//         $group: {
+//           _id: '$_id.status',
+//           types: { $push: '$$ROOT' },
+//           totalCount: { $sum: '$count' },
+//           totalDocuments: { $sum: '$documents' }
+//         }
+//       }
+//     ]);
+
+//     const [documentStats] = await Visa.aggregate([
+//       {
+//         $group: {
+//           _id: null,
+//           totalDocuments: { $sum: '$documents' },
+//           avgDocuments: { $avg: '$documents' },
+//           maxDocuments: { $max: '$documents' },
+//           minDocuments: { $min: '$documents' }
+//         }
+//       }
+//     ]);
+
+//     const recentApplications = await this.getRecentApplications(30);
+
+//     return {
+//       inventory,
+//       documentStats: documentStats || {},
+//       recentApplications
+//     };
+//   }
+
+//   async getRecentApplications(days) {
+//     const fromDate = new Date();
+//     fromDate.setDate(fromDate.getDate() - days);
+
+//     return Visa.aggregate([
+//       { $match: { createdAt: { $gte: fromDate } } },
+//       {
+//         $group: {
+//           _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } },
+//           count: { $sum: 1 }
+//         }
+//       },
+//       { $sort: { _id: 1 } }
+//     ]);
+//   }
+
+//   async getStatusSummary() {
+//     return Visa.aggregate([
+//       {
+//         $group: {
+//           _id: '$status',
+//           count: { $sum: 1 },
+//           avgProcessingTime: { $avg: { $subtract: ['$updatedAt', '$createdAt'] } },
+//           minDocuments: { $min: '$documents' },
+//           maxDocuments: { $max: '$documents' }
+//         }
+//       },
+//       { $sort: { count: -1 } }
+//     ]);
+//   }
+// }
+
+// const inventoryService = new InventoryService();
+
+// /* ===========================
+//    STATUS CHANGE FUNCTIONS
+// =========================== */
+
+// class StatusService {
+//   static isValidTransition(fromStatus, toStatus) {
+//     if (!fromStatus) return true; // New application
+    
+//     const allowedTransitions = STATUS_TRANSITIONS[fromStatus] || [];
+//     return allowedTransitions.includes(toStatus);
+//   }
+
+//   static getStatusDisplayName(status) {
+//     const displayNames = {
+//       [VISA_STATUS.PENDING]: 'Pending',
+//       [VISA_STATUS.IN_REVIEW]: 'In Review',
+//       [VISA_STATUS.APPROVED]: 'Approved',
+//       [VISA_STATUS.REJECTED]: 'Rejected'
+//     };
+//     return displayNames[status] || status;
+//   }
+
+//   static calculateTimeInStatus(oldStatusTimestamp) {
+//     if (!oldStatusTimestamp) return 0;
+//     const now = new Date();
+//     const diffMs = now - new Date(oldStatusTimestamp);
+//     return Math.round(diffMs / (1000 * 60 * 60)); // Convert to hours
+//   }
+// }
+
+// /* ===========================
+//    VISA CONTROLLER
+// =========================== */
+
+// class VisaController {
+//   // CREATE VISA
+//   async createVisa(req, res, next) {
+//     try {
+//       const year = new Date().getFullYear();
+//       const count = await Visa.countDocuments();
+
+//       const visaData = {
+//         ...req.body,
+//         id: req.body.id || `VISA-${year}-${String(count + 1).padStart(3, '0')}`,
+//         status: VISA_STATUS.PENDING,
+//         statusHistory: [{
+//           from: null,
+//           to: VISA_STATUS.PENDING,
+//           changedAt: new Date(),
+//           changedBy: req.user?.id || 'system'
+//         }]
+//       };
+
+//       const visa = await Visa.create(visaData);
+//       await emailService.sendStatusUpdateEmail(visa);
+
+//       res.status(201).json({ success: true, data: visa });
+//     } catch (err) {
+//       next(err);
+//     }
+//   }
+
+//   // GET ALL VISAS
+//   async getAllVisas(req, res, next) {
+//     try {
+//       const {
+//         status,
+//         type,
+//         country,
+//         priority,
+//         page = 1,
+//         limit = 10,
+//         sortBy = 'createdAt',
+//         sortOrder = 'desc'
+//       } = req.query;
+
+//       const filter = {};
+//       if (status) filter.status = status;
+//       if (type) filter.type = type;
+//       if (country) filter.country = country;
+//       if (priority) filter.priority = priority;
+
+//       const sort = {};
+//       sort[sortBy] = sortOrder === 'desc' ? -1 : 1;
+
+//       const visas = await Visa.find(filter)
+//         .sort(sort)
+//         .skip((page - 1) * limit)
+//         .limit(Number(limit));
+
+//       const total = await Visa.countDocuments(filter);
+
+//       res.json({
+//         success: true,
+//         data: visas,
+//         pagination: {
+//           total,
+//           page: Number(page),
+//           limit: Number(limit),
+//           pages: Math.ceil(total / limit)
+//         }
+//       });
+//     } catch (err) {
+//       next(err);
+//     }
+//   }
+
+//   // SEARCH VISAS
+//   async searchVisas(req, res, next) {
+//     try {
+//       const { query } = req.query;
+
+//       const visas = await Visa.find({
+//         $or: [
+//           { applicant: new RegExp(query, 'i') },
+//           { id: new RegExp(query, 'i') },
+//           { email: new RegExp(query, 'i') },
+//           { country: new RegExp(query, 'i') },
+//           { 'contact.phone': new RegExp(query, 'i') }
+//         ]
+//       }).limit(20);
+
+//       res.json({ success: true, data: visas });
+//     } catch (err) {
+//       next(err);
+//     }
+//   }
+
+//   // GET VISA BY ID
+//   async getVisaById(req, res, next) {
+//     try {
+//       const visa = await Visa.findOne({ id: req.params.id });
+//       if (!visa) {
+//         return res.status(404).json({ success: false, message: 'Visa not found' });
+//       }
+//       res.json({ success: true, data: visa });
+//     } catch (err) {
+//       next(err);
+//     }
+//   }
+
+//   // UPDATE VISA
+//   async updateVisa(req, res, next) {
+//     try {
+//       const oldVisa = await Visa.findOne({ id: req.params.id });
+//       if (!oldVisa) {
+//         return res.status(404).json({ success: false, message: 'Visa not found' });
+//       }
+
+//       const visa = await Visa.findOneAndUpdate(
+//         { id: req.params.id },
+//         req.body,
+//         { new: true, runValidators: true }
+//       );
+
+//       if (req.body.status && req.body.status !== oldVisa.status) {
+//         await emailService.sendStatusUpdateEmail(visa, oldVisa.status);
+//       }
+
+//       res.json({ success: true, data: visa });
+//     } catch (err) {
+//       next(err);
+//     }
+//   }
+
+//   // DELETE VISA
+//   async deleteVisa(req, res, next) {
+//     try {
+//       const visa = await Visa.findOneAndDelete({ id: req.params.id });
+//       if (!visa) {
+//         return res.status(404).json({ success: false, message: 'Visa not found' });
+//       }
+//       res.json({ success: true, message: 'Visa deleted successfully' });
+//     } catch (err) {
+//       next(err);
+//     }
+//   }
+
+//   // BULK UPDATE STATUS
+//   async bulkUpdateStatus(req, res, next) {
+//     try {
+//       const { ids, status, reason } = req.body;
+
+//       if (!Object.values(VISA_STATUS).includes(status)) {
+//         return res.status(400).json({ 
+//           success: false, 
+//           message: 'Invalid status provided' 
+//         });
+//       }
+
+//       const visas = await Visa.find({ id: { $in: ids } });
+      
+//       // Check if all transitions are valid
+//       const invalidTransitions = visas.filter(visa => 
+//         !StatusService.isValidTransition(visa.status, status)
+//       );
+
+//       if (invalidTransitions.length > 0) {
+//         return res.status(400).json({
+//           success: false,
+//           message: `Cannot change status from ${invalidTransitions[0].status} to ${status} for some applications`
+//         });
+//       }
+
+//       const updatePromises = visas.map(async (visa) => {
+//         const statusHistory = [
+//           ...(visa.statusHistory || []),
+//           {
+//             from: visa.status,
+//             to: status,
+//             changedAt: new Date(),
+//             changedBy: req.user?.id || 'system',
+//             reason: reason,
+//             timeInStatusHours: StatusService.calculateTimeInStatus(visa.updatedAt)
+//           }
+//         ];
+
+//         const updatedVisa = await Visa.findOneAndUpdate(
+//           { id: visa.id },
+//           { 
+//             status, 
+//             statusHistory,
+//             updatedAt: new Date()
+//           },
+//           { new: true }
+//         );
+
+//         // Send email notification
+//         await emailService.sendStatusUpdateEmail(updatedVisa, visa.status);
+        
+//         return updatedVisa;
+//       });
+
+//       const updatedVisas = await Promise.all(updatePromises);
+
+//       res.json({ 
+//         success: true, 
+//         message: `Updated ${updatedVisas.length} applications to ${status}`,
+//         data: updatedVisas 
+//       });
+//     } catch (err) {
+//       next(err);
+//     }
+//   }
+
+//   // UPDATE SINGLE STATUS
+//   async updateStatus(req, res, next) {
+//     try {
+//       const { id } = req.params;
+//       const { status, reason } = req.body;
+
+//       if (!Object.values(VISA_STATUS).includes(status)) {
+//         return res.status(400).json({ 
+//           success: false, 
+//           message: 'Invalid status provided' 
+//         });
+//       }
+
+//       const oldVisa = await Visa.findOne({ id });
+//       if (!oldVisa) {
+//         return res.status(404).json({ success: false, message: 'Visa not found' });
+//       }
+
+//       if (!StatusService.isValidTransition(oldVisa.status, status)) {
+//         return res.status(400).json({
+//           success: false,
+//           message: `Cannot change status from ${oldVisa.status} to ${status}`
+//         });
+//       }
+
+//       const statusHistory = [
+//         ...(oldVisa.statusHistory || []),
+//         {
+//           from: oldVisa.status,
+//           to: status,
+//           changedAt: new Date(),
+//           changedBy: req.user?.id || 'system',
+//           reason: reason,
+//           timeInStatusHours: StatusService.calculateTimeInStatus(oldVisa.updatedAt)
+//         }
+//       ];
+
+//       const visa = await Visa.findOneAndUpdate(
+//         { id },
+//         { 
+//           status, 
+//           statusHistory,
+//           updatedAt: new Date()
+//         },
+//         { new: true, runValidators: true }
+//       );
+
+//       await emailService.sendStatusUpdateEmail(visa, oldVisa.status);
+
+//       res.json({ 
+//         success: true, 
+//         data: visa,
+//         message: `Status changed from ${oldVisa.status} to ${status}`
+//       });
+//     } catch (err) {
+//       next(err);
+//     }
+//   }
+
+//   // GET STATUS HISTORY
+//   async getStatusHistory(req, res, next) {
+//     try {
+//       const visa = await Visa.findOne({ id: req.params.id });
+//       if (!visa) {
+//         return res.status(404).json({ success: false, message: 'Visa not found' });
+//       }
+
+//       res.json({ 
+//         success: true, 
+//         data: visa.statusHistory || [],
+//         currentStatus: visa.status
+//       });
+//     } catch (err) {
+//       next(err);
+//     }
+//   }
+
+//   // GET STATUS OPTIONS
+//   async getStatusOptions(req, res, next) {
+//     try {
+//       const { currentStatus } = req.query;
+      
+//       let availableStatuses = Object.values(VISA_STATUS);
+      
+//       if (currentStatus && STATUS_TRANSITIONS[currentStatus]) {
+//         availableStatuses = [currentStatus, ...STATUS_TRANSITIONS[currentStatus]];
+//       }
+
+//       const options = availableStatuses.map(status => ({
+//         value: status,
+//         label: StatusService.getStatusDisplayName(status),
+//         canTransition: StatusService.isValidTransition(currentStatus, status)
+//       }));
+
+//       res.json({ success: true, data: options });
+//     } catch (err) {
+//       next(err);
+//     }
+//   }
+
+//   // GET STATISTICS
+//   async getStatistics(req, res, next) {
+//     try {
+//       const [overallStats, revenueStats, statusChanges] = await Promise.all([
+//         statisticsService.getOverallStatistics(),
+//         statisticsService.getRevenueStatistics(),
+//         statisticsService.getStatusChangeHistory()
+//       ]);
+
+//       res.json({
+//         success: true,
+//         data: {
+//           ...overallStats,
+//           revenue: revenueStats,
+//           statusChangeHistory: statusChanges
+//         }
+//       });
+//     } catch (err) {
+//       next(err);
+//     }
+//   }
+
+//   // GET INVENTORY STATISTICS
+//   async getInventoryStatistics(req, res, next) {
+//     try {
+//       const data = await inventoryService.getInventoryOverview();
+//       res.json({ success: true, data });
+//     } catch (err) {
+//       next(err);
+//     }
+//   }
+
+//   // SEND EMAIL
+//   async sendEmail(req, res, next) {
+//     try {
+//       const { applicationId, customMessage } = req.body;
+
+//       const visa = await Visa.findOne({ id: applicationId });
+//       if (!visa) {
+//         return res.status(404).json({ success: false, message: 'Visa not found' });
+//       }
+
+//       let result;
+//       if (customMessage) {
+//         result = await emailService.sendMail(
+//           visa.email,
+//           `Custom Update - ${visa.id}`,
+//           `Dear ${visa.applicant},\n\n${customMessage}\n\nBest regards,\nVisa Processing Team`
+//         );
+//       } else {
+//         result = await emailService.sendStatusUpdateEmail(visa);
+//       }
+
+//       res.json(result);
+//     } catch (err) {
+//       next(err);
+//     }
+//   }
+
+//   // GET APPLICATIONS BY STATUS
+//   async getApplicationsByStatus(req, res, next) {
+//     try {
+//       const { status } = req.params;
+      
+//       if (!Object.values(VISA_STATUS).includes(status)) {
+//         return res.status(400).json({ 
+//           success: false, 
+//           message: 'Invalid status' 
+//         });
+//       }
+
+//       const applications = await Visa.find({ status })
+//         .sort({ createdAt: -1 })
+//         .limit(100);
+
+//       const count = await Visa.countDocuments({ status });
+
+//       res.json({
+//         success: true,
+//         data: applications,
+//         count,
+//         status: StatusService.getStatusDisplayName(status)
+//       });
+//     } catch (err) {
+//       next(err);
+//     }
+//   }
+// }
+
+// /* ===========================
+//    ERROR HANDLER
+// =========================== */
+
+// const errorHandler = (err, req, res, next) => {
+//   console.error(err);
+
+//   if (err.name === 'ValidationError') {
+//     return res.status(400).json({
+//       success: false,
+//       errors: Object.values(err.errors).map(e => e.message)
+//     });
+//   }
+
+//   if (err.code === 11000) {
+//     return res.status(400).json({
+//       success: false,
+//       message: 'Duplicate value error - This ID or email already exists'
+//     });
+//   }
+
+//   res.status(500).json({
+//     success: false,
+//     message: err.message || 'Internal server error'
+//   });
+// };
+
+// /* ===========================
+//    EXPORTS
+// =========================== */
+
+// module.exports = {
+//   VisaController: new VisaController(),
+//   errorHandler,
+//   VISA_STATUS,
+//   StatusService
+// };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// const VisaService = require('../models/Visa');
+// const mongoose = require('mongoose');
+// const nodemailer = require('nodemailer');
+// const cloudinary = require('cloudinary').v2;
+
+// // Configure Cloudinary
+// cloudinary.config({
+//   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+//   api_key: process.env.CLOUDINARY_API_KEY,
+//   api_secret: process.env.CLOUDINARY_API_SECRET
+// });
+
+// // Email Service Configuration
+// const emailTransporter = nodemailer.createTransport({
+//   host: process.env.SMTP_HOST || 'smtp.gmail.com',
+//   port: process.env.SMTP_PORT || 587,
+//   secure: process.env.SMTP_SECURE === 'true',
+//   auth: {
+//     user: process.env.SMTP_USER,
+//     pass: process.env.SMTP_PASS
+//   }
+// });
+
+// // Email Templates
+// const emailTemplates = {
+//   bookingConfirmation: (bookingData) => ({
+//     subject: `Booking Confirmation - ${bookingData.serviceId}`,
+//     html: `
+//       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+//         <h2 style="color: #2c3e50;">Visa Consultation Booking Confirmed</h2>
+//         <p>Dear ${bookingData.customer.personalInfo.fullName},</p>
+//         <p>Your visa consultation booking has been confirmed with the following details:</p>
+        
+//         <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0;">
+//           <h3 style="color: #3498db;">Booking Details</h3>
+//           <p><strong>Booking ID:</strong> ${bookingData.serviceId}</p>
+//           <p><strong>Appointment Date:</strong> ${new Date(bookingData.bookingDetails.appointment.date).toLocaleDateString()}</p>
+//           <p><strong>Time Slot:</strong> ${bookingData.bookingDetails.appointment.timeSlot}</p>
+//           <p><strong>Mode:</strong> ${bookingData.bookingDetails.appointment.mode}</p>
+//           ${bookingData.bookingDetails.appointment.location ? `<p><strong>Location:</strong> ${bookingData.bookingDetails.appointment.location}</p>` : ''}
+//         </div>
+        
+//         <p>Please make sure to prepare the following for your appointment:</p>
+//         <ul>
+//           <li>Original Passport</li>
+//           <li>Passport-sized photographs</li>
+//           <li>Previous visa documents (if any)</li>
+//         </ul>
+        
+//         <p>If you need to reschedule or cancel, please contact us at least 24 hours in advance.</p>
+        
+//         <hr style="margin: 30px 0;">
+//         <p style="color: #7f8c8d; font-size: 12px;">
+//           This is an automated email. Please do not reply to this address.
+//         </p>
+//       </div>
+//     `
+//   }),
+
+//   applicationSubmitted: (applicationData) => ({
+//     subject: `Visa Application Submitted - ${applicationData.trackingNumber}`,
+//     html: `
+//       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+//         <h2 style="color: #2c3e50;">Visa Application Submitted</h2>
+//         <p>Dear ${applicationData.customer.personalInfo.fullName},</p>
+//         <p>Your visa application has been successfully submitted with the following details:</p>
+        
+//         <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0;">
+//           <h3 style="color: #3498db;">Application Details</h3>
+//           <p><strong>Tracking Number:</strong> ${applicationData.trackingNumber}</p>
+//           <p><strong>Destination:</strong> ${applicationData.applicationDetails.visaInfo.destinationCountry}</p>
+//           <p><strong>Visa Type:</strong> ${applicationData.applicationDetails.visaInfo.visaType}</p>
+//           <p><strong>Current Status:</strong> ${applicationData.applicationDetails.applicationStatus.current}</p>
+//           <p><strong>Estimated Processing Time:</strong> ${applicationData.applicationDetails.servicePackage.processingTime}</p>
+//         </div>
+        
+//         <p>You can track your application status using your tracking number on our website.</p>
+//         <p>We will notify you via email when there are any updates to your application.</p>
+        
+//         <hr style="margin: 30px 0;">
+//         <p style="color: #7f8c8d; font-size: 12px;">
+//           This is an automated email. Please do not reply to this address.
+//         </p>
+//       </div>
+//     `
+//   }),
+
+//   statusUpdate: (applicationData, newStatus) => ({
+//     subject: `Status Update - ${applicationData.trackingNumber}`,
+//     html: `
+//       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+//         <h2 style="color: #2c3e50;">Application Status Update</h2>
+//         <p>Dear ${applicationData.customer.personalInfo.fullName},</p>
+//         <p>The status of your visa application has been updated:</p>
+        
+//         <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0;">
+//           <h3 style="color: #3498db;">Updated Status</h3>
+//           <p><strong>Tracking Number:</strong> ${applicationData.trackingNumber}</p>
+//           <p><strong>New Status:</strong> ${newStatus}</p>
+//           <p><strong>Updated Date:</strong> ${new Date().toLocaleDateString()}</p>
+//         </div>
+        
+//         <p>Next Steps: ${applicationData.nextActionRequired}</p>
+        
+//         <p>If you have any questions, please contact our support team.</p>
+        
+//         <hr style="margin: 30px 0;">
+//         <p style="color: #7f8c8d; font-size: 12px;">
+//           This is an automated email. Please do not reply to this address.
+//         </p>
+//       </div>
+//     `
+//   }),
+
+//   paymentConfirmation: (applicationData, paymentDetails) => ({
+//     subject: `Payment Received - ${applicationData.trackingNumber}`,
+//     html: `
+//       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+//         <h2 style="color: #2c3e50;">Payment Confirmation</h2>
+//         <p>Dear ${applicationData.customer.personalInfo.fullName},</p>
+//         <p>We have received your payment for visa application services:</p>
+        
+//         <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0;">
+//           <h3 style="color: #3498db;">Payment Details</h3>
+//           <p><strong>Transaction ID:</strong> ${paymentDetails.transactionId}</p>
+//           <p><strong>Amount Paid:</strong> ${paymentDetails.amount} ${applicationData.applicationDetails.fees.currency}</p>
+//           <p><strong>Payment Method:</strong> ${paymentDetails.method}</p>
+//           <p><strong>Payment Date:</strong> ${new Date(paymentDetails.date).toLocaleDateString()}</p>
+//           <p><strong>Balance Due:</strong> ${applicationData.balanceDue} ${applicationData.applicationDetails.fees.currency}</p>
+//         </div>
+        
+//         <p>Your application will now proceed to the next stage.</p>
+        
+//         <hr style="margin: 30px 0;">
+//         <p style="color: #7f8c8d; font-size: 12px;">
+//           This is an automated email. Please do not reply to this address.
+//         </p>
+//       </div>
+//     `
+//   }),
+
+//   documentUploadConfirmation: (applicationData, documentType) => ({
+//     subject: `Document Received - ${applicationData.trackingNumber}`,
+//     html: `
+//       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+//         <h2 style="color: #2c3e50;">Document Upload Confirmation</h2>
+//         <p>Dear ${applicationData.customer.personalInfo.fullName},</p>
+//         <p>We have successfully received your ${documentType} for visa application:</p>
+        
+//         <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0;">
+//           <h3 style="color: #3498db;">Upload Details</h3>
+//           <p><strong>Tracking Number:</strong> ${applicationData.trackingNumber}</p>
+//           <p><strong>Document Type:</strong> ${documentType}</p>
+//           <p><strong>Upload Date:</strong> ${new Date().toLocaleDateString()}</p>
+//           <p><strong>Documents Uploaded:</strong> ${applicationData.totalDocuments}</p>
+//           <p><strong>Documents Verified:</strong> ${applicationData.verifiedDocuments}</p>
+//         </div>
+        
+//         <p>Our team will review your document and update the verification status.</p>
+        
+//         <hr style="margin: 30px 0;">
+//         <p style="color: #7f8c8d; font-size: 12px;">
+//           This is an automated email. Please do not reply to this address.
+//         </p>
+//       </div>
+//     `
+//   })
+// };
+
+// // Helper function to send emails
+// const sendEmail = async (to, template, data) => {
+//   try {
+//     const emailTemplate = emailTemplates[template](data);
+//     const mailOptions = {
+//       from: process.env.EMAIL_FROM || 'visa-services@example.com',
+//       to,
+//       subject: emailTemplate.subject,
+//       html: emailTemplate.html
+//     };
+
+//     await emailTransporter.sendMail(mailOptions);
+//     return { success: true, message: 'Email sent successfully' };
+//   } catch (error) {
+//     console.error('Email sending error:', error);
+//     return { success: false, message: 'Failed to send email', error: error.message };
+//   }
+// };
+
+// // Helper function to upload to Cloudinary
+// const uploadToCloudinary = async (file, folder = 'visa_documents') => {
+//   try {
+//     const result = await cloudinary.uploader.upload(file.path, {
+//       folder: folder,
+//       resource_type: 'auto',
+//       transformation: [
+//         { quality: 'auto:good' },
+//         { fetch_format: 'auto' }
+//       ]
+//     });
+
+//     return {
+//       success: true,
+//       cloudinaryUrl: result.secure_url,
+//       publicId: result.public_id,
+//       originalName: file.originalname
+//     };
+//   } catch (error) {
+//     console.error('Cloudinary upload error:', error);
+//     return { success: false, message: 'Failed to upload to Cloudinary', error: error.message };
+//   }
+// };
+
+// // Helper function to delete from Cloudinary
+// const deleteFromCloudinary = async (publicId) => {
+//   try {
+//     await cloudinary.uploader.destroy(publicId);
+//     return { success: true, message: 'File deleted from Cloudinary' };
+//   } catch (error) {
+//     console.error('Cloudinary delete error:', error);
+//     return { success: false, message: 'Failed to delete from Cloudinary', error: error.message };
+//   }
+// };
+
+// // Statistics Helper Functions
+// const calculateStatistics = async (filters = {}) => {
+//   try {
+//     const matchStage = {};
+    
+//     // Apply filters
+//     if (filters.startDate && filters.endDate) {
+//       matchStage.createdAt = {
+//         $gte: new Date(filters.startDate),
+//         $lte: new Date(filters.endDate)
+//       };
+//     }
+    
+//     if (filters.agentId) {
+//       matchStage['internal.assignedTo.agentId'] = new mongoose.Types.ObjectId(filters.agentId);
+//     }
+    
+//     if (filters.destinationCountry) {
+//       matchStage['applicationDetails.visaInfo.destinationCountry'] = filters.destinationCountry;
+//     }
+    
+//     if (filters.visaType) {
+//       matchStage['applicationDetails.visaInfo.visaType'] = filters.visaType;
+//     }
+
+//     const stats = await VisaService.aggregate([
+//       { $match: matchStage },
+//       {
+//         $facet: {
+//           // Overall counts
+//           overview: [
+//             {
+//               $group: {
+//                 _id: null,
+//                 totalBookings: {
+//                   $sum: { $cond: [{ $eq: ['$serviceType', 'booking'] }, 1, 0] }
+//                 },
+//                 totalApplications: {
+//                   $sum: { $cond: [{ $eq: ['$serviceType', 'application'] }, 1, 0] }
+//                 },
+//                 totalCombined: {
+//                   $sum: { $cond: [{ $eq: ['$serviceType', 'combined'] }, 1, 0] }
+//                 },
+//                 totalRevenue: {
+//                   $sum: {
+//                     $add: [
+//                       '$bookingDetails.bookingAmount',
+//                       '$applicationDetails.fees.totalAmount'
+//                     ]
+//                   }
+//                 },
+//                 totalPendingPayments: {
+//                   $sum: {
+//                     $cond: [
+//                       {
+//                         $in: [
+//                           '$applicationDetails.payment.status',
+//                           ['pending', 'partial']
+//                         ]
+//                       },
+//                       '$applicationDetails.fees.totalAmount',
+//                       0
+//                     ]
+//                   }
+//                 }
+//               }
+//             }
+//           ],
+
+//           // Status breakdown
+//           statusBreakdown: [
+//             {
+//               $group: {
+//                 _id: '$applicationDetails.applicationStatus.current',
+//                 count: { $sum: 1 },
+//                 averageProcessingDays: {
+//                   $avg: {
+//                     $cond: [
+//                       '$applicationDetails.applicationStatus.actualCompletionDate',
+//                       {
+//                         $divide: [
+//                           {
+//                             $subtract: [
+//                               '$applicationDetails.applicationStatus.actualCompletionDate',
+//                               '$applicationDetails.applicationStatus.submittedAt'
+//                             ]
+//                           },
+//                           1000 * 60 * 60 * 24
+//                         ]
+//                       },
+//                       null
+//                     ]
+//                   }
+//                 }
+//               }
+//             },
+//             { $sort: { count: -1 } }
+//           ],
+
+//           // Destination country breakdown
+//           destinationBreakdown: [
+//             {
+//               $group: {
+//                 _id: '$applicationDetails.visaInfo.destinationCountry',
+//                 count: { $sum: 1 },
+//                 approved: {
+//                   $sum: {
+//                     $cond: [
+//                       { $eq: ['$applicationDetails.applicationStatus.current', 'approved'] },
+//                       1,
+//                       0
+//                     ]
+//                   }
+//                 },
+//                 rejected: {
+//                   $sum: {
+//                     $cond: [
+//                       { $eq: ['$applicationDetails.applicationStatus.current', 'rejected'] },
+//                       1,
+//                       0
+//                     ]
+//                   }
+//                 },
+//                 avgProcessingTime: {
+//                   $avg: {
+//                     $cond: [
+//                       '$applicationDetails.applicationStatus.actualCompletionDate',
+//                       {
+//                         $divide: [
+//                           {
+//                             $subtract: [
+//                               '$applicationDetails.applicationStatus.actualCompletionDate',
+//                               '$applicationDetails.applicationStatus.submittedAt'
+//                             ]
+//                           },
+//                           1000 * 60 * 60 * 24
+//                         ]
+//                       },
+//                       null
+//                     ]
+//                   }
+//                 }
+//               }
+//             },
+//             { $sort: { count: -1 } },
+//             { $limit: 10 }
+//           ],
+
+//           // Visa type breakdown
+//           visaTypeBreakdown: [
+//             {
+//               $group: {
+//                 _id: '$applicationDetails.visaInfo.visaType',
+//                 count: { $sum: 1 },
+//                 successRate: {
+//                   $avg: {
+//                     $cond: [
+//                       { $eq: ['$applicationDetails.applicationStatus.current', 'approved'] },
+//                       100,
+//                       0
+//                     ]
+//                   }
+//                 },
+//                 avgFee: { $avg: '$applicationDetails.fees.totalAmount' }
+//               }
+//             },
+//             { $sort: { count: -1 } }
+//           ],
+
+//           // Monthly trends
+//           monthlyTrends: [
+//             {
+//               $group: {
+//                 _id: {
+//                   year: { $year: '$createdAt' },
+//                   month: { $month: '$createdAt' }
+//                 },
+//                 count: { $sum: 1 },
+//                 revenue: {
+//                   $sum: {
+//                     $add: [
+//                       '$bookingDetails.bookingAmount',
+//                       '$applicationDetails.fees.totalAmount'
+//                     ]
+//                   }
+//                 },
+//                 applications: {
+//                   $sum: { $cond: [{ $ne: ['$serviceType', 'booking'] }, 1, 0] }
+//                 }
+//               }
+//             },
+//             { $sort: { '_id.year': 1, '_id.month': 1 } },
+//             { $limit: 12 }
+//           ],
+
+//           // Agent performance
+//           agentPerformance: [
+//             {
+//               $match: {
+//                 'internal.assignedTo.agentId': { $exists: true, $ne: null }
+//               }
+//             },
+//             {
+//               $group: {
+//                 _id: '$internal.assignedTo.agentId',
+//                 agentName: { $first: '$internal.assignedTo.agentName' },
+//                 totalAssigned: { $sum: 1 },
+//                 completed: {
+//                   $sum: {
+//                     $cond: [
+//                       {
+//                         $in: [
+//                           '$applicationDetails.applicationStatus.current',
+//                           ['approved', 'visa-printed', 'collected']
+//                         ]
+//                       },
+//                       1,
+//                       0
+//                     ]
+//                   }
+//                 },
+//                 pending: {
+//                   $sum: {
+//                     $cond: [
+//                       {
+//                         $in: [
+//                           '$applicationDetails.applicationStatus.current',
+//                           ['pending', 'processing']
+//                         ]
+//                       },
+//                       1,
+//                       0
+//                     ]
+//                   }
+//                 },
+//                 avgCompletionTime: {
+//                   $avg: {
+//                     $cond: [
+//                       '$applicationDetails.applicationStatus.actualCompletionDate',
+//                       {
+//                         $divide: [
+//                           {
+//                             $subtract: [
+//                               '$applicationDetails.applicationStatus.actualCompletionDate',
+//                               '$createdAt'
+//                             ]
+//                           },
+//                           1000 * 60 * 60 * 24
+//                         ]
+//                       },
+//                       null
+//                     ]
+//                   }
+//                 },
+//                 totalRevenue: {
+//                   $sum: '$applicationDetails.fees.totalAmount'
+//                 }
+//               }
+//             },
+//             { $sort: { totalAssigned: -1 } }
+//           ],
+
+//           // Payment statistics
+//           paymentStats: [
+//             {
+//               $group: {
+//                 _id: '$applicationDetails.payment.status',
+//                 count: { $sum: 1 },
+//                 totalAmount: { $sum: '$applicationDetails.fees.totalAmount' },
+//                 totalCollected: { $sum: '$applicationDetails.payment.amountPaid' },
+//                 avgCollectionTime: {
+//                   $avg: {
+//                     $cond: [
+//                       '$applicationDetails.payment.paymentHistory',
+//                       {
+//                         $divide: [
+//                           {
+//                             $subtract: [
+//                               { $arrayElemAt: ['$applicationDetails.payment.paymentHistory.date', -1] },
+//                               '$createdAt'
+//                             ]
+//                           },
+//                           1000 * 60 * 60 * 24
+//                         ]
+//                       },
+//                       null
+//                     ]
+//                   }
+//                 }
+//               }
+//             }
+//           ],
+
+//           // Document statistics
+//           documentStats: [
+//             {
+//               $project: {
+//                 totalDocuments: {
+//                   $add: [
+//                     { $cond: [{ $ifNull: ['$documents.photograph.cloudinaryUrl', false] }, 1, 0] },
+//                     { $cond: [{ $ifNull: ['$documents.passportCopy.cloudinaryUrl', false] }, 1, 0] },
+//                     { $size: { $ifNull: ['$documents.financialDocuments', []] } },
+//                     { $size: { $ifNull: ['$documents.travelDocuments', []] } },
+//                     { $size: { $ifNull: ['$documents.supportingDocuments', []] } },
+//                     { $size: { $ifNull: ['$documents.otherDocuments', []] } }
+//                   ]
+//                 },
+//                 verifiedDocuments: {
+//                   $add: [
+//                     { $cond: ['$documents.photograph.verified', 1, 0] },
+//                     { $cond: ['$documents.passportCopy.verified', 1, 0] },
+//                     {
+//                       $size: {
+//                         $filter: {
+//                           input: { $ifNull: ['$documents.financialDocuments', []] },
+//                           as: 'doc',
+//                           cond: '$$doc.verified'
+//                         }
+//                       }
+//                     },
+//                     {
+//                       $size: {
+//                         $filter: {
+//                           input: { $ifNull: ['$documents.travelDocuments', []] },
+//                           as: 'doc',
+//                           cond: '$$doc.verified'
+//                         }
+//                       }
+//                     },
+//                     {
+//                       $size: {
+//                         $filter: {
+//                           input: { $ifNull: ['$documents.supportingDocuments', []] },
+//                           as: 'doc',
+//                           cond: '$$doc.verified'
+//                         }
+//                       }
+//                     },
+//                     {
+//                       $size: {
+//                         $filter: {
+//                           input: { $ifNull: ['$documents.otherDocuments', []] },
+//                           as: 'doc',
+//                           cond: '$$doc.verified'
+//                         }
+//                       }
+//                     }
+//                   ]
+//                 }
+//               }
+//             },
+//             {
+//               $group: {
+//                 _id: null,
+//                 avgDocumentsPerApplication: { $avg: '$totalDocuments' },
+//                 avgVerificationRate: {
+//                   $avg: {
+//                     $cond: [
+//                       { $gt: ['$totalDocuments', 0] },
+//                       { $divide: ['$verifiedDocuments', '$totalDocuments'] },
+//                       0
+//                     ]
+//                   }
+//                 },
+//                 applicationsWithAllDocuments: {
+//                   $sum: {
+//                     $cond: [
+//                       { $gte: ['$totalDocuments', 5] },
+//                       1,
+//                       0
+//                     ]
+//                   }
+//                 }
+//               }
+//             }
+//           ]
+//         }
+//       }
+//     ]);
+
+//     return stats[0]; // Return the first element of the facet result
+//   } catch (error) {
+//     console.error('Statistics calculation error:', error);
+//     throw error;
+//   }
+// };
+
+// // ========== BOOKING CONTROLLERS ==========
+
+// const BookingController = {
+//   // Create a new booking
+//   createBooking: async (req, res) => {
+//     try {
+//       const {
+//         customer,
+//         bookingDetails,
+//         internal
+//       } = req.body;
+
+//       // Validate required fields
+//       if (!customer?.personalInfo?.fullName || !customer?.contactInfo?.email) {
+//         return res.status(400).json({
+//           success: false,
+//           message: 'Full name and email are required'
+//         });
+//       }
+
+//       // Create booking
+//       const booking = new VisaService({
+//         serviceType: 'booking',
+//         serviceStage: 'booking-pending',
+//         customer,
+//         bookingDetails,
+//         internal
+//       });
+
+//       await booking.save();
+
+//       // Send confirmation email
+//       await sendEmail(
+//         customer.contactInfo.email,
+//         'bookingConfirmation',
+//         booking
+//       );
+
+//       res.status(201).json({
+//         success: true,
+//         message: 'Booking created successfully',
+//         data: {
+//           bookingId: booking.serviceId,
+//           appointmentDate: booking.bookingDetails.appointment?.date,
+//           nextAction: booking.nextActionRequired
+//         }
+//       });
+//     } catch (error) {
+//       console.error('Create booking error:', error);
+//       res.status(500).json({
+//         success: false,
+//         message: 'Failed to create booking',
+//         error: error.message
+//       });
+//     }
+//   },
+
+//   // Update booking
+//   updateBooking: async (req, res) => {
+//     try {
+//       const { bookingId } = req.params;
+//       const updateData = req.body;
+
+//       const booking = await VisaService.findOne({ serviceId: bookingId, serviceType: 'booking' });
+
+//       if (!booking) {
+//         return res.status(404).json({
+//           success: false,
+//           message: 'Booking not found'
+//         });
+//       }
+
+//       // Update booking
+//       Object.keys(updateData).forEach(key => {
+//         booking[key] = updateData[key];
+//       });
+
+//       await booking.save();
+
+//       res.json({
+//         success: true,
+//         message: 'Booking updated successfully',
+//         data: booking
+//       });
+//     } catch (error) {
+//       console.error('Update booking error:', error);
+//       res.status(500).json({
+//         success: false,
+//         message: 'Failed to update booking',
+//         error: error.message
+//       });
+//     }
+//   },
+
+//   // Schedule appointment
+//   scheduleAppointment: async (req, res) => {
+//     try {
+//       const { bookingId } = req.params;
+//       const { appointmentData } = req.body;
+
+//       const booking = await VisaService.findOne({ serviceId: bookingId, serviceType: 'booking' });
+
+//       if (!booking) {
+//         return res.status(404).json({
+//           success: false,
+//           message: 'Booking not found'
+//         });
+//       }
+
+//       // Schedule appointment using instance method
+//       await booking.scheduleAppointment(appointmentData);
+
+//       // Send confirmation email
+//       await sendEmail(
+//         booking.customer.contactInfo.email,
+//         'bookingConfirmation',
+//         booking
+//       );
+
+//       res.json({
+//         success: true,
+//         message: 'Appointment scheduled successfully',
+//         data: {
+//           appointmentDate: booking.bookingDetails.appointment.date,
+//           timeSlot: booking.bookingDetails.appointment.timeSlot,
+//           status: booking.bookingDetails.bookingStatus
+//         }
+//       });
+//     } catch (error) {
+//       console.error('Schedule appointment error:', error);
+//       res.status(500).json({
+//         success: false,
+//         message: 'Failed to schedule appointment',
+//         error: error.message
+//       });
+//     }
+//   },
+
+//   // Convert booking to application
+//   convertToApplication: async (req, res) => {
+//     try {
+//       const { bookingId } = req.params;
+//       const { applicationDetails } = req.body;
+
+//       const booking = await VisaService.findOne({ serviceId: bookingId });
+
+//       if (!booking) {
+//         return res.status(404).json({
+//           success: false,
+//           message: 'Booking not found'
+//         });
+//       }
+
+//       // Update application details if provided
+//       if (applicationDetails) {
+//         booking.applicationDetails = { ...booking.applicationDetails, ...applicationDetails };
+//       }
+
+//       // Convert to application using instance method
+//       await booking.convertToApplication();
+
+//       // Send application submitted email
+//       await sendEmail(
+//         booking.customer.contactInfo.email,
+//         'applicationSubmitted',
+//         booking
+//       );
+
+//       res.json({
+//         success: true,
+//         message: 'Booking converted to application successfully',
+//         data: {
+//           trackingNumber: booking.trackingNumber,
+//           applicationStatus: booking.applicationDetails.applicationStatus.current,
+//           nextAction: booking.nextActionRequired
+//         }
+//       });
+//     } catch (error) {
+//       console.error('Convert to application error:', error);
+//       res.status(500).json({
+//         success: false,
+//         message: 'Failed to convert booking to application',
+//         error: error.message
+//       });
+//     }
+//   }
+// };
+
+// // ========== VISA APPLICATION CONTROLLERS ==========
+
+// const ApplicationController = {
+//   // Create new visa application (without booking)
+//   createApplication: async (req, res) => {
+//     try {
+//       const {
+//         customer,
+//         applicationDetails,
+//         internal
+//       } = req.body;
+
+//       // Validate required fields
+//       if (!customer?.personalInfo?.fullName || !customer?.contactInfo?.email) {
+//         return res.status(400).json({
+//           success: false,
+//           message: 'Full name and email are required'
+//         });
+//       }
+
+//       if (!applicationDetails?.visaInfo?.destinationCountry || !applicationDetails?.visaInfo?.visaType) {
+//         return res.status(400).json({
+//           success: false,
+//           message: 'Destination country and visa type are required'
+//         });
+//       }
+
+//       // Create application
+//       const application = new VisaService({
+//         serviceType: 'application',
+//         serviceStage: 'application-initiated',
+//         customer,
+//         applicationDetails,
+//         internal
+//       });
+
+//       await application.save();
+
+//       // Send confirmation email
+//       await sendEmail(
+//         customer.contactInfo.email,
+//         'applicationSubmitted',
+//         application
+//       );
+
+//       res.status(201).json({
+//         success: true,
+//         message: 'Visa application created successfully',
+//         data: {
+//           trackingNumber: application.trackingNumber,
+//           serviceId: application.serviceId,
+//           applicationStatus: application.applicationDetails.applicationStatus.current
+//         }
+//       });
+//     } catch (error) {
+//       console.error('Create application error:', error);
+//       res.status(500).json({
+//         success: false,
+//         message: 'Failed to create visa application',
+//         error: error.message
+//       });
+//     }
+//   },
+
+//   // Upload document
+//   uploadDocument: async (req, res) => {
+//     try {
+//       const { trackingNumber } = req.params;
+//       const { category, documentType } = req.body;
+//       const file = req.file;
+
+//       if (!file) {
+//         return res.status(400).json({
+//           success: false,
+//           message: 'No file uploaded'
+//         });
+//       }
+
+//       const application = await VisaService.findOne({ trackingNumber });
+
+//       if (!application) {
+//         return res.status(404).json({
+//           success: false,
+//           message: 'Application not found'
+//         });
+//       }
+
+//       // Upload to Cloudinary
+//       const uploadResult = await uploadToCloudinary(file, `visa_applications/${trackingNumber}/${category}`);
+
+//       if (!uploadResult.success) {
+//         return res.status(500).json(uploadResult);
+//       }
+
+//       // Prepare document data
+//       const documentData = {
+//         documentType: documentType || category,
+//         cloudinaryUrl: uploadResult.cloudinaryUrl,
+//         publicId: uploadResult.publicId,
+//         originalName: uploadResult.originalName,
+//         uploadedAt: new Date(),
+//         verified: false
+//       };
+
+//       // Add document using instance method
+//       await application.addDocument(category, documentData);
+
+//       // Send document upload confirmation email
+//       await sendEmail(
+//         application.customer.contactInfo.email,
+//         'documentUploadConfirmation',
+//         { ...application.toObject(), documentType: documentType || category }
+//       );
+
+//       res.json({
+//         success: true,
+//         message: 'Document uploaded successfully',
+//         data: {
+//           documentUrl: uploadResult.cloudinaryUrl,
+//           totalDocuments: application.totalDocuments,
+//           verifiedDocuments: application.verifiedDocuments
+//         }
+//       });
+//     } catch (error) {
+//       console.error('Upload document error:', error);
+//       res.status(500).json({
+//         success: false,
+//         message: 'Failed to upload document',
+//         error: error.message
+//       });
+//     }
+//   },
+
+//   // Verify document
+//   verifyDocument: async (req, res) => {
+//     try {
+//       const { trackingNumber } = req.params;
+//       const { documentId, category, verifiedBy } = req.body;
+
+//       const application = await VisaService.findOne({ trackingNumber });
+
+//       if (!application) {
+//         return res.status(404).json({
+//           success: false,
+//           message: 'Application not found'
+//         });
+//       }
+
+//       // Verify document using instance method
+//       await application.verifyDocument(documentId, verifiedBy, category);
+
+//       res.json({
+//         success: true,
+//         message: 'Document verified successfully',
+//         data: {
+//           verifiedDocuments: application.verifiedDocuments,
+//           totalDocuments: application.totalDocuments,
+//           nextAction: application.nextActionRequired
+//         }
+//       });
+//     } catch (error) {
+//       console.error('Verify document error:', error);
+//       res.status(500).json({
+//         success: false,
+//         message: 'Failed to verify document',
+//         error: error.message
+//       });
+//     }
+//   },
+
+//   // Update payment
+//   updatePayment: async (req, res) => {
+//     try {
+//       const { trackingNumber } = req.params;
+//       const { amount, method, transactionId, notes } = req.body;
+
+//       const application = await VisaService.findOne({ trackingNumber });
+
+//       if (!application) {
+//         return res.status(404).json({
+//           success: false,
+//           message: 'Application not found'
+//         });
+//       }
+
+//       // Update payment using instance method
+//       await application.updatePayment(amount, method, transactionId, notes);
+
+//       // Send payment confirmation email
+//       const paymentDetails = {
+//         amount,
+//         method,
+//         transactionId,
+//         date: new Date()
+//       };
+      
+//       await sendEmail(
+//         application.customer.contactInfo.email,
+//         'paymentConfirmation',
+//         { ...application.toObject(), paymentDetails }
+//       );
+
+//       res.json({
+//         success: true,
+//         message: 'Payment updated successfully',
+//         data: {
+//           amountPaid: application.applicationDetails.payment.amountPaid,
+//           balanceDue: application.balanceDue,
+//           paymentStatus: application.applicationDetails.payment.status
+//         }
+//       });
+//     } catch (error) {
+//       console.error('Update payment error:', error);
+//       res.status(500).json({
+//         success: false,
+//         message: 'Failed to update payment',
+//         error: error.message
+//       });
+//     }
+//   },
+
+//   // Update application status
+//   updateStatus: async (req, res) => {
+//     try {
+//       const { trackingNumber } = req.params;
+//       const { status, remarks, changedBy } = req.body;
+
+//       const application = await VisaService.findOne({ trackingNumber });
+
+//       if (!application) {
+//         return res.status(404).json({
+//           success: false,
+//           message: 'Application not found'
+//         });
+//       }
+
+//       // Update status
+//       application.applicationDetails.applicationStatus.current = status;
+      
+//       // Record in history
+//       application.statusHistory.push({
+//         stage: application.serviceStage,
+//         status: status,
+//         changedAt: new Date(),
+//         changedBy: changedBy || 'system',
+//         remarks: remarks
+//       });
+
+//       await application.save();
+
+//       // Send status update email
+//       await sendEmail(
+//         application.customer.contactInfo.email,
+//         'statusUpdate',
+//         { ...application.toObject(), newStatus: status }
+//       );
+
+//       res.json({
+//         success: true,
+//         message: 'Status updated successfully',
+//         data: {
+//           currentStatus: status,
+//           previousStatus: application.statusHistory.slice(-2, -1)[0]?.status,
+//           nextAction: application.nextActionRequired
+//         }
+//       });
+//     } catch (error) {
+//       console.error('Update status error:', error);
+//       res.status(500).json({
+//         success: false,
+//         message: 'Failed to update status',
+//         error: error.message
+//       });
+//     }
+//   }
+// };
+
+// // ========== STATISTICS CONTROLLERS ==========
+
+// const StatisticsController = {
+//   // Get overall statistics
+//   getOverview: async (req, res) => {
+//     try {
+//       const filters = req.query;
+//       const stats = await calculateStatistics(filters);
+
+//       res.json({
+//         success: true,
+//         data: stats
+//       });
+//     } catch (error) {
+//       console.error('Get overview error:', error);
+//       res.status(500).json({
+//         success: false,
+//         message: 'Failed to get statistics',
+//         error: error.message
+//       });
+//     }
+//   },
+
+//   // Get dashboard statistics
+//   getDashboardStats: async (req, res) => {
+//     try {
+//       const thirtyDaysAgo = new Date();
+//       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+//       const [
+//         totalApplications,
+//         pendingPayments,
+//         upcomingAppointments,
+//         recentActivities,
+//         monthlyRevenue,
+//         statusDistribution
+//       ] = await Promise.all([
+//         // Total applications
+//         VisaService.countDocuments({
+//           serviceType: { $ne: 'booking' },
+//           createdAt: { $gte: thirtyDaysAgo }
+//         }),
+
+//         // Pending payments
+//         VisaService.aggregate([
+//           {
+//             $match: {
+//               'applicationDetails.payment.status': { $in: ['pending', 'partial'] },
+//               'applicationDetails.fees.totalAmount': { $gt: 0 }
+//             }
+//           },
+//           {
+//             $group: {
+//               _id: null,
+//               totalAmount: { $sum: '$applicationDetails.fees.totalAmount' },
+//               totalCollected: { $sum: '$applicationDetails.payment.amountPaid' },
+//               count: { $sum: 1 }
+//             }
+//           }
+//         ]),
+
+//         // Upcoming appointments
+//         VisaService.find({
+//           'bookingDetails.appointment.date': { $gte: new Date() },
+//           'bookingDetails.bookingStatus': { $in: ['confirmed', 'pending'] }
+//         })
+//           .sort({ 'bookingDetails.appointment.date': 1 })
+//           .limit(10)
+//           .select('serviceId customer.personalInfo.fullName bookingDetails.appointment.date bookingDetails.appointment.timeSlot'),
+
+//         // Recent activities
+//         VisaService.find()
+//           .sort({ updatedAt: -1 })
+//           .limit(10)
+//           .select('serviceId trackingNumber serviceStage applicationDetails.applicationStatus.current updatedAt'),
+
+//         // Monthly revenue
+//         VisaService.aggregate([
+//           {
+//             $match: {
+//               createdAt: { $gte: thirtyDaysAgo }
+//             }
+//           },
+//           {
+//             $group: {
+//               _id: {
+//                 year: { $year: '$createdAt' },
+//                 month: { $month: '$createdAt' },
+//                 day: { $dayOfMonth: '$createdAt' }
+//               },
+//               revenue: {
+//                 $sum: {
+//                   $add: [
+//                     '$bookingDetails.bookingAmount',
+//                     '$applicationDetails.fees.totalAmount'
+//                   ]
+//                 }
+//               },
+//               applications: { $sum: 1 }
+//             }
+//           },
+//           { $sort: { '_id.year': 1, '_id.month': 1, '_id.day': 1 } }
+//         ]),
+
+//         // Status distribution
+//         VisaService.aggregate([
+//           {
+//             $group: {
+//               _id: '$applicationDetails.applicationStatus.current',
+//               count: { $sum: 1 }
+//             }
+//           },
+//           { $sort: { count: -1 } }
+//         ])
+//       ]);
+
+//       res.json({
+//         success: true,
+//         data: {
+//           totalApplications,
+//           pendingPayments: pendingPayments[0] || { totalAmount: 0, totalCollected: 0, count: 0 },
+//           upcomingAppointments,
+//           recentActivities,
+//           monthlyRevenue,
+//           statusDistribution
+//         }
+//       });
+//     } catch (error) {
+//       console.error('Get dashboard stats error:', error);
+//       res.status(500).json({
+//         success: false,
+//         message: 'Failed to get dashboard statistics',
+//         error: error.message
+//       });
+//     }
+//   },
+
+//   // Get agent performance statistics
+//   getAgentPerformance: async (req, res) => {
+//     try {
+//       const { startDate, endDate } = req.query;
+
+//       const matchStage = {};
+//       if (startDate && endDate) {
+//         matchStage.createdAt = {
+//           $gte: new Date(startDate),
+//           $lte: new Date(endDate)
+//         };
+//       }
+
+//       const agentStats = await VisaService.aggregate([
+//         { $match: matchStage },
+//         {
+//           $group: {
+//             _id: '$internal.assignedTo.agentId',
+//             agentName: { $first: '$internal.assignedTo.agentName' },
+//             totalApplications: { $sum: 1 },
+//             completedApplications: {
+//               $sum: {
+//                 $cond: [
+//                   {
+//                     $in: [
+//                       '$applicationDetails.applicationStatus.current',
+//                       ['approved', 'visa-printed', 'collected']
+//                     ]
+//                   },
+//                   1,
+//                   0
+//                 ]
+//               }
+//             },
+//             pendingApplications: {
+//               $sum: {
+//                 $cond: [
+//                   {
+//                     $in: [
+//                       '$applicationDetails.applicationStatus.current',
+//                       ['pending', 'processing', 'document-review']
+//                     ]
+//                   },
+//                   1,
+//                   0
+//                 ]
+//               }
+//             },
+//             totalRevenue: { $sum: '$applicationDetails.fees.totalAmount' },
+//             avgProcessingTime: {
+//               $avg: {
+//                 $cond: [
+//                   '$applicationDetails.applicationStatus.actualCompletionDate',
+//                   {
+//                     $divide: [
+//                       {
+//                         $subtract: [
+//                           '$applicationDetails.applicationStatus.actualCompletionDate',
+//                           '$applicationDetails.applicationStatus.submittedAt'
+//                         ]
+//                       },
+//                       1000 * 60 * 60 * 24
+//                     ]
+//                   },
+//                   null
+//                 ]
+//               }
+//             }
+//           }
+//         },
+//         { $sort: { totalApplications: -1 } }
+//       ]);
+
+//       res.json({
+//         success: true,
+//         data: agentStats
+//       });
+//     } catch (error) {
+//       console.error('Get agent performance error:', error);
+//       res.status(500).json({
+//         success: false,
+//         message: 'Failed to get agent performance statistics',
+//         error: error.message
+//       });
+//     }
+//   },
+
+//   // Get revenue statistics
+//   getRevenueStats: async (req, res) => {
+//     try {
+//       const { period = 'monthly' } = req.query;
+
+//       let groupFormat;
+//       switch (period) {
+//         case 'daily':
+//           groupFormat = {
+//             year: { $year: '$createdAt' },
+//             month: { $month: '$createdAt' },
+//             day: { $dayOfMonth: '$createdAt' }
+//           };
+//           break;
+//         case 'weekly':
+//           groupFormat = {
+//             year: { $year: '$createdAt' },
+//             week: { $week: '$createdAt' }
+//           };
+//           break;
+//         case 'monthly':
+//         default:
+//           groupFormat = {
+//             year: { $year: '$createdAt' },
+//             month: { $month: '$createdAt' }
+//           };
+//       }
+
+//       const revenueStats = await VisaService.aggregate([
+//         {
+//           $group: {
+//             _id: groupFormat,
+//             totalRevenue: {
+//               $sum: {
+//                 $add: [
+//                   '$bookingDetails.bookingAmount',
+//                   '$applicationDetails.fees.totalAmount'
+//                 ]
+//               }
+//             },
+//             bookingRevenue: { $sum: '$bookingDetails.bookingAmount' },
+//             applicationRevenue: { $sum: '$applicationDetails.fees.totalAmount' },
+//             applicationCount: {
+//               $sum: { $cond: [{ $ne: ['$serviceType', 'booking'] }, 1, 0] }
+//             },
+//             bookingCount: {
+//               $sum: { $cond: [{ $eq: ['$serviceType', 'booking'] }, 1, 0] }
+//             },
+//             avgApplicationValue: { $avg: '$applicationDetails.fees.totalAmount' }
+//           }
+//         },
+//         { $sort: { '_id.year': 1, '_id.month': 1, '_id.day': 1, '_id.week': 1 } }
+//       ]);
+
+//       res.json({
+//         success: true,
+//         data: revenueStats
+//       });
+//     } catch (error) {
+//       console.error('Get revenue stats error:', error);
+//       res.status(500).json({
+//         success: false,
+//         message: 'Failed to get revenue statistics',
+//         error: error.message
+//       });
+//     }
+//   }
+// };
+
+// // ========== SEARCH & QUERY CONTROLLERS ==========
+
+// const QueryController = {
+//   // Search applications
+//   searchApplications: async (req, res) => {
+//     try {
+//       const {
+//         trackingNumber,
+//         email,
+//         fullName,
+//         passportNumber,
+//         destinationCountry,
+//         visaType,
+//         status,
+//         startDate,
+//         endDate
+//       } = req.query;
+
+//       const query = { serviceType: { $ne: 'booking' } };
+
+//       if (trackingNumber) query.trackingNumber = trackingNumber;
+//       if (email) query['customer.contactInfo.email'] = email;
+//       if (fullName) query['customer.personalInfo.fullName'] = { $regex: fullName, $options: 'i' };
+//       if (passportNumber) query['customer.passportInfo.passportNumber'] = passportNumber;
+//       if (destinationCountry) query['applicationDetails.visaInfo.destinationCountry'] = destinationCountry;
+//       if (visaType) query['applicationDetails.visaInfo.visaType'] = visaType;
+//       if (status) query['applicationDetails.applicationStatus.current'] = status;
+      
+//       if (startDate || endDate) {
+//         query.createdAt = {};
+//         if (startDate) query.createdAt.$gte = new Date(startDate);
+//         if (endDate) query.createdAt.$lte = new Date(endDate);
+//       }
+
+//       const applications = await VisaService.find(query)
+//         .sort({ createdAt: -1 })
+//         .limit(50);
+
+//       res.json({
+//         success: true,
+//         data: applications,
+//         count: applications.length
+//       });
+//     } catch (error) {
+//       console.error('Search applications error:', error);
+//       res.status(500).json({
+//         success: false,
+//         message: 'Failed to search applications',
+//         error: error.message
+//       });
+//     }
+//   },
+
+//   // Get application by tracking number
+//   getApplicationByTrackingNumber: async (req, res) => {
+//     try {
+//       const { trackingNumber } = req.params;
+
+//       const application = await VisaService.findOne({ trackingNumber });
+
+//       if (!application) {
+//         return res.status(404).json({
+//           success: false,
+//           message: 'Application not found'
+//         });
+//       }
+
+//       res.json({
+//         success: true,
+//         data: application
+//       });
+//     } catch (error) {
+//       console.error('Get application error:', error);
+//       res.status(500).json({
+//         success: false,
+//         message: 'Failed to get application',
+//         error: error.message
+//       });
+//     }
+//   },
+
+//   // Get applications by status
+//   getApplicationsByStatus: async (req, res) => {
+//     try {
+//       const { status } = req.params;
+//       const { limit = 20, page = 1 } = req.query;
+
+//       const skip = (page - 1) * limit;
+
+//       const [applications, total] = await Promise.all([
+//         VisaService.find({ 'applicationDetails.applicationStatus.current': status })
+//           .sort({ updatedAt: -1 })
+//           .skip(skip)
+//           .limit(parseInt(limit)),
+//         VisaService.countDocuments({ 'applicationDetails.applicationStatus.current': status })
+//       ]);
+
+//       res.json({
+//         success: true,
+//         data: applications,
+//         pagination: {
+//           page: parseInt(page),
+//           limit: parseInt(limit),
+//           total,
+//           pages: Math.ceil(total / limit)
+//         }
+//       });
+//     } catch (error) {
+//       console.error('Get applications by status error:', error);
+//       res.status(500).json({
+//         success: false,
+//         message: 'Failed to get applications by status',
+//         error: error.message
+//       });
+//     }
+//   },
+
+//   // Get applications by email
+//   getApplicationsByEmail: async (req, res) => {
+//     try {
+//       const { email } = req.params;
+
+//       const applications = await VisaService.find({ 'customer.contactInfo.email': email })
+//         .sort({ createdAt: -1 });
+
+//       res.json({
+//         success: true,
+//         data: applications,
+//         count: applications.length
+//       });
+//     } catch (error) {
+//       console.error('Get applications by email error:', error);
+//       res.status(500).json({
+//         success: false,
+//         message: 'Failed to get applications by email',
+//         error: error.message
+//       });
+//     }
+//   }
+// };
+
+// // Export all controllers
+// module.exports = {
+//   BookingController,
+//   ApplicationController,
+//   StatisticsController,
+//   QueryController,
+  
+//   // Utility functions for direct use if needed
+//   sendEmail,
+//   uploadToCloudinary,
+//   deleteFromCloudinary
+// };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+const VisaService = require('../models/Visa');
+const mongoose = require('mongoose');
 const nodemailer = require('nodemailer');
+const cloudinary = require('cloudinary').v2;
 
-/* ===========================
-   CONSTANTS & CONFIGURATION
-=========================== */
+// Configure Cloudinary
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET
+});
 
-const VISA_STATUS = {
-  PENDING: 'pending',
-  APPROVED: 'approved',
-  REJECTED: 'rejected',
-  IN_REVIEW: 'in-review'
+// Email Service Configuration
+const emailTransporter = nodemailer.createTransport({
+  host: process.env.SMTP_HOST || 'smtp.gmail.com',
+  port: process.env.SMTP_PORT || 587,
+  secure: process.env.SMTP_SECURE === 'true',
+  auth: {
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASS
+  }
+});
+
+// Email Templates
+const emailTemplates = {
+  bookingConfirmation: (bookingData) => ({
+    subject: `Booking Confirmation - ${bookingData.serviceId}`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #2c3e50;">Visa Consultation Booking Confirmed</h2>
+        <p>Dear ${bookingData.customer.personalInfo.fullName},</p>
+        <p>Your visa consultation booking has been confirmed with the following details:</p>
+        
+        <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0;">
+          <h3 style="color: #3498db;">Booking Details</h3>
+          <p><strong>Booking ID:</strong> ${bookingData.serviceId}</p>
+          <p><strong>Appointment Date:</strong> ${new Date(bookingData.bookingDetails.appointment.date).toLocaleDateString()}</p>
+          <p><strong>Time Slot:</strong> ${bookingData.bookingDetails.appointment.timeSlot}</p>
+          <p><strong>Mode:</strong> ${bookingData.bookingDetails.appointment.mode}</p>
+          ${bookingData.bookingDetails.appointment.location ? `<p><strong>Location:</strong> ${bookingData.bookingDetails.appointment.location}</p>` : ''}
+        </div>
+        
+        <p>Please make sure to prepare the following for your appointment:</p>
+        <ul>
+          <li>Original Passport</li>
+          <li>Passport-sized photographs</li>
+          <li>Previous visa documents (if any)</li>
+        </ul>
+        
+        <p>If you need to reschedule or cancel, please contact us at least 24 hours in advance.</p>
+        
+        <hr style="margin: 30px 0;">
+        <p style="color: #7f8c8d; font-size: 12px;">
+          This is an automated email. Please do not reply to this address.
+        </p>
+      </div>
+    `
+  }),
+
+  applicationSubmitted: (applicationData) => ({
+    subject: `Visa Application Submitted - ${applicationData.trackingNumber}`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #2c3e50;">Visa Application Submitted</h2>
+        <p>Dear ${applicationData.customer.personalInfo.fullName},</p>
+        <p>Your visa application has been successfully submitted with the following details:</p>
+        
+        <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0;">
+          <h3 style="color: #3498db;">Application Details</h3>
+          <p><strong>Tracking Number:</strong> ${applicationData.trackingNumber}</p>
+          <p><strong>Destination:</strong> ${applicationData.applicationDetails.visaInfo.destinationCountry}</p>
+          <p><strong>Visa Type:</strong> ${applicationData.applicationDetails.visaInfo.visaType}</p>
+          <p><strong>Current Status:</strong> ${applicationData.applicationDetails.applicationStatus.current}</p>
+          <p><strong>Estimated Processing Time:</strong> ${applicationData.applicationDetails.servicePackage.processingTime}</p>
+        </div>
+        
+        <p>You can track your application status using your tracking number on our website.</p>
+        <p>We will notify you via email when there are any updates to your application.</p>
+        
+        <hr style="margin: 30px 0;">
+        <p style="color: #7f8c8d; font-size: 12px;">
+          This is an automated email. Please do not reply to this address.
+        </p>
+      </div>
+    `
+  }),
+
+  statusUpdate: (applicationData, newStatus) => ({
+    subject: `Status Update - ${applicationData.trackingNumber}`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #2c3e50;">Application Status Update</h2>
+        <p>Dear ${applicationData.customer.personalInfo.fullName},</p>
+        <p>The status of your visa application has been updated:</p>
+        
+        <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0;">
+          <h3 style="color: #3498db;">Updated Status</h3>
+          <p><strong>Tracking Number:</strong> ${applicationData.trackingNumber}</p>
+          <p><strong>New Status:</strong> ${newStatus}</p>
+          <p><strong>Updated Date:</strong> ${new Date().toLocaleDateString()}</p>
+        </div>
+        
+        <p>Next Steps: ${applicationData.nextActionRequired || 'No action required at this time'}</p>
+        
+        <p>If you have any questions, please contact our support team.</p>
+        
+        <hr style="margin: 30px 0;">
+        <p style="color: #7f8c8d; font-size: 12px;">
+          This is an automated email. Please do not reply to this address.
+        </p>
+      </div>
+    `
+  }),
+
+  paymentConfirmation: (applicationData, paymentDetails) => ({
+    subject: `Payment Received - ${applicationData.trackingNumber}`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #2c3e50;">Payment Confirmation</h2>
+        <p>Dear ${applicationData.customer.personalInfo.fullName},</p>
+        <p>We have received your payment for visa application services:</p>
+        
+        <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0;">
+          <h3 style="color: #3498db;">Payment Details</h3>
+          <p><strong>Transaction ID:</strong> ${paymentDetails.transactionId}</p>
+          <p><strong>Amount Paid:</strong> ${paymentDetails.amount} ${applicationData.applicationDetails.fees.currency}</p>
+          <p><strong>Payment Method:</strong> ${paymentDetails.method}</p>
+          <p><strong>Payment Date:</strong> ${new Date(paymentDetails.date).toLocaleDateString()}</p>
+          <p><strong>Balance Due:</strong> ${applicationData.balanceDue || 0} ${applicationData.applicationDetails.fees.currency}</p>
+        </div>
+        
+        <p>Your application will now proceed to the next stage.</p>
+        
+        <hr style="margin: 30px 0;">
+        <p style="color: #7f8c8d; font-size: 12px;">
+          This is an automated email. Please do not reply to this address.
+        </p>
+      </div>
+    `
+  }),
+
+  documentUploadConfirmation: (applicationData, documentType) => ({
+    subject: `Document Received - ${applicationData.trackingNumber}`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #2c3e50;">Document Upload Confirmation</h2>
+        <p>Dear ${applicationData.customer.personalInfo.fullName},</p>
+        <p>We have successfully received your ${documentType} for visa application:</p>
+        
+        <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0;">
+          <h3 style="color: #3498db;">Upload Details</h3>
+          <p><strong>Tracking Number:</strong> ${applicationData.trackingNumber}</p>
+          <p><strong>Document Type:</strong> ${documentType}</p>
+          <p><strong>Upload Date:</strong> ${new Date().toLocaleDateString()}</p>
+          <p><strong>Documents Uploaded:</strong> ${applicationData.totalDocuments || 0}</p>
+          <p><strong>Documents Verified:</strong> ${applicationData.verifiedDocuments || 0}</p>
+        </div>
+        
+        <p>Our team will review your document and update the verification status.</p>
+        
+        <hr style="margin: 30px 0;">
+        <p style="color: #7f8c8d; font-size: 12px;">
+          This is an automated email. Please do not reply to this address.
+        </p>
+      </div>
+    `
+  })
 };
 
-const STATUS_TRANSITIONS = {
-  [VISA_STATUS.PENDING]: [VISA_STATUS.IN_REVIEW, VISA_STATUS.REJECTED],
-  [VISA_STATUS.IN_REVIEW]: [VISA_STATUS.APPROVED, VISA_STATUS.REJECTED, VISA_STATUS.PENDING],
-  [VISA_STATUS.APPROVED]: [], // Terminal state
-  [VISA_STATUS.REJECTED]: [VISA_STATUS.IN_REVIEW] // Allow re-review
+// Helper function to send emails
+const sendEmail = async (to, template, data) => {
+  try {
+    const emailTemplate = emailTemplates[template](data);
+    const mailOptions = {
+      from: process.env.EMAIL_FROM || 'visa-services@example.com',
+      to,
+      subject: emailTemplate.subject,
+      html: emailTemplate.html
+    };
+
+    await emailTransporter.sendMail(mailOptions);
+    return { success: true, message: 'Email sent successfully' };
+  } catch (error) {
+    console.error('Email sending error:', error);
+    return { success: false, message: 'Failed to send email', error: error.message };
+  }
 };
 
-/* ===========================
-   EMAIL SERVICE
-=========================== */
+// Helper function to upload to Cloudinary
+const uploadToCloudinary = async (file, folder = 'visa_documents') => {
+  try {
+    const result = await cloudinary.uploader.upload(file.path || file.buffer.toString('base64'), {
+      folder: folder,
+      resource_type: 'auto',
+      transformation: [
+        { quality: 'auto:good' },
+        { fetch_format: 'auto' }
+      ]
+    });
 
-class EmailService {
-  constructor() {
-    this.transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST || 'smtp.gmail.com',
-      port: process.env.SMTP_PORT || 587,
-      secure: false,
-      auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS
+    return {
+      success: true,
+      cloudinaryUrl: result.secure_url,
+      publicId: result.public_id,
+      originalName: file.originalname
+    };
+  } catch (error) {
+    console.error('Cloudinary upload error:', error);
+    return { success: false, message: 'Failed to upload to Cloudinary', error: error.message };
+  }
+};
+
+// Helper function to delete from Cloudinary
+const deleteFromCloudinary = async (publicId) => {
+  try {
+    await cloudinary.uploader.destroy(publicId);
+    return { success: true, message: 'File deleted from Cloudinary' };
+  } catch (error) {
+    console.error('Cloudinary delete error:', error);
+    return { success: false, message: 'Failed to delete from Cloudinary', error: error.message };
+  }
+};
+
+// Statistics Helper Functions
+const calculateStatistics = async (filters = {}) => {
+  try {
+    const matchStage = {};
+    
+    // Apply filters
+    if (filters.startDate && filters.endDate) {
+      matchStage.createdAt = {
+        $gte: new Date(filters.startDate),
+        $lte: new Date(filters.endDate)
+      };
+    }
+    
+    if (filters.agentId) {
+      matchStage['internal.assignedTo.agentId'] = new mongoose.Types.ObjectId(filters.agentId);
+    }
+    
+    if (filters.destinationCountry) {
+      matchStage['applicationDetails.visaInfo.destinationCountry'] = filters.destinationCountry;
+    }
+    
+    if (filters.visaType) {
+      matchStage['applicationDetails.visaInfo.visaType'] = filters.visaType;
+    }
+
+    const stats = await VisaService.aggregate([
+      { $match: matchStage },
+      {
+        $facet: {
+          // Overall counts
+          overview: [
+            {
+              $group: {
+                _id: null,
+                totalBookings: {
+                  $sum: { $cond: [{ $eq: ['$serviceType', 'booking'] }, 1, 0] }
+                },
+                totalApplications: {
+                  $sum: { $cond: [{ $eq: ['$serviceType', 'application'] }, 1, 0] }
+                },
+                totalCombined: {
+                  $sum: { $cond: [{ $eq: ['$serviceType', 'combined'] }, 1, 0] }
+                },
+                totalRevenue: {
+                  $sum: {
+                    $add: [
+                      '$bookingDetails.bookingAmount',
+                      '$applicationDetails.fees.totalAmount'
+                    ]
+                  }
+                },
+                totalPendingPayments: {
+                  $sum: {
+                    $cond: [
+                      {
+                        $in: [
+                          '$applicationDetails.payment.status',
+                          ['pending', 'partial']
+                        ]
+                      },
+                      '$applicationDetails.fees.totalAmount',
+                      0
+                    ]
+                  }
+                }
+              }
+            }
+          ],
+
+          // Status breakdown
+          statusBreakdown: [
+            {
+              $group: {
+                _id: '$applicationDetails.applicationStatus.current',
+                count: { $sum: 1 },
+                averageProcessingDays: {
+                  $avg: {
+                    $cond: [
+                      '$applicationDetails.applicationStatus.actualCompletionDate',
+                      {
+                        $divide: [
+                          {
+                            $subtract: [
+                              '$applicationDetails.applicationStatus.actualCompletionDate',
+                              '$applicationDetails.applicationStatus.submittedAt'
+                            ]
+                          },
+                          1000 * 60 * 60 * 24
+                        ]
+                      },
+                      null
+                    ]
+                  }
+                }
+              }
+            },
+            { $sort: { count: -1 } }
+          ],
+
+          // Destination country breakdown
+          destinationBreakdown: [
+            {
+              $group: {
+                _id: '$applicationDetails.visaInfo.destinationCountry',
+                count: { $sum: 1 },
+                approved: {
+                  $sum: {
+                    $cond: [
+                      { $eq: ['$applicationDetails.applicationStatus.current', 'approved'] },
+                      1,
+                      0
+                    ]
+                  }
+                },
+                rejected: {
+                  $sum: {
+                    $cond: [
+                      { $eq: ['$applicationDetails.applicationStatus.current', 'rejected'] },
+                      1,
+                      0
+                    ]
+                  }
+                },
+                avgProcessingTime: {
+                  $avg: {
+                    $cond: [
+                      '$applicationDetails.applicationStatus.actualCompletionDate',
+                      {
+                        $divide: [
+                          {
+                            $subtract: [
+                              '$applicationDetails.applicationStatus.actualCompletionDate',
+                              '$applicationDetails.applicationStatus.submittedAt'
+                            ]
+                          },
+                          1000 * 60 * 60 * 24
+                        ]
+                      },
+                      null
+                    ]
+                  }
+                }
+              }
+            },
+            { $sort: { count: -1 } },
+            { $limit: 10 }
+          ],
+
+          // Visa type breakdown
+          visaTypeBreakdown: [
+            {
+              $group: {
+                _id: '$applicationDetails.visaInfo.visaType',
+                count: { $sum: 1 },
+                successRate: {
+                  $avg: {
+                    $cond: [
+                      { $eq: ['$applicationDetails.applicationStatus.current', 'approved'] },
+                      100,
+                      0
+                    ]
+                  }
+                },
+                avgFee: { $avg: '$applicationDetails.fees.totalAmount' }
+              }
+            },
+            { $sort: { count: -1 } }
+          ],
+
+          // Monthly trends
+          monthlyTrends: [
+            {
+              $group: {
+                _id: {
+                  year: { $year: '$createdAt' },
+                  month: { $month: '$createdAt' }
+                },
+                count: { $sum: 1 },
+                revenue: {
+                  $sum: {
+                    $add: [
+                      '$bookingDetails.bookingAmount',
+                      '$applicationDetails.fees.totalAmount'
+                    ]
+                  }
+                },
+                applications: {
+                  $sum: { $cond: [{ $ne: ['$serviceType', 'booking'] }, 1, 0] }
+                }
+              }
+            },
+            { $sort: { '_id.year': 1, '_id.month': 1 } },
+            { $limit: 12 }
+          ],
+
+          // Agent performance
+          agentPerformance: [
+            {
+              $match: {
+                'internal.assignedTo.agentId': { $exists: true, $ne: null }
+              }
+            },
+            {
+              $group: {
+                _id: '$internal.assignedTo.agentId',
+                agentName: { $first: '$internal.assignedTo.agentName' },
+                totalAssigned: { $sum: 1 },
+                completed: {
+                  $sum: {
+                    $cond: [
+                      {
+                        $in: [
+                          '$applicationDetails.applicationStatus.current',
+                          ['approved', 'visa-printed', 'collected']
+                        ]
+                      },
+                      1,
+                      0
+                    ]
+                  }
+                },
+                pending: {
+                  $sum: {
+                    $cond: [
+                      {
+                        $in: [
+                          '$applicationDetails.applicationStatus.current',
+                          ['pending', 'processing']
+                        ]
+                      },
+                      1,
+                      0
+                    ]
+                  }
+                },
+                avgCompletionTime: {
+                  $avg: {
+                    $cond: [
+                      '$applicationDetails.applicationStatus.actualCompletionDate',
+                      {
+                        $divide: [
+                          {
+                            $subtract: [
+                              '$applicationDetails.applicationStatus.actualCompletionDate',
+                              '$createdAt'
+                            ]
+                          },
+                          1000 * 60 * 60 * 24
+                        ]
+                      },
+                      null
+                    ]
+                  }
+                },
+                totalRevenue: {
+                  $sum: '$applicationDetails.fees.totalAmount'
+                }
+              }
+            },
+            { $sort: { totalAssigned: -1 } }
+          ],
+
+          // Payment statistics
+          paymentStats: [
+            {
+              $group: {
+                _id: '$applicationDetails.payment.status',
+                count: { $sum: 1 },
+                totalAmount: { $sum: '$applicationDetails.fees.totalAmount' },
+                totalCollected: { $sum: '$applicationDetails.payment.amountPaid' },
+                avgCollectionTime: {
+                  $avg: {
+                    $cond: [
+                      '$applicationDetails.payment.paymentHistory',
+                      {
+                        $divide: [
+                          {
+                            $subtract: [
+                              { $arrayElemAt: ['$applicationDetails.payment.paymentHistory.date', -1] },
+                              '$createdAt'
+                            ]
+                          },
+                          1000 * 60 * 60 * 24
+                        ]
+                      },
+                      null
+                    ]
+                  }
+                }
+              }
+            }
+          ],
+
+          // Document statistics
+          documentStats: [
+            {
+              $project: {
+                totalDocuments: {
+                  $add: [
+                    { $cond: [{ $ifNull: ['$documents.photograph.cloudinaryUrl', false] }, 1, 0] },
+                    { $cond: [{ $ifNull: ['$documents.passportCopy.cloudinaryUrl', false] }, 1, 0] },
+                    { $size: { $ifNull: ['$documents.financialDocuments', []] } },
+                    { $size: { $ifNull: ['$documents.travelDocuments', []] } },
+                    { $size: { $ifNull: ['$documents.supportingDocuments', []] } },
+                    { $size: { $ifNull: ['$documents.otherDocuments', []] } }
+                  ]
+                },
+                verifiedDocuments: {
+                  $add: [
+                    { $cond: ['$documents.photograph.verified', 1, 0] },
+                    { $cond: ['$documents.passportCopy.verified', 1, 0] },
+                    {
+                      $size: {
+                        $filter: {
+                          input: { $ifNull: ['$documents.financialDocuments', []] },
+                          as: 'doc',
+                          cond: '$$doc.verified'
+                        }
+                      }
+                    },
+                    {
+                      $size: {
+                        $filter: {
+                          input: { $ifNull: ['$documents.travelDocuments', []] },
+                          as: 'doc',
+                          cond: '$$doc.verified'
+                        }
+                      }
+                    },
+                    {
+                      $size: {
+                        $filter: {
+                          input: { $ifNull: ['$documents.supportingDocuments', []] },
+                          as: 'doc',
+                          cond: '$$doc.verified'
+                        }
+                      }
+                    },
+                    {
+                      $size: {
+                        $filter: {
+                          input: { $ifNull: ['$documents.otherDocuments', []] },
+                          as: 'doc',
+                          cond: '$$doc.verified'
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              $group: {
+                _id: null,
+                avgDocumentsPerApplication: { $avg: '$totalDocuments' },
+                avgVerificationRate: {
+                  $avg: {
+                    $cond: [
+                      { $gt: ['$totalDocuments', 0] },
+                      { $divide: ['$verifiedDocuments', '$totalDocuments'] },
+                      0
+                    ]
+                  }
+                },
+                applicationsWithAllDocuments: {
+                  $sum: {
+                    $cond: [
+                      { $gte: ['$totalDocuments', 5] },
+                      1,
+                      0
+                    ]
+                  }
+                }
+              }
+            }
+          ]
+        }
+      }
+    ]);
+
+    return stats[0]; // Return the first element of the facet result
+  } catch (error) {
+    console.error('Statistics calculation error:', error);
+    throw error;
+  }
+};
+
+// ========== BOOKING CONTROLLERS ==========
+
+const BookingController = {
+  // Create a new booking
+// controllers/visaServiceController.js
+
+//  createBooking : async (req, res) => {
+//   try {
+//     let { customer, bookingDetails = {}, applicationDetails = {}, internal = {} } = req.body;
+
+//     // ======= VALIDATE CUSTOMER REQUIRED FIELDS =======
+//     if (!customer?.personalInfo?.fullName || !customer?.contactInfo?.email) {
+//       return res.status(400).json({
+//         success: false,
+//         message: 'Full name and email are required'
+//       });
+//     }
+
+//     // ======= HANDLE previousVisaDetails =======
+//     if (customer.passportInfo?.previousVisaDetails) {
+//       // If previousVisaDetails is a string, parse it
+//       if (typeof customer.passportInfo.previousVisaDetails === 'string') {
+//         try {
+//           customer.passportInfo.previousVisaDetails = JSON.parse(customer.passportInfo.previousVisaDetails);
+//         } catch (err) {
+//           // If parsing fails, just make it an empty array
+//           customer.passportInfo.previousVisaDetails = [];
+//         }
+//       }
+//       // Ensure it’s an array
+//       if (!Array.isArray(customer.passportInfo.previousVisaDetails)) {
+//         customer.passportInfo.previousVisaDetails = [];
+//       }
+//     } else {
+//       customer.passportInfo = customer.passportInfo || {};
+//       customer.passportInfo.previousVisaDetails = [];
+//     }
+
+//     // ======= SET DEFAULTS FOR MISSING FIELDS =======
+//     const personalInfoDefaults = {
+//       dateOfBirth: new Date('1990-01-01'),
+//       gender: 'prefer-not-to-say',
+//       nationality: 'Unknown',
+//       countryOfResidence: 'Unknown',
+//       maritalStatus: 'single',
+//       occupation: '',
+//       employer: ''
+//     };
+//     customer.personalInfo = { ...personalInfoDefaults, ...customer.personalInfo };
+
+//     const contactInfoDefaults = {
+//       primaryPhone: '',
+//       secondaryPhone: '',
+//       whatsappNumber: '',
+//       address: {},
+//       emergencyContact: {}
+//     };
+//     customer.contactInfo = { ...contactInfoDefaults, ...customer.contactInfo };
+
+//     const passportInfoDefaults = {
+//       passportNumber: '',
+//       issuingCountry: '',
+//       issueDate: new Date('2010-01-01'),
+//       expiryDate: new Date('2030-01-01'),
+//       placeOfIssue: '',
+//       hasPreviousVisas: false
+//     };
+//     customer.passportInfo = { ...passportInfoDefaults, ...customer.passportInfo };
+
+//     applicationDetails.visaInfo = {
+//       destinationCountry: 'Unknown',
+//       visaType: 'Tourist',
+//       purposeOfTravel: 'Tourism',
+//       category: 'short-term',
+//       entriesRequested: 'Single',
+//       travelCompanions: [],
+//       travelDates: {},
+//       ...(applicationDetails.visaInfo || {})
+//     };
+
+//     bookingDetails.type = bookingDetails.type || 'consultation';
+//     bookingDetails.serviceRequested = bookingDetails.serviceRequested || 'tourist-visa';
+//     bookingDetails.bookingStatus = bookingDetails.bookingStatus || 'pending';
+//     bookingDetails.appointment = bookingDetails.appointment || {};
+
+//     // ======= CREATE BOOKING =======
+//     const booking = new VisaService({
+//       serviceType: 'booking',
+//       serviceStage: 'booking-pending',
+//       customer,
+//       bookingDetails,
+//       applicationDetails,
+//       internal
+//     });
+
+//     await booking.save();
+
+//     // ======= SEND CONFIRMATION EMAIL =======
+//     await sendEmail(customer.contactInfo.email, 'bookingConfirmation', booking);
+
+//     // ======= RESPONSE =======
+//     res.status(201).json({
+//       success: true,
+//       message: 'Booking created successfully',
+//       data: {
+//         bookingId: booking.serviceId,
+//         appointmentDate: booking.bookingDetails.appointment?.date,
+//         nextAction: booking.nextActionRequired
+//       }
+//     });
+
+//   } catch (error) {
+//     console.error('Create booking error:', error);
+//     res.status(500).json({
+//       success: false,
+//       message: 'Failed to create booking',
+//       error: error.message
+//     });
+//   }
+// },
+// createBooking : async (req, res) => {
+//   try {
+//     const {
+//       customer,
+//       bookingDetails,
+//       applicationDetails
+//     } = req.body;
+
+//     // Ensure previousVisaDetails is array of objects
+//     if (customer?.passportInfo?.previousVisaDetails && !Array.isArray(customer.passportInfo.previousVisaDetails)) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "previousVisaDetails must be an array of objects"
+//       });
+//     }
+
+//     const newBooking = new VisaService({
+//       serviceType: 'booking',
+//       serviceStage: 'booking-pending',
+//       customer,
+//       bookingDetails,
+//       applicationDetails
+//     });
+
+//     // Save the booking (pre-save hook ensures serviceId)
+//     await newBooking.save();
+
+//     res.status(201).json({
+//       success: true,
+//       message: "Booking created successfully",
+//       booking: newBooking
+//     });
+
+//   } catch (error) {
+//     console.error("Create booking error:", error);
+//     res.status(500).json({
+//       success: false,
+//       message: "Failed to create booking",
+//       error: error.message
+//     });
+//   }
+// },
+
+createBooking: async (req, res, next) => {
+  try {
+    const {
+      customer,
+      bookingDetails,
+      applicationDetails,
+      internal
+    } = req.body;
+
+    // Validate request body
+    if (!customer) {
+      return res.status(400).json({
+        success: false,
+        message: 'Customer information is required'
+      });
+    }
+
+    // Validate required customer fields
+    const requiredCustomerFields = [
+      { path: 'customer.personalInfo.fullName', message: 'Customer full name is required' },
+      { path: 'customer.personalInfo.dateOfBirth', message: 'Customer date of birth is required' },
+      { path: 'customer.personalInfo.nationality', message: 'Customer nationality is required' },
+      { path: 'customer.personalInfo.countryOfResidence', message: 'Customer country of residence is required' },
+      { path: 'customer.contactInfo.email', message: 'Customer email is required' },
+      { path: 'customer.contactInfo.primaryPhone', message: 'Customer primary phone is required' }
+    ];
+
+    for (const field of requiredCustomerFields) {
+      const value = field.path.split('.').reduce((obj, key) => obj?.[key], req.body);
+      if (!value) {
+        return res.status(400).json({
+          success: false,
+          message: field.message
+        });
+      }
+    }
+
+    // Validate email format
+    const emailRegex = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/;
+    if (!emailRegex.test(customer.contactInfo.email)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide a valid email address'
+      });
+    }
+
+    // Ensure previousVisaDetails is array of objects
+    if (customer?.passportInfo?.previousVisaDetails) {
+      if (!Array.isArray(customer.passportInfo.previousVisaDetails)) {
+        return res.status(400).json({
+          success: false,
+          message: 'previousVisaDetails must be an array of objects'
+        });
+      }
+      
+      // Validate each visa detail object
+      for (const visaDetail of customer.passportInfo.previousVisaDetails) {
+        if (!visaDetail.country || !visaDetail.type) {
+          return res.status(400).json({
+            success: false,
+            message: 'Each visa detail must have country and type'
+          });
+        }
+      }
+    }
+
+    // Validate bookingDetails if provided
+    if (bookingDetails) {
+      if (bookingDetails.bookingAmount && (isNaN(bookingDetails.bookingAmount) || bookingDetails.bookingAmount < 0)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Booking amount must be a positive number'
+        });
+      }
+
+      // Validate appointment date if provided
+      if (bookingDetails.appointment?.date) {
+        const appointmentDate = new Date(bookingDetails.appointment.date);
+        if (isNaN(appointmentDate.getTime())) {
+          return res.status(400).json({
+            success: false,
+            message: 'Invalid appointment date format'
+          });
+        }
+        
+        // Don't allow past dates for appointments
+        const now = new Date();
+        if (appointmentDate < now) {
+          return res.status(400).json({
+            success: false,
+            message: 'Appointment date cannot be in the past'
+          });
+        }
+      }
+    }
+
+    // Prepare booking data
+    const bookingData = {
+      serviceType: 'booking',
+      serviceStage: 'booking-pending',
+      customer: {
+        personalInfo: {
+          fullName: customer.personalInfo.fullName.trim(),
+          dateOfBirth: new Date(customer.personalInfo.dateOfBirth),
+          gender: customer.personalInfo.gender || 'prefer-not-to-say',
+          nationality: customer.personalInfo.nationality,
+          countryOfResidence: customer.personalInfo.countryOfResidence,
+          maritalStatus: customer.personalInfo.maritalStatus || 'single',
+          occupation: customer.personalInfo.occupation,
+          employer: customer.personalInfo.employer
+        },
+        contactInfo: {
+          email: customer.contactInfo.email.toLowerCase().trim(),
+          primaryPhone: customer.contactInfo.primaryPhone,
+          secondaryPhone: customer.contactInfo.secondaryPhone,
+          whatsappNumber: customer.contactInfo.whatsappNumber,
+          address: customer.contactInfo.address,
+          emergencyContact: customer.contactInfo.emergencyContact
+        },
+        passportInfo: {
+          passportNumber: customer.passportInfo?.passportNumber,
+          issuingCountry: customer.passportInfo?.issuingCountry,
+          issueDate: customer.passportInfo?.issueDate ? new Date(customer.passportInfo.issueDate) : undefined,
+          expiryDate: customer.passportInfo?.expiryDate ? new Date(customer.passportInfo.expiryDate) : undefined,
+          placeOfIssue: customer.passportInfo?.placeOfIssue,
+          hasPreviousVisas: customer.passportInfo?.hasPreviousVisas || false,
+          previousVisaDetails: customer.passportInfo?.previousVisaDetails || []
+        }
+      },
+      bookingDetails: {
+        type: bookingDetails?.type || 'consultation',
+        serviceRequested: bookingDetails?.serviceRequested,
+        appointment: bookingDetails?.appointment ? {
+          date: bookingDetails.appointment.date ? new Date(bookingDetails.appointment.date) : undefined,
+          timeSlot: bookingDetails.appointment.timeSlot,
+          duration: bookingDetails.appointment.duration || 60,
+          mode: bookingDetails.appointment.mode || 'in-person',
+          location: bookingDetails.appointment.location,
+          address: bookingDetails.appointment.address,
+          confirmed: bookingDetails.appointment.confirmed || false,
+          attended: bookingDetails.appointment.attended || false,
+          notes: bookingDetails.appointment.notes
+        } : undefined,
+        bookingStatus: bookingDetails?.bookingStatus || 'pending',
+        bookingAmount: bookingDetails?.bookingAmount || 0,
+        bookingPayment: bookingDetails?.bookingPayment ? {
+          status: bookingDetails.bookingPayment.status || 'pending',
+          method: bookingDetails.bookingPayment.method,
+          transactionId: bookingDetails.bookingPayment.transactionId,
+          paidAt: bookingDetails.bookingPayment.paidAt ? new Date(bookingDetails.bookingPayment.paidAt) : undefined
+        } : undefined
+      },
+      applicationDetails: {
+        visaInfo: {
+          destinationCountry: 'Not Applicable',
+          visaType: 'Tourist',
+          purposeOfTravel: 'Not Applicable'
+        },
+        applicationStatus: {
+          current: 'not-started'
+        },
+        fees: {
+          totalAmount: 0,
+          currency: 'USD'
+        },
+        payment: {
+          status: 'pending',
+          amountPaid: 0
+        }
+      },
+      internal: {
+        assignedTo: internal?.assignedTo ? {
+          agentId: internal.assignedTo.agentId,
+          agentName: internal.assignedTo.agentName,
+          agentEmail: internal.assignedTo.agentEmail,
+          department: internal.assignedTo.department,
+          assignedAt: internal.assignedTo.assignedAt ? new Date(internal.assignedTo.assignedAt) : new Date(),
+          lastContacted: internal.assignedTo.lastContacted ? new Date(internal.assignedTo.lastContacted) : undefined
+        } : undefined,
+        priority: internal?.priority || 'normal',
+        source: internal?.source || 'website',
+        tags: internal?.tags || [],
+        notes: internal?.notes || [],
+        followUp: internal?.followUp
+      }
+    };
+
+    // If applicationDetails are provided in the request, merge them
+    if (applicationDetails) {
+      bookingData.applicationDetails = {
+        ...bookingData.applicationDetails,
+        servicePackage: applicationDetails.servicePackage,
+        embassyInfo: applicationDetails.embassyInfo,
+        visaIssuance: applicationDetails.visaIssuance
+      };
+    }
+
+    // Create the booking
+    const newBooking = new VisaService(bookingData);
+
+    // Save the booking
+    await newBooking.save();
+
+    // Send confirmation email (optional)
+    if (typeof sendEmail === 'function') {
+      try {
+        await sendEmail(
+          newBooking.customer.contactInfo.email,
+          'bookingConfirmation',
+          newBooking.toObject()
+        );
+      } catch (emailError) {
+        console.warn('Email sending failed, but booking was created:', emailError.message);
+      }
+    }
+
+    // Prepare response (exclude sensitive/unnecessary data)
+    const responseBooking = newBooking.toObject();
+    delete responseBooking.__v;
+    if (responseBooking.auditLog) delete responseBooking.auditLog;
+    if (responseBooking.communications) delete responseBooking.communications;
+    if (responseBooking.internal?.notes) delete responseBooking.internal.notes;
+
+    res.status(201).json({
+      success: true,
+      message: 'Booking created successfully',
+      data: {
+        booking: responseBooking,
+        nextSteps: [
+          'Confirm the appointment date and time',
+          'Share appointment details with the customer',
+          'Prepare consultation materials'
+        ],
+        trackingInfo: {
+          serviceId: newBooking.serviceId,
+          nextAction: newBooking.nextActionRequired,
+          status: newBooking.bookingDetails.bookingStatus
+        }
       }
     });
-  }
 
-  async sendStatusUpdateEmail(visa, oldStatus = null) {
-    const messages = {
-      [VISA_STATUS.APPROVED]: {
-        subject: '🎉 Visa Application Approved',
-        text: `Congratulations! Your ${visa.type} visa application (${visa.id}) has been approved.`
-      },
-      [VISA_STATUS.REJECTED]: {
-        subject: 'Visa Application Update',
-        text: `Your ${visa.type} visa application (${visa.id}) was not approved. Please contact our office for more information.`
-      },
-      [VISA_STATUS.IN_REVIEW]: {
-        subject: 'Visa Application Under Review',
-        text: `Your ${visa.type} visa application (${visa.id}) is currently under review. We will notify you once a decision is made.`
-      },
-      [VISA_STATUS.PENDING]: {
-        subject: 'Visa Application Received',
-        text: `We have received your ${visa.type} visa application (${visa.id}). It is now pending initial review.`
-      }
-    };
-
-    const template = messages[visa.status] || {
-      subject: 'Visa Application Update',
-      text: `There is an update on your ${visa.type} visa application (${visa.id}).`
-    };
-
-    return this.sendMail(
-      visa.email,
-      `${template.subject} - ${visa.id}`,
-      `Dear ${visa.applicant},\n\n${template.text}\n\nThank you,\nVisa Processing Team`
-    );
-  }
-
-  async sendMail(to, subject, text) {
-    try {
-      await this.transporter.sendMail({
-        from: process.env.SMTP_USER,
-        to,
-        subject,
-        text,
-        html: `<p>${text.replace(/\n/g, '<br>')}</p>`
-      });
-      return { success: true, message: 'Email sent successfully' };
-    } catch (err) {
-      console.error('Email error:', err);
-      return { success: false, message: 'Failed to send email' };
-    }
-  }
-}
-
-const emailService = new EmailService();
-
-/* ===========================
-   STATISTICS SERVICE
-=========================== */
-
-class StatisticsService {
-  async getOverallStatistics() {
-    const total = await Visa.countDocuments();
-
-    const counts = await Visa.aggregate([
-      { $group: { _id: '$status', count: { $sum: 1 } } }
-    ]);
-
-    const mapCount = status =>
-      counts.find(c => c._id === status)?.count || 0;
-
-    const pending = mapCount(VISA_STATUS.PENDING);
-    const approved = mapCount(VISA_STATUS.APPROVED);
-    const rejected = mapCount(VISA_STATUS.REJECTED);
-    const inReview = mapCount(VISA_STATUS.IN_REVIEW);
-
-    return {
-      total,
-      pending,
-      approved,
-      rejected,
-      inReview,
-      percentages: {
-        pending: total ? ((pending / total) * 100).toFixed(2) : 0,
-        approved: total ? ((approved / total) * 100).toFixed(2) : 0,
-        rejected: total ? ((rejected / total) * 100).toFixed(2) : 0,
-        inReview: total ? ((inReview / total) * 100).toFixed(2) : 0
-      },
-      byType: await this.groupByField('type'),
-      byPriority: await this.groupByField('priority'),
-      byCountry: await this.getTopCountries(),
-      monthlyStats: await this.getMonthlyStats()
-    };
-  }
-
-  async groupByField(field) {
-    return Visa.aggregate([
-      { $group: { _id: `$${field}`, count: { $sum: 1 } } },
-      { $sort: { count: -1 } }
-    ]);
-  }
-
-  async getTopCountries() {
-    return Visa.aggregate([
-      { $group: { _id: '$country', count: { $sum: 1 } } },
-      { $sort: { count: -1 } },
-      { $limit: 10 }
-    ]);
-  }
-
-  async getMonthlyStats() {
-    return Visa.aggregate([
-      {
-        $group: {
-          _id: {
-            year: { $year: '$createdAt' },
-            month: { $month: '$createdAt' }
-          },
-          count: { $sum: 1 },
-          approved: {
-            $sum: {
-              $cond: [{ $eq: ['$status', VISA_STATUS.APPROVED] }, 1, 0]
-            }
-          },
-          pending: {
-            $sum: {
-              $cond: [{ $eq: ['$status', VISA_STATUS.PENDING] }, 1, 0]
-            }
-          }
-        }
-      },
-      { $sort: { '_id.year': 1, '_id.month': 1 } }
-    ]);
-  }
-
-  async getRevenueStatistics() {
-    // Helper to parse amount string to number
-    const parseAmount = {
-      $toDouble: {
-        $substr: [
-          '$amount',
-          1,
-          { $subtract: [{ $strLenCP: '$amount' }, 1] }
-        ]
-      }
-    };
-
-    const [stats] = await Visa.aggregate([
-      {
-        $group: {
-          _id: null,
-          totalRevenue: { $sum: parseAmount },
-          avgRevenue: { $avg: parseAmount },
-          minRevenue: { $min: parseAmount },
-          maxRevenue: { $max: parseAmount }
-        }
-      }
-    ]);
-
-    return stats || {
-      totalRevenue: 0,
-      avgRevenue: 0,
-      minRevenue: 0,
-      maxRevenue: 0
-    };
-  }
-
-  async getStatusChangeHistory() {
-    return Visa.aggregate([
-      { $match: { statusHistory: { $exists: true, $ne: [] } } },
-      { $unwind: '$statusHistory' },
-      {
-        $group: {
-          _id: {
-            from: '$statusHistory.from',
-            to: '$statusHistory.to'
-          },
-          count: { $sum: 1 },
-          avgTimeHours: { $avg: '$statusHistory.timeInStatusHours' }
-        }
-      },
-      { $sort: { count: -1 } }
-    ]);
-  }
-}
-
-const statisticsService = new StatisticsService();
-
-/* ===========================
-   INVENTORY SERVICE
-=========================== */
-
-class InventoryService {
-  async getInventoryOverview() {
-    const inventory = await Visa.aggregate([
-      {
-        $group: {
-          _id: { status: '$status', type: '$type' },
-          count: { $sum: 1 },
-          documents: { $sum: '$documents' }
-        }
-      },
-      {
-        $group: {
-          _id: '$_id.status',
-          types: { $push: '$$ROOT' },
-          totalCount: { $sum: '$count' },
-          totalDocuments: { $sum: '$documents' }
-        }
-      }
-    ]);
-
-    const [documentStats] = await Visa.aggregate([
-      {
-        $group: {
-          _id: null,
-          totalDocuments: { $sum: '$documents' },
-          avgDocuments: { $avg: '$documents' },
-          maxDocuments: { $max: '$documents' },
-          minDocuments: { $min: '$documents' }
-        }
-      }
-    ]);
-
-    const recentApplications = await this.getRecentApplications(30);
-
-    return {
-      inventory,
-      documentStats: documentStats || {},
-      recentApplications
-    };
-  }
-
-  async getRecentApplications(days) {
-    const fromDate = new Date();
-    fromDate.setDate(fromDate.getDate() - days);
-
-    return Visa.aggregate([
-      { $match: { createdAt: { $gte: fromDate } } },
-      {
-        $group: {
-          _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } },
-          count: { $sum: 1 }
-        }
-      },
-      { $sort: { _id: 1 } }
-    ]);
-  }
-
-  async getStatusSummary() {
-    return Visa.aggregate([
-      {
-        $group: {
-          _id: '$status',
-          count: { $sum: 1 },
-          avgProcessingTime: { $avg: { $subtract: ['$updatedAt', '$createdAt'] } },
-          minDocuments: { $min: '$documents' },
-          maxDocuments: { $max: '$documents' }
-        }
-      },
-      { $sort: { count: -1 } }
-    ]);
-  }
-}
-
-const inventoryService = new InventoryService();
-
-/* ===========================
-   STATUS CHANGE FUNCTIONS
-=========================== */
-
-class StatusService {
-  static isValidTransition(fromStatus, toStatus) {
-    if (!fromStatus) return true; // New application
+  } catch (error) {
+    console.error('Create booking error:', error);
     
-    const allowedTransitions = STATUS_TRANSITIONS[fromStatus] || [];
-    return allowedTransitions.includes(toStatus);
-  }
-
-  static getStatusDisplayName(status) {
-    const displayNames = {
-      [VISA_STATUS.PENDING]: 'Pending',
-      [VISA_STATUS.IN_REVIEW]: 'In Review',
-      [VISA_STATUS.APPROVED]: 'Approved',
-      [VISA_STATUS.REJECTED]: 'Rejected'
-    };
-    return displayNames[status] || status;
-  }
-
-  static calculateTimeInStatus(oldStatusTimestamp) {
-    if (!oldStatusTimestamp) return 0;
-    const now = new Date();
-    const diffMs = now - new Date(oldStatusTimestamp);
-    return Math.round(diffMs / (1000 * 60 * 60)); // Convert to hours
-  }
-}
-
-/* ===========================
-   VISA CONTROLLER
-=========================== */
-
-class VisaController {
-  // CREATE VISA
-  async createVisa(req, res, next) {
-    try {
-      const year = new Date().getFullYear();
-      const count = await Visa.countDocuments();
-
-      const visaData = {
-        ...req.body,
-        id: req.body.id || `VISA-${year}-${String(count + 1).padStart(3, '0')}`,
-        status: VISA_STATUS.PENDING,
-        statusHistory: [{
-          from: null,
-          to: VISA_STATUS.PENDING,
-          changedAt: new Date(),
-          changedBy: req.user?.id || 'system'
-        }]
-      };
-
-      const visa = await Visa.create(visaData);
-      await emailService.sendStatusUpdateEmail(visa);
-
-      res.status(201).json({ success: true, data: visa });
-    } catch (err) {
-      next(err);
+    // Pass the error to the next middleware (error handler)
+    if (typeof next === 'function') {
+      next(error);
+    } else {
+      // Fallback error handling if next is not available
+      // Handle validation errors
+      if (error.name === 'ValidationError') {
+        const errors = {};
+        Object.keys(error.errors).forEach(key => {
+          errors[key] = error.errors[key].message;
+        });
+        
+        return res.status(400).json({
+          success: false,
+          message: 'Validation failed',
+          errors: errors
+        });
+      }
+      
+      // Handle duplicate key errors
+      if (error.code === 11000) {
+        const field = Object.keys(error.keyPattern)[0];
+        return res.status(400).json({
+          success: false,
+          message: `Duplicate value for ${field}`,
+          field: field,
+          value: error.keyValue[field]
+        });
+      }
+      
+      // Generic error
+      res.status(500).json({
+        success: false,
+        message: 'Failed to create booking',
+        error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+      });
     }
   }
+},
 
-  // GET ALL VISAS
-  async getAllVisas(req, res, next) {
+  // Update booking
+  updateBooking: async (req, res) => {
     try {
-      const {
-        status,
-        type,
-        country,
-        priority,
-        page = 1,
-        limit = 10,
-        sortBy = 'createdAt',
-        sortOrder = 'desc'
-      } = req.query;
+      const { bookingId } = req.params;
+      const updateData = req.body;
 
-      const filter = {};
-      if (status) filter.status = status;
-      if (type) filter.type = type;
-      if (country) filter.country = country;
-      if (priority) filter.priority = priority;
+      const booking = await VisaService.findOne({ serviceId: bookingId, serviceType: { $in: ['booking', 'combined'] } });
 
-      const sort = {};
-      sort[sortBy] = sortOrder === 'desc' ? -1 : 1;
+      if (!booking) {
+        return res.status(404).json({
+          success: false,
+          message: 'Booking not found'
+        });
+      }
 
-      const visas = await Visa.find(filter)
-        .sort(sort)
-        .skip((page - 1) * limit)
-        .limit(Number(limit));
+      // Update booking
+      Object.keys(updateData).forEach(key => {
+        if (key !== 'serviceId' && key !== 'trackingNumber') {
+          booking[key] = updateData[key];
+        }
+      });
 
-      const total = await Visa.countDocuments(filter);
+      await booking.save();
 
       res.json({
         success: true,
-        data: visas,
-        pagination: {
-          total,
-          page: Number(page),
-          limit: Number(limit),
-          pages: Math.ceil(total / limit)
+        message: 'Booking updated successfully',
+        data: booking
+      });
+    } catch (error) {
+      console.error('Update booking error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to update booking',
+        error: error.message
+      });
+    }
+  },
+
+  // Schedule appointment
+  scheduleAppointment: async (req, res) => {
+    try {
+      const { bookingId } = req.params;
+      const { appointmentData } = req.body;
+
+      const booking = await VisaService.findOne({ serviceId: bookingId, serviceType: { $in: ['booking', 'combined'] } });
+
+      if (!booking) {
+        return res.status(404).json({
+          success: false,
+          message: 'Booking not found'
+        });
+      }
+
+      // Schedule appointment using instance method
+      await booking.scheduleAppointment(appointmentData);
+
+      // Send confirmation email
+      await sendEmail(
+        booking.customer.contactInfo.email,
+        'bookingConfirmation',
+        booking
+      );
+
+      res.json({
+        success: true,
+        message: 'Appointment scheduled successfully',
+        data: {
+          appointmentDate: booking.bookingDetails.appointment.date,
+          timeSlot: booking.bookingDetails.appointment.timeSlot,
+          status: booking.bookingDetails.bookingStatus
         }
       });
-    } catch (err) {
-      next(err);
+    } catch (error) {
+      console.error('Schedule appointment error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to schedule appointment',
+        error: error.message
+      });
     }
-  }
+  },
 
-  // SEARCH VISAS
-  async searchVisas(req, res, next) {
+  // Convert booking to application
+  convertToApplication: async (req, res) => {
     try {
-      const { query } = req.query;
+      const { bookingId } = req.params;
+      const { applicationDetails } = req.body;
 
-      const visas = await Visa.find({
-        $or: [
-          { applicant: new RegExp(query, 'i') },
-          { id: new RegExp(query, 'i') },
-          { email: new RegExp(query, 'i') },
-          { country: new RegExp(query, 'i') },
-          { 'contact.phone': new RegExp(query, 'i') }
-        ]
-      }).limit(20);
+      const booking = await VisaService.findOne({ serviceId: bookingId });
 
-      res.json({ success: true, data: visas });
-    } catch (err) {
-      next(err);
-    }
-  }
-
-  // GET VISA BY ID
-  async getVisaById(req, res, next) {
-    try {
-      const visa = await Visa.findOne({ id: req.params.id });
-      if (!visa) {
-        return res.status(404).json({ success: false, message: 'Visa not found' });
-      }
-      res.json({ success: true, data: visa });
-    } catch (err) {
-      next(err);
-    }
-  }
-
-  // UPDATE VISA
-  async updateVisa(req, res, next) {
-    try {
-      const oldVisa = await Visa.findOne({ id: req.params.id });
-      if (!oldVisa) {
-        return res.status(404).json({ success: false, message: 'Visa not found' });
-      }
-
-      const visa = await Visa.findOneAndUpdate(
-        { id: req.params.id },
-        req.body,
-        { new: true, runValidators: true }
-      );
-
-      if (req.body.status && req.body.status !== oldVisa.status) {
-        await emailService.sendStatusUpdateEmail(visa, oldVisa.status);
-      }
-
-      res.json({ success: true, data: visa });
-    } catch (err) {
-      next(err);
-    }
-  }
-
-  // DELETE VISA
-  async deleteVisa(req, res, next) {
-    try {
-      const visa = await Visa.findOneAndDelete({ id: req.params.id });
-      if (!visa) {
-        return res.status(404).json({ success: false, message: 'Visa not found' });
-      }
-      res.json({ success: true, message: 'Visa deleted successfully' });
-    } catch (err) {
-      next(err);
-    }
-  }
-
-  // BULK UPDATE STATUS
-  async bulkUpdateStatus(req, res, next) {
-    try {
-      const { ids, status, reason } = req.body;
-
-      if (!Object.values(VISA_STATUS).includes(status)) {
-        return res.status(400).json({ 
-          success: false, 
-          message: 'Invalid status provided' 
-        });
-      }
-
-      const visas = await Visa.find({ id: { $in: ids } });
-      
-      // Check if all transitions are valid
-      const invalidTransitions = visas.filter(visa => 
-        !StatusService.isValidTransition(visa.status, status)
-      );
-
-      if (invalidTransitions.length > 0) {
-        return res.status(400).json({
+      if (!booking) {
+        return res.status(404).json({
           success: false,
-          message: `Cannot change status from ${invalidTransitions[0].status} to ${status} for some applications`
+          message: 'Booking not found'
         });
       }
 
-      const updatePromises = visas.map(async (visa) => {
-        const statusHistory = [
-          ...(visa.statusHistory || []),
-          {
-            from: visa.status,
-            to: status,
-            changedAt: new Date(),
-            changedBy: req.user?.id || 'system',
-            reason: reason,
-            timeInStatusHours: StatusService.calculateTimeInStatus(visa.updatedAt)
-          }
-        ];
+      // Update application details if provided
+      if (applicationDetails) {
+        booking.applicationDetails = { ...booking.applicationDetails, ...applicationDetails };
+      }
 
-        const updatedVisa = await Visa.findOneAndUpdate(
-          { id: visa.id },
-          { 
-            status, 
-            statusHistory,
-            updatedAt: new Date()
+      // Convert to application using instance method
+      await booking.convertToApplication();
+
+      // Send application submitted email
+      await sendEmail(
+        booking.customer.contactInfo.email,
+        'applicationSubmitted',
+        booking
+      );
+
+      res.json({
+        success: true,
+        message: 'Booking converted to application successfully',
+        data: {
+          trackingNumber: booking.trackingNumber,
+          applicationStatus: booking.applicationDetails.applicationStatus.current,
+          nextAction: booking.nextActionRequired
+        }
+      });
+    } catch (error) {
+      console.error('Convert to application error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to convert booking to application',
+        error: error.message
+      });
+    }
+  },
+
+  // Get all bookings with advanced filtering
+  getAllBookings: async (req, res) => {
+    try {
+      const {
+        page = 1,
+        limit = 20,
+        sortBy = 'createdAt',
+        sortOrder = 'desc',
+        status,
+        bookingType,
+        dateFrom,
+        dateTo,
+        customerName,
+        email,
+        agentId,
+        source,
+        hasAppointment,
+        confirmedOnly = false,
+        serviceType = 'booking'
+      } = req.query;
+
+      const skip = (parseInt(page) - 1) * parseInt(limit);
+      
+      // Build query for bookings only
+      const query = { serviceType: serviceType };
+      
+      // Apply filters
+      if (status) {
+        query['bookingDetails.bookingStatus'] = status;
+      }
+      
+      if (bookingType) {
+        query['bookingDetails.type'] = bookingType;
+      }
+      
+      if (dateFrom || dateTo) {
+        query.createdAt = {};
+        if (dateFrom) query.createdAt.$gte = new Date(dateFrom);
+        if (dateTo) query.createdAt.$lte = new Date(dateTo);
+      }
+      
+      if (customerName) {
+        query['customer.personalInfo.fullName'] = { 
+          $regex: customerName, 
+          $options: 'i' 
+        };
+      }
+      
+      if (email) {
+        query['customer.contactInfo.email'] = { 
+          $regex: email, 
+          $options: 'i' 
+        };
+      }
+      
+      if (agentId) {
+        query['internal.assignedTo.agentId'] = new mongoose.Types.ObjectId(agentId);
+      }
+      
+      if (source) {
+        query['internal.source'] = source;
+      }
+      
+      if (hasAppointment === 'true') {
+        query['bookingDetails.appointment.date'] = { $exists: true, $ne: null };
+      } else if (hasAppointment === 'false') {
+        query['bookingDetails.appointment.date'] = null;
+      }
+      
+      if (confirmedOnly === 'true') {
+        query['bookingDetails.bookingStatus'] = 'confirmed';
+        query['bookingDetails.appointment.confirmed'] = true;
+      }
+
+      // Determine sort order
+      const sort = {};
+      sort[sortBy] = sortOrder === 'asc' ? 1 : -1;
+
+      // Get bookings with pagination
+      const [bookings, total] = await Promise.all([
+        VisaService.find(query)
+          .sort(sort)
+          .skip(skip)
+          .limit(parseInt(limit))
+          .select('-documents -communications -statusHistory -auditLog')
+          .lean(),
+        VisaService.countDocuments(query)
+      ]);
+
+      // Calculate additional statistics for the current result set
+      const upcomingAppointments = bookings.filter(booking => 
+        booking.bookingDetails?.appointment?.date && 
+        new Date(booking.bookingDetails.appointment.date) > new Date()
+      ).length;
+
+      const confirmedAppointments = bookings.filter(booking => 
+        booking.bookingDetails?.appointment?.confirmed === true
+      ).length;
+
+      const totalRevenue = bookings.reduce((sum, booking) => 
+        sum + (booking.bookingDetails?.bookingAmount || 0), 0
+      );
+
+      res.json({
+        success: true,
+        data: {
+          bookings,
+          pagination: {
+            page: parseInt(page),
+            limit: parseInt(limit),
+            total,
+            totalPages: Math.ceil(total / parseInt(limit)),
+            hasNextPage: (page * limit) < total,
+            hasPrevPage: page > 1
           },
-          { new: true }
-        );
-
-        // Send email notification
-        await emailService.sendStatusUpdateEmail(updatedVisa, visa.status);
-        
-        return updatedVisa;
-      });
-
-      const updatedVisas = await Promise.all(updatePromises);
-
-      res.json({ 
-        success: true, 
-        message: `Updated ${updatedVisas.length} applications to ${status}`,
-        data: updatedVisas 
-      });
-    } catch (err) {
-      next(err);
-    }
-  }
-
-  // UPDATE SINGLE STATUS
-  async updateStatus(req, res, next) {
-    try {
-      const { id } = req.params;
-      const { status, reason } = req.body;
-
-      if (!Object.values(VISA_STATUS).includes(status)) {
-        return res.status(400).json({ 
-          success: false, 
-          message: 'Invalid status provided' 
-        });
-      }
-
-      const oldVisa = await Visa.findOne({ id });
-      if (!oldVisa) {
-        return res.status(404).json({ success: false, message: 'Visa not found' });
-      }
-
-      if (!StatusService.isValidTransition(oldVisa.status, status)) {
-        return res.status(400).json({
-          success: false,
-          message: `Cannot change status from ${oldVisa.status} to ${status}`
-        });
-      }
-
-      const statusHistory = [
-        ...(oldVisa.statusHistory || []),
-        {
-          from: oldVisa.status,
-          to: status,
-          changedAt: new Date(),
-          changedBy: req.user?.id || 'system',
-          reason: reason,
-          timeInStatusHours: StatusService.calculateTimeInStatus(oldVisa.updatedAt)
+          statistics: {
+            totalBookings: total,
+            upcomingAppointments,
+            confirmedAppointments,
+            pendingConfirmations: bookings.filter(b => b.bookingDetails?.bookingStatus === 'pending').length,
+            completedBookings: bookings.filter(b => b.bookingDetails?.bookingStatus === 'completed').length,
+            cancelledBookings: bookings.filter(b => b.bookingDetails?.bookingStatus === 'cancelled').length,
+            totalRevenue
+          },
+          filtersApplied: Object.keys(req.query).filter(key => 
+            !['page', 'limit', 'sortBy', 'sortOrder'].includes(key)
+          )
         }
-      ];
+      });
+    } catch (error) {
+      console.error('Get all bookings error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to retrieve bookings',
+        error: error.message
+      });
+    }
+  },
 
-      const visa = await Visa.findOneAndUpdate(
-        { id },
-        { 
-          status, 
-          statusHistory,
-          updatedAt: new Date()
+  // Get booking by ID
+  getBookingById: async (req, res) => {
+    try {
+      const { bookingId } = req.params;
+      
+      const booking = await VisaService.findOne({ 
+        serviceId: bookingId,
+        serviceType: { $in: ['booking', 'combined'] }
+      });
+
+      if (!booking) {
+        return res.status(404).json({
+          success: false,
+          message: 'Booking not found'
+        });
+      }
+
+      res.json({
+        success: true,
+        data: booking
+      });
+    } catch (error) {
+      console.error('Get booking by ID error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to retrieve booking',
+        error: error.message
+      });
+    }
+  },
+
+  // Get bookings by customer email
+  getBookingsByCustomerEmail: async (req, res) => {
+    try {
+      const { email } = req.params;
+      const { includeApplications = 'false' } = req.query;
+      
+      const query = { 'customer.contactInfo.email': email.toLowerCase() };
+      
+      if (includeApplications === 'false') {
+        query.serviceType = 'booking';
+      }
+
+      const bookings = await VisaService.find(query)
+        .sort({ createdAt: -1 })
+        .select('serviceId serviceType bookingDetails serviceStage createdAt')
+        .lean();
+
+      // Group bookings by status
+      const groupedByStatus = bookings.reduce((acc, booking) => {
+        const status = booking.bookingDetails?.bookingStatus || 'unknown';
+        if (!acc[status]) acc[status] = [];
+        acc[status].push(booking);
+        return acc;
+      }, {});
+
+      res.json({
+        success: true,
+        data: {
+          bookings,
+          customerEmail: email,
+          totalBookings: bookings.length,
+          groupedByStatus,
+          recentBookings: bookings.slice(0, 5),
+          upcomingAppointments: bookings.filter(b => 
+            b.bookingDetails?.appointment?.date && 
+            new Date(b.bookingDetails.appointment.date) > new Date()
+          )
+        }
+      });
+    } catch (error) {
+      console.error('Get bookings by email error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to retrieve bookings',
+        error: error.message
+      });
+    }
+  },
+
+  // Get upcoming appointments
+  getUpcomingAppointments: async (req, res) => {
+    try {
+      const { 
+        daysAhead = 30,
+        includePast = 'false',
+        agentId 
+      } = req.query;
+
+      const now = new Date();
+      const futureDate = new Date();
+      futureDate.setDate(now.getDate() + parseInt(daysAhead));
+
+      const query = {
+        'bookingDetails.appointment.date': { 
+          $exists: true,
+          $ne: null
         },
-        { new: true, runValidators: true }
+        'bookingDetails.bookingStatus': { $in: ['pending', 'confirmed'] }
+      };
+
+      if (includePast === 'false') {
+        query['bookingDetails.appointment.date'] = { $gte: now };
+      }
+      
+      query['bookingDetails.appointment.date'].$lte = futureDate;
+
+      if (agentId) {
+        query['internal.assignedTo.agentId'] = new mongoose.Types.ObjectId(agentId);
+      }
+
+      const appointments = await VisaService.find(query)
+        .sort({ 'bookingDetails.appointment.date': 1, 'bookingDetails.appointment.timeSlot': 1 })
+        .select('serviceId customer.personalInfo.fullName customer.contactInfo.email bookingDetails.appointment serviceStage internal.assignedTo')
+        .lean();
+
+      // Group by date
+      const appointmentsByDate = appointments.reduce((acc, appointment) => {
+        if (!appointment.bookingDetails?.appointment?.date) return acc;
+        const date = new Date(appointment.bookingDetails.appointment.date).toDateString();
+        if (!acc[date]) acc[date] = [];
+        acc[date].push(appointment);
+        return acc;
+      }, {});
+
+      // Get statistics
+      const today = new Date().toDateString();
+      const todaysAppointments = appointments.filter(a => 
+        a.bookingDetails?.appointment?.date && 
+        new Date(a.bookingDetails.appointment.date).toDateString() === today
       );
 
-      await emailService.sendStatusUpdateEmail(visa, oldVisa.status);
-
-      res.json({ 
-        success: true, 
-        data: visa,
-        message: `Status changed from ${oldVisa.status} to ${status}`
+      res.json({
+        success: true,
+        data: {
+          appointments,
+          appointmentsByDate,
+          statistics: {
+            total: appointments.length,
+            today: todaysAppointments.length,
+            confirmed: appointments.filter(a => a.bookingDetails?.appointment?.confirmed).length,
+            pendingConfirmation: appointments.filter(a => !a.bookingDetails?.appointment?.confirmed).length,
+            byMode: appointments.reduce((acc, a) => {
+              const mode = a.bookingDetails?.appointment?.mode || 'unknown';
+              acc[mode] = (acc[mode] || 0) + 1;
+              return acc;
+            }, {})
+          },
+          timeframe: {
+            from: now.toISOString(),
+            to: futureDate.toISOString(),
+            days: parseInt(daysAhead)
+          }
+        }
       });
-    } catch (err) {
-      next(err);
+    } catch (error) {
+      console.error('Get upcoming appointments error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to retrieve appointments',
+        error: error.message
+      });
     }
-  }
+  },
 
-  // GET STATUS HISTORY
-  async getStatusHistory(req, res, next) {
+  // Cancel booking
+  cancelBooking: async (req, res) => {
     try {
-      const visa = await Visa.findOne({ id: req.params.id });
-      if (!visa) {
-        return res.status(404).json({ success: false, message: 'Visa not found' });
+      const { bookingId } = req.params;
+      const { reason, cancelledBy } = req.body;
+
+      const booking = await VisaService.findOne({ 
+        serviceId: bookingId,
+        serviceType: { $in: ['booking', 'combined'] }
+      });
+
+      if (!booking) {
+        return res.status(404).json({
+          success: false,
+          message: 'Booking not found'
+        });
       }
 
-      res.json({ 
-        success: true, 
-        data: visa.statusHistory || [],
-        currentStatus: visa.status
+      // Update booking status
+      booking.bookingDetails.bookingStatus = 'cancelled';
+      booking.serviceStage = 'cancelled';
+      
+      // Add to notes
+      booking.internal.notes.push({
+        note: `Booking cancelled. Reason: ${reason}`,
+        addedBy: cancelledBy || 'system',
+        addedAt: new Date(),
+        category: 'status',
+        priority: 'high'
       });
-    } catch (err) {
-      next(err);
-    }
-  }
 
-  // GET STATUS OPTIONS
-  async getStatusOptions(req, res, next) {
+      // Add to audit log
+      booking.auditLog.push({
+        action: 'booking_cancelled',
+        performedBy: cancelledBy || 'system',
+        details: { reason },
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent']
+      });
+
+      await booking.save();
+
+      // Send cancellation email
+      await sendEmail(
+        booking.customer.contactInfo.email,
+        'statusUpdate',
+        { 
+          ...booking.toObject(), 
+          newStatus: 'Booking Cancelled'
+        }
+      );
+
+      res.json({
+        success: true,
+        message: 'Booking cancelled successfully',
+        data: {
+          bookingId: booking.serviceId,
+          status: booking.bookingDetails.bookingStatus,
+          cancellationReason: reason
+        }
+      });
+    } catch (error) {
+      console.error('Cancel booking error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to cancel booking',
+        error: error.message
+      });
+    }
+  },
+
+  // Get booking statistics
+  getBookingStatistics: async (req, res) => {
     try {
-      const { currentStatus } = req.query;
-      
-      let availableStatuses = Object.values(VISA_STATUS);
-      
-      if (currentStatus && STATUS_TRANSITIONS[currentStatus]) {
-        availableStatuses = [currentStatus, ...STATUS_TRANSITIONS[currentStatus]];
+      const { startDate, endDate } = req.query;
+
+      const matchStage = {
+        serviceType: { $in: ['booking', 'combined'] }
+      };
+
+      if (startDate || endDate) {
+        matchStage.createdAt = {};
+        if (startDate) matchStage.createdAt.$gte = new Date(startDate);
+        if (endDate) matchStage.createdAt.$lte = new Date(endDate);
       }
 
-      const options = availableStatuses.map(status => ({
-        value: status,
-        label: StatusService.getStatusDisplayName(status),
-        canTransition: StatusService.isValidTransition(currentStatus, status)
+      const statistics = await VisaService.aggregate([
+        { $match: matchStage },
+        {
+          $facet: {
+            // Overall booking statistics
+            overview: [
+              {
+                $group: {
+                  _id: null,
+                  totalBookings: { $sum: 1 },
+                  totalRevenue: { $sum: '$bookingDetails.bookingAmount' },
+                  avgBookingValue: { $avg: '$bookingDetails.bookingAmount' },
+                  conversionRate: {
+                    $avg: {
+                      $cond: [
+                        { $eq: ['$serviceType', 'combined'] },
+                        100,
+                        0
+                      ]
+                    }
+                  }
+                }
+              }
+            ],
+
+            // Status breakdown
+            statusBreakdown: [
+              {
+                $group: {
+                  _id: '$bookingDetails.bookingStatus',
+                  count: { $sum: 1 },
+                  totalRevenue: { $sum: '$bookingDetails.bookingAmount' },
+                  avgProcessingTime: {
+                    $avg: {
+                      $cond: [
+                        '$updatedAt',
+                        {
+                          $divide: [
+                            { $subtract: ['$updatedAt', '$createdAt'] },
+                            1000 * 60 * 60 * 24
+                          ]
+                        },
+                        null
+                      ]
+                    }
+                  }
+                }
+              },
+              { $sort: { count: -1 } }
+            ],
+
+            // Source breakdown
+            sourceBreakdown: [
+              {
+                $group: {
+                  _id: '$internal.source',
+                  count: { $sum: 1 },
+                  conversionRate: {
+                    $avg: {
+                      $cond: [
+                        { $eq: ['$serviceType', 'combined'] },
+                        100,
+                        0
+                      ]
+                    }
+                  }
+                }
+              },
+              { $sort: { count: -1 } }
+            ],
+
+            // Monthly trends
+            monthlyTrends: [
+              {
+                $group: {
+                  _id: {
+                    year: { $year: '$createdAt' },
+                    month: { $month: '$createdAt' }
+                  },
+                  count: { $sum: 1 },
+                  revenue: { $sum: '$bookingDetails.bookingAmount' },
+                  conversions: {
+                    $sum: {
+                      $cond: [
+                        { $eq: ['$serviceType', 'combined'] },
+                        1,
+                        0
+                      ]
+                    }
+                  }
+                }
+              },
+              { $sort: { '_id.year': 1, '_id.month': 1 } },
+              { $limit: 12 }
+            ],
+
+            // Time slot popularity
+            timeSlotPopularity: [
+              {
+                $match: {
+                  'bookingDetails.appointment.timeSlot': { $exists: true, $ne: null }
+                }
+              },
+              {
+                $group: {
+                  _id: '$bookingDetails.appointment.timeSlot',
+                  count: { $sum: 1 },
+                  confirmedRate: {
+                    $avg: {
+                      $cond: [
+                        { $eq: ['$bookingDetails.appointment.confirmed', true] },
+                        100,
+                        0
+                      ]
+                    }
+                  }
+                }
+              },
+              { $sort: { count: -1 } },
+              { $limit: 10 }
+            ],
+
+            // Agent performance for bookings
+            agentPerformance: [
+              {
+                $match: {
+                  'internal.assignedTo.agentId': { $exists: true, $ne: null }
+                }
+              },
+              {
+                $group: {
+                  _id: '$internal.assignedTo.agentId',
+                  agentName: { $first: '$internal.assignedTo.agentName' },
+                  totalBookings: { $sum: 1 },
+                  confirmedBookings: {
+                    $sum: {
+                      $cond: [
+                        { $eq: ['$bookingDetails.bookingStatus', 'confirmed'] },
+                        1,
+                        0
+                      ]
+                    }
+                  },
+                  conversionRate: {
+                    $avg: {
+                      $cond: [
+                        { $eq: ['$serviceType', 'combined'] },
+                        100,
+                        0
+                      ]
+                    }
+                  },
+                  totalRevenue: { $sum: '$bookingDetails.bookingAmount' }
+                }
+              },
+              { $sort: { totalBookings: -1 } }
+            ]
+          }
+        }
+      ]);
+
+      res.json({
+        success: true,
+        data: statistics[0]
+      });
+    } catch (error) {
+      console.error('Get booking statistics error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to retrieve booking statistics',
+        error: error.message
+      });
+    }
+  }
+};
+
+// ========== VISA APPLICATION CONTROLLERS ==========
+
+const ApplicationController = {
+  // Create new visa application (without booking)
+  // createApplication: async (req, res) => {
+  //   try {
+  //     const {
+  //       customer,
+  //       applicationDetails,
+  //       internal
+  //     } = req.body;
+
+  //     // Validate required fields
+  //     if (!customer?.personalInfo?.fullName || !customer?.contactInfo?.email) {
+  //       return res.status(400).json({
+  //         success: false,
+  //         message: 'Full name and email are required'
+  //       });
+  //     }
+
+  //     if (!applicationDetails?.visaInfo?.destinationCountry || !applicationDetails?.visaInfo?.visaType) {
+  //       return res.status(400).json({
+  //         success: false,
+  //         message: 'Destination country and visa type are required'
+  //       });
+  //     }
+
+  //     // Create application
+  //     const application = new VisaService({
+  //       serviceType: 'application',
+  //       serviceStage: 'application-initiated',
+  //       customer,
+  //       applicationDetails,
+  //       internal
+  //     });
+
+  //     await application.save();
+
+  //     // Send confirmation email
+  //     await sendEmail(
+  //       customer.contactInfo.email,
+  //       'applicationSubmitted',
+  //       application
+  //     );
+
+  //     res.status(201).json({
+  //       success: true,
+  //       message: 'Visa application created successfully',
+  //       data: {
+  //         trackingNumber: application.trackingNumber,
+  //         serviceId: application.serviceId,
+  //         applicationStatus: application.applicationDetails.applicationStatus.current
+  //       }
+  //     });
+  //   } catch (error) {
+  //     console.error('Create application error:', error);
+  //     res.status(500).json({
+  //       success: false,
+  //       message: 'Failed to create visa application',
+  //       error: error.message
+  //     });
+  //   }
+  // },
+
+  createApplication: async (req, res) => {
+  try {
+    const {
+      customer,
+      applicationDetails,
+      internal,
+      serviceType = 'application'
+    } = req.body;
+
+    // Validate required customer fields
+    if (!customer?.personalInfo?.fullName) {
+      return res.status(400).json({
+        success: false,
+        message: 'Customer full name is required'
+      });
+    }
+
+    if (!customer?.contactInfo?.email) {
+      return res.status(400).json({
+        success: false,
+        message: 'Customer email is required'
+      });
+    }
+
+    // Validate application fields
+    if (!applicationDetails?.visaInfo?.destinationCountry) {
+      return res.status(400).json({
+        success: false,
+        message: 'Destination country is required for visa application'
+      });
+    }
+
+    if (!applicationDetails?.visaInfo?.visaType) {
+      return res.status(400).json({
+        success: false,
+        message: 'Visa type is required'
+      });
+    }
+
+    if (!applicationDetails?.visaInfo?.purposeOfTravel) {
+      return res.status(400).json({
+        success: false,
+        message: 'Purpose of travel is required'
+      });
+    }
+
+    // Prepare application data
+    const applicationData = {
+      serviceType: serviceType,
+      serviceStage: serviceType === 'combined' ? 'application-initiated' : 'booking-pending',
+      customer: {
+        personalInfo: {
+          fullName: customer.personalInfo.fullName.trim(),
+          dateOfBirth: customer.personalInfo.dateOfBirth ? new Date(customer.personalInfo.dateOfBirth) : undefined,
+          gender: customer.personalInfo.gender || 'prefer-not-to-say',
+          nationality: customer.personalInfo.nationality,
+          countryOfResidence: customer.personalInfo.countryOfResidence,
+          maritalStatus: customer.personalInfo.maritalStatus || 'single',
+          occupation: customer.personalInfo.occupation,
+          employer: customer.personalInfo.employer
+        },
+        contactInfo: {
+          email: customer.contactInfo.email.toLowerCase().trim(),
+          primaryPhone: customer.contactInfo.primaryPhone,
+          secondaryPhone: customer.contactInfo.secondaryPhone,
+          whatsappNumber: customer.contactInfo.whatsappNumber,
+          address: customer.contactInfo.address,
+          emergencyContact: customer.contactInfo.emergencyContact
+        },
+        passportInfo: {
+          passportNumber: customer.passportInfo?.passportNumber,
+          issuingCountry: customer.passportInfo?.issuingCountry,
+          issueDate: customer.passportInfo?.issueDate ? new Date(customer.passportInfo.issueDate) : undefined,
+          expiryDate: customer.passportInfo?.expiryDate ? new Date(customer.passportInfo.expiryDate) : undefined,
+          placeOfIssue: customer.passportInfo?.placeOfIssue,
+          hasPreviousVisas: customer.passportInfo?.hasPreviousVisas || false,
+          previousVisaDetails: customer.passportInfo?.previousVisaDetails || []
+        }
+      },
+      applicationDetails: {
+        visaInfo: {
+          destinationCountry: applicationDetails.visaInfo.destinationCountry,
+          visaType: applicationDetails.visaInfo.visaType,
+          category: applicationDetails.visaInfo.category || 'short-term',
+          purposeOfTravel: applicationDetails.visaInfo.purposeOfTravel,
+          travelDates: applicationDetails.visaInfo.travelDates ? {
+            intendedEntry: applicationDetails.visaInfo.travelDates.intendedEntry ? 
+              new Date(applicationDetails.visaInfo.travelDates.intendedEntry) : undefined,
+            intendedExit: applicationDetails.visaInfo.travelDates.intendedExit ? 
+              new Date(applicationDetails.visaInfo.travelDates.intendedExit) : undefined,
+            flexibleDates: applicationDetails.visaInfo.travelDates.flexibleDates || false
+          } : undefined,
+          durationOfStay: applicationDetails.visaInfo.durationOfStay,
+          entriesRequested: applicationDetails.visaInfo.entriesRequested || 'Single',
+          travelCompanions: applicationDetails.visaInfo.travelCompanions || []
+        },
+        servicePackage: applicationDetails.servicePackage || {
+          name: 'standard',
+          processingTime: '15-20 business days',
+          inclusions: []
+        },
+        fees: {
+          consultationFee: applicationDetails.fees?.consultationFee || 0,
+          serviceFee: applicationDetails.fees?.serviceFee || 0,
+          embassyFee: applicationDetails.fees?.embassyFee || 0,
+          additionalFees: applicationDetails.fees?.additionalFees || 0,
+          discount: applicationDetails.fees?.discount || 0,
+          totalAmount: applicationDetails.fees?.totalAmount || 0,
+          currency: applicationDetails.fees?.currency || 'USD'
+        },
+        payment: {
+          status: applicationDetails.payment?.status || 'pending',
+          amountPaid: applicationDetails.payment?.amountPaid || 0,
+          paymentMethod: applicationDetails.payment?.paymentMethod,
+          dueDate: applicationDetails.payment?.dueDate ? new Date(applicationDetails.payment.dueDate) : undefined,
+          paymentHistory: applicationDetails.payment?.paymentHistory || []
+        },
+        applicationStatus: {
+          current: applicationDetails.applicationStatus?.current || 'not-started',
+          submittedAt: applicationDetails.applicationStatus?.submittedAt ? 
+            new Date(applicationDetails.applicationStatus.submittedAt) : undefined,
+          processingStartedAt: applicationDetails.applicationStatus?.processingStartedAt ? 
+            new Date(applicationDetails.applicationStatus.processingStartedAt) : undefined
+        },
+        embassyInfo: applicationDetails.embassyInfo,
+        visaIssuance: applicationDetails.visaIssuance
+      },
+      bookingDetails: applicationDetails.bookingDetails || {},
+      internal: {
+        assignedTo: internal?.assignedTo ? {
+          agentId: internal.assignedTo.agentId,
+          agentName: internal.assignedTo.agentName,
+          agentEmail: internal.assignedTo.agentEmail,
+          department: internal.assignedTo.department,
+          assignedAt: internal.assignedTo.assignedAt ? new Date(internal.assignedTo.assignedAt) : new Date(),
+          lastContacted: internal.assignedTo.lastContacted ? new Date(internal.assignedTo.lastContacted) : undefined
+        } : undefined,
+        priority: internal?.priority || 'normal',
+        source: internal?.source || 'website',
+        tags: internal?.tags || [],
+        notes: internal?.notes || [],
+        followUp: internal?.followUp
+      }
+    };
+
+    // Create the application
+    const newApplication = new VisaService(applicationData);
+
+    // Save the application
+    await newApplication.save();
+
+    // Send confirmation email
+    try {
+      await sendEmail(
+        newApplication.customer.contactInfo.email,
+        serviceType === 'combined' ? 'applicationSubmitted' : 'bookingConfirmation',
+        newApplication.toObject()
+      );
+    } catch (emailError) {
+      console.warn('Email sending failed, but application was created:', emailError.message);
+    }
+
+    // Prepare response
+    const responseApplication = newApplication.toObject();
+    delete responseApplication.__v;
+    delete responseApplication.auditLog;
+    delete responseApplication.communications;
+    delete responseApplication.internal?.notes;
+    delete responseApplication.documents?.financialDocuments?.cloudinaryUrl;
+    delete responseApplication.documents?.travelDocuments?.cloudinaryUrl;
+    delete responseApplication.documents?.supportingDocuments?.cloudinaryUrl;
+
+    res.status(201).json({
+      success: true,
+      message: serviceType === 'combined' ? 
+        'Booking converted to application successfully' : 
+        'Visa application created successfully',
+      data: {
+        application: responseApplication,
+        trackingInfo: {
+          serviceId: newApplication.serviceId,
+          trackingNumber: newApplication.trackingNumber,
+          nextAction: newApplication.nextActionRequired,
+          status: newApplication.applicationDetails.applicationStatus.current
+        }
+      }
+    });
+
+  } catch (error) {
+    console.error('Create application error:', error);
+    
+    if (error.name === 'ValidationError') {
+      const errors = {};
+      Object.keys(error.errors).forEach(key => {
+        errors[key] = error.errors[key].message;
+      });
+      
+      return res.status(400).json({
+        success: false,
+        message: 'Validation failed',
+        errors: errors
+      });
+    }
+    
+    if (error.code === 11000) {
+      const field = Object.keys(error.keyPattern)[0];
+      return res.status(400).json({
+        success: false,
+        message: `Duplicate value for ${field}`,
+        field: field,
+        value: error.keyValue[field]
+      });
+    }
+    
+    res.status(500).json({
+      success: false,
+      message: 'Failed to create application',
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+    });
+  }
+},
+
+  // Upload document
+  uploadDocument: async (req, res) => {
+    try {
+      const { trackingNumber } = req.params;
+      const { category, documentType } = req.body;
+      const file = req.file;
+
+      if (!file) {
+        return res.status(400).json({
+          success: false,
+          message: 'No file uploaded'
+        });
+      }
+
+      const application = await VisaService.findOne({ trackingNumber });
+
+      if (!application) {
+        return res.status(404).json({
+          success: false,
+          message: 'Application not found'
+        });
+      }
+
+      // Upload to Cloudinary
+      const uploadResult = await uploadToCloudinary(file, `visa_applications/${trackingNumber}/${category}`);
+
+      if (!uploadResult.success) {
+        return res.status(500).json(uploadResult);
+      }
+
+      // Prepare document data
+      const documentData = {
+        documentType: documentType || category,
+        cloudinaryUrl: uploadResult.cloudinaryUrl,
+        publicId: uploadResult.publicId,
+        originalName: uploadResult.originalName,
+        uploadedAt: new Date(),
+        verified: false
+      };
+
+      // Add document using instance method
+      await application.addDocument(category, documentData);
+
+      // Send document upload confirmation email
+      await sendEmail(
+        application.customer.contactInfo.email,
+        'documentUploadConfirmation',
+        { ...application.toObject(), documentType: documentType || category }
+      );
+
+      res.json({
+        success: true,
+        message: 'Document uploaded successfully',
+        data: {
+          documentUrl: uploadResult.cloudinaryUrl,
+          totalDocuments: application.totalDocuments,
+          verifiedDocuments: application.verifiedDocuments
+        }
+      });
+    } catch (error) {
+      console.error('Upload document error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to upload document',
+        error: error.message
+      });
+    }
+  },
+
+  // Verify document
+  verifyDocument: async (req, res) => {
+    try {
+      const { trackingNumber } = req.params;
+      const { documentId, category, verifiedBy } = req.body;
+
+      const application = await VisaService.findOne({ trackingNumber });
+
+      if (!application) {
+        return res.status(404).json({
+          success: false,
+          message: 'Application not found'
+        });
+      }
+
+      // Verify document using instance method
+      await application.verifyDocument(documentId, verifiedBy, category);
+
+      res.json({
+        success: true,
+        message: 'Document verified successfully',
+        data: {
+          verifiedDocuments: application.verifiedDocuments,
+          totalDocuments: application.totalDocuments,
+          nextAction: application.nextActionRequired
+        }
+      });
+    } catch (error) {
+      console.error('Verify document error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to verify document',
+        error: error.message
+      });
+    }
+  },
+
+  // Update payment
+  updatePayment: async (req, res) => {
+    try {
+      const { trackingNumber } = req.params;
+      const { amount, method, transactionId, notes } = req.body;
+
+      const application = await VisaService.findOne({ trackingNumber });
+
+      if (!application) {
+        return res.status(404).json({
+          success: false,
+          message: 'Application not found'
+        });
+      }
+
+      // Update payment using instance method
+      await application.updatePayment(amount, method, transactionId, notes);
+
+      // Send payment confirmation email
+      const paymentDetails = {
+        amount,
+        method,
+        transactionId,
+        date: new Date()
+      };
+      
+      await sendEmail(
+        application.customer.contactInfo.email,
+        'paymentConfirmation',
+        { ...application.toObject(), paymentDetails }
+      );
+
+      res.json({
+        success: true,
+        message: 'Payment updated successfully',
+        data: {
+          amountPaid: application.applicationDetails.payment.amountPaid,
+          balanceDue: application.balanceDue,
+          paymentStatus: application.applicationDetails.payment.status
+        }
+      });
+    } catch (error) {
+      console.error('Update payment error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to update payment',
+        error: error.message
+      });
+    }
+  },
+
+  // Update application status
+  updateStatus: async (req, res) => {
+    try {
+      const { trackingNumber } = req.params;
+      const { status, remarks, changedBy } = req.body;
+
+      const application = await VisaService.findOne({ trackingNumber });
+
+      if (!application) {
+        return res.status(404).json({
+          success: false,
+          message: 'Application not found'
+        });
+      }
+
+      // Update status
+      application.applicationDetails.applicationStatus.current = status;
+      
+      // Record in history
+      application.statusHistory.push({
+        stage: application.serviceStage,
+        status: status,
+        changedAt: new Date(),
+        changedBy: changedBy || 'system',
+        remarks: remarks
+      });
+
+      await application.save();
+
+      // Send status update email
+      await sendEmail(
+        application.customer.contactInfo.email,
+        'statusUpdate',
+        { ...application.toObject(), newStatus: status }
+      );
+
+      res.json({
+        success: true,
+        message: 'Status updated successfully',
+        data: {
+          currentStatus: status,
+          previousStatus: application.statusHistory.slice(-2, -1)[0]?.status,
+          nextAction: application.nextActionRequired
+        }
+      });
+    } catch (error) {
+      console.error('Update status error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to update status',
+        error: error.message
+      });
+    }
+  },
+
+  // Get all applications with advanced filtering
+  getAllApplications: async (req, res) => {
+    try {
+      const {
+        page = 1,
+        limit = 20,
+        sortBy = 'createdAt',
+        sortOrder = 'desc',
+        status,
+        destinationCountry,
+        visaType,
+        dateFrom,
+        dateTo,
+        customerName,
+        email,
+        passportNumber,
+        agentId,
+        priority,
+        paymentStatus,
+        hasDocuments,
+        overdueOnly = false,
+        includeBookings = 'false',
+        serviceStage
+      } = req.query;
+
+      const skip = (parseInt(page) - 1) * parseInt(limit);
+      
+      // Build query for applications
+      const query = { 
+        serviceType: { 
+          $in: includeBookings === 'true' ? ['application', 'combined'] : ['application'] 
+        } 
+      };
+      
+      // Apply filters
+      if (status) {
+        query['applicationDetails.applicationStatus.current'] = status;
+      }
+      
+      if (serviceStage) {
+        query.serviceStage = serviceStage;
+      }
+      
+      if (destinationCountry) {
+        query['applicationDetails.visaInfo.destinationCountry'] = destinationCountry;
+      }
+      
+      if (visaType) {
+        query['applicationDetails.visaInfo.visaType'] = visaType;
+      }
+      
+      if (dateFrom || dateTo) {
+        query.createdAt = {};
+        if (dateFrom) query.createdAt.$gte = new Date(dateFrom);
+        if (dateTo) query.createdAt.$lte = new Date(dateTo);
+      }
+      
+      if (customerName) {
+        query['customer.personalInfo.fullName'] = { 
+          $regex: customerName, 
+          $options: 'i' 
+        };
+      }
+      
+      if (email) {
+        query['customer.contactInfo.email'] = { 
+          $regex: email, 
+          $options: 'i' 
+        };
+      }
+      
+      if (passportNumber) {
+        query['customer.passportInfo.passportNumber'] = passportNumber;
+      }
+      
+      if (agentId) {
+        query['internal.assignedTo.agentId'] = new mongoose.Types.ObjectId(agentId);
+      }
+      
+      if (priority) {
+        query['internal.priority'] = priority;
+      }
+      
+      if (paymentStatus) {
+        query['applicationDetails.payment.status'] = paymentStatus;
+      }
+      
+      if (hasDocuments === 'true') {
+        query.$or = [
+          { 'documents.photograph.cloudinaryUrl': { $exists: true } },
+          { 'documents.passportCopy.cloudinaryUrl': { $exists: true } },
+          { 'documents.financialDocuments.0': { $exists: true } },
+          { 'documents.travelDocuments.0': { $exists: true } }
+        ];
+      } else if (hasDocuments === 'false') {
+        query.$and = [
+          { 'documents.photograph.cloudinaryUrl': { $exists: false } },
+          { 'documents.passportCopy.cloudinaryUrl': { $exists: false } },
+          { 'documents.financialDocuments.0': { $exists: false } },
+          { 'documents.travelDocuments.0': { $exists: false } }
+        ];
+      }
+      
+      if (overdueOnly === 'true') {
+        query['applicationDetails.payment.dueDate'] = { $lt: new Date() };
+        query['applicationDetails.payment.status'] = { $in: ['pending', 'partial'] };
+      }
+
+      // Determine sort order
+      const sort = {};
+      sort[sortBy] = sortOrder === 'asc' ? 1 : -1;
+
+      // Get applications with pagination
+      const [applications, total] = await Promise.all([
+        VisaService.find(query)
+          .sort(sort)
+          .skip(skip)
+          .limit(parseInt(limit))
+          .select('-documents.financialDocuments.cloudinaryUrl -documents.travelDocuments.cloudinaryUrl -documents.supportingDocuments.cloudinaryUrl -communications -auditLog')
+          .lean(),
+        VisaService.countDocuments(query)
+      ]);
+
+      // Calculate statistics for the current result set
+      const stats = {
+        totalApplications: total,
+        byStatus: applications.reduce((acc, app) => {
+          const status = app.applicationDetails?.applicationStatus?.current || 'unknown';
+          acc[status] = (acc[status] || 0) + 1;
+          return acc;
+        }, {}),
+        byDestination: applications.reduce((acc, app) => {
+          const country = app.applicationDetails?.visaInfo?.destinationCountry || 'unknown';
+          acc[country] = (acc[country] || 0) + 1;
+          return acc;
+        }, {}),
+        byVisaType: applications.reduce((acc, app) => {
+          const type = app.applicationDetails?.visaInfo?.visaType || 'unknown';
+          acc[type] = (acc[type] || 0) + 1;
+          return acc;
+        }, {}),
+        totalRevenue: applications.reduce((sum, app) => 
+          sum + (app.applicationDetails?.fees?.totalAmount || 0), 0
+        ),
+        totalPaid: applications.reduce((sum, app) => 
+          sum + (app.applicationDetails?.payment?.amountPaid || 0), 0
+        ),
+        pendingPayments: applications.filter(app => 
+          ['pending', 'partial'].includes(app.applicationDetails?.payment?.status)
+        ).length,
+        totalDocuments: applications.reduce((sum, app) => 
+          sum + (app.totalDocuments || 0), 0
+        ),
+        averageProcessingTime: applications.reduce((sum, app) => {
+          if (app.applicationDetails?.applicationStatus?.actualCompletionDate && 
+              app.applicationDetails?.applicationStatus?.submittedAt) {
+            const days = (new Date(app.applicationDetails.applicationStatus.actualCompletionDate) - 
+                         new Date(app.applicationDetails.applicationStatus.submittedAt)) / (1000 * 60 * 60 * 24);
+            return sum + days;
+          }
+          return sum;
+        }, 0) / (applications.filter(app => app.applicationDetails?.applicationStatus?.actualCompletionDate).length || 1)
+      };
+
+      res.json({
+        success: true,
+        data: {
+          applications,
+          pagination: {
+            page: parseInt(page),
+            limit: parseInt(limit),
+            total,
+            totalPages: Math.ceil(total / parseInt(limit)),
+            hasNextPage: (page * limit) < total,
+            hasPrevPage: page > 1
+          },
+          statistics: stats,
+          filtersApplied: Object.keys(req.query).filter(key => 
+            !['page', 'limit', 'sortBy', 'sortOrder'].includes(key)
+          ),
+          summary: {
+            // Quick summary for dashboard
+            pending: stats.byStatus.pending || 0,
+            processing: (stats.byStatus.processing || 0) + (stats.byStatus['document-review'] || 0),
+            approved: stats.byStatus.approved || 0,
+            rejected: stats.byStatus.rejected || 0,
+            urgent: applications.filter(app => app.internal?.priority === 'urgent').length
+          }
+        }
+      });
+    } catch (error) {
+      console.error('Get all applications error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to retrieve applications',
+        error: error.message
+      });
+    }
+  },
+
+  // Get application by tracking number
+  getApplicationByTrackingNumber: async (req, res) => {
+    try {
+      const { trackingNumber } = req.params;
+      const { includeDocuments = 'true' } = req.query;
+
+      const selectFields = includeDocuments === 'true' 
+        ? '' 
+        : '-documents.financialDocuments.cloudinaryUrl -documents.travelDocuments.cloudinaryUrl -documents.supportingDocuments.cloudinaryUrl -documents.otherDocuments.cloudinaryUrl';
+
+      const application = await VisaService.findOne({ trackingNumber })
+        .select(selectFields);
+
+      if (!application) {
+        return res.status(404).json({
+          success: false,
+          message: 'Application not found'
+        });
+      }
+
+      // Get related applications for the same customer
+      const relatedApplications = await VisaService.find({
+        'customer.contactInfo.email': application.customer.contactInfo.email,
+        trackingNumber: { $ne: trackingNumber }
+      })
+      .sort({ createdAt: -1 })
+      .select('trackingNumber serviceId applicationDetails.visaInfo.destinationCountry applicationDetails.visaInfo.visaType applicationDetails.applicationStatus.current createdAt')
+      .limit(5);
+
+      res.json({
+        success: true,
+        data: {
+          application,
+          customerHistory: {
+            totalApplications: relatedApplications.length + 1,
+            previousApplications: relatedApplications,
+            email: application.customer.contactInfo.email,
+            customerSince: relatedApplications.length > 0 ? 
+              relatedApplications[relatedApplications.length - 1].createdAt : 
+              application.createdAt
+          }
+        }
+      });
+    } catch (error) {
+      console.error('Get application error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to get application',
+        error: error.message
+      });
+    }
+  },
+
+  // Get applications by status
+  getApplicationsByStatus: async (req, res) => {
+    try {
+      const { status } = req.params;
+      const { limit = 20, page = 1, priority } = req.query;
+
+      const skip = (page - 1) * limit;
+
+      const query = { 
+        'applicationDetails.applicationStatus.current': status,
+        serviceType: { $in: ['application', 'combined'] }
+      };
+
+      if (priority) {
+        query['internal.priority'] = priority;
+      }
+
+      const [applications, total] = await Promise.all([
+        VisaService.find(query)
+          .sort({ updatedAt: -1 })
+          .skip(skip)
+          .limit(parseInt(limit))
+          .select('trackingNumber serviceId customer.personalInfo.fullName customer.contactInfo.email applicationDetails.visaInfo.destinationCountry applicationDetails.visaInfo.visaType applicationDetails.fees.totalAmount applicationDetails.payment.status internal.assignedTo internal.priority createdAt')
+          .lean(),
+        VisaService.countDocuments(query)
+      ]);
+
+      // Calculate summary statistics
+      const summary = {
+        totalAmount: applications.reduce((sum, app) => sum + (app.applicationDetails?.fees?.totalAmount || 0), 0),
+        totalPaid: applications.reduce((sum, app) => sum + (app.applicationDetails?.payment?.amountPaid || 0), 0),
+        byPriority: applications.reduce((acc, app) => {
+          const priority = app.internal?.priority || 'normal';
+          acc[priority] = (acc[priority] || 0) + 1;
+          return acc;
+        }, {}),
+        byAgent: applications.reduce((acc, app) => {
+          const agent = app.internal?.assignedTo?.agentName || 'Unassigned';
+          acc[agent] = (acc[agent] || 0) + 1;
+          return acc;
+        }, {})
+      };
+
+      res.json({
+        success: true,
+        data: applications,
+        pagination: {
+          page: parseInt(page),
+          limit: parseInt(limit),
+          total,
+          pages: Math.ceil(total / limit)
+        },
+        summary
+      });
+    } catch (error) {
+      console.error('Get applications by status error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to get applications by status',
+        error: error.message
+      });
+    }
+  },
+
+  // Get applications by email
+  getApplicationsByEmail: async (req, res) => {
+    try {
+      const { email } = req.params;
+      const { includeBookings = 'false' } = req.query;
+
+      const query = { 'customer.contactInfo.email': email.toLowerCase() };
+      
+      if (includeBookings === 'false') {
+        query.serviceType = { $in: ['application', 'combined'] };
+      }
+
+      const applications = await VisaService.find(query)
+        .sort({ createdAt: -1 })
+        .select('serviceId trackingNumber serviceType serviceStage applicationDetails.visaInfo.destinationCountry applicationDetails.visaInfo.visaType applicationDetails.applicationStatus.current applicationDetails.fees.totalAmount applicationDetails.payment.status bookingDetails.bookingStatus createdAt updatedAt')
+        .lean();
+
+      // Calculate statistics
+      const stats = {
+        total: applications.length,
+        byStatus: applications.reduce((acc, app) => {
+          const status = app.applicationDetails?.applicationStatus?.current || 
+                        app.bookingDetails?.bookingStatus || 
+                        app.serviceStage || 
+                        'unknown';
+          acc[status] = (acc[status] || 0) + 1;
+          return acc;
+        }, {}),
+        byType: applications.reduce((acc, app) => {
+          const type = app.serviceType || 'unknown';
+          acc[type] = (acc[type] || 0) + 1;
+          return acc;
+        }, {}),
+        totalSpent: applications.reduce((sum, app) => 
+          sum + (app.applicationDetails?.fees?.totalAmount || 0) + (app.bookingDetails?.bookingAmount || 0), 0
+        ),
+        successRate: applications.filter(app => 
+          app.applicationDetails?.applicationStatus?.current === 'approved' ||
+          app.bookingDetails?.bookingStatus === 'completed'
+        ).length / (applications.length || 1) * 100
+      };
+
+      res.json({
+        success: true,
+        data: {
+          applications,
+          customerEmail: email,
+          statistics: stats,
+          recentActivity: applications.slice(0, 5),
+          activeApplications: applications.filter(app => 
+            !['completed', 'cancelled', 'rejected'].includes(
+              app.applicationDetails?.applicationStatus?.current || ''
+            ) && app.serviceType !== 'booking'
+          )
+        }
+      });
+    } catch (error) {
+      console.error('Get applications by email error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to get applications by email',
+        error: error.message
+      });
+    }
+  },
+
+  // Get application statistics
+  getApplicationStatistics: async (req, res) => {
+    try {
+      const { startDate, endDate } = req.query;
+
+      const matchStage = {
+        serviceType: { $in: ['application', 'combined'] }
+      };
+
+      if (startDate || endDate) {
+        matchStage.createdAt = {};
+        if (startDate) matchStage.createdAt.$gte = new Date(startDate);
+        if (endDate) matchStage.createdAt.$lte = new Date(endDate);
+      }
+
+      const statistics = await VisaService.aggregate([
+        { $match: matchStage },
+        {
+          $facet: {
+            // Overall application statistics
+            overview: [
+              {
+                $group: {
+                  _id: null,
+                  totalApplications: { $sum: 1 },
+                  totalRevenue: { $sum: '$applicationDetails.fees.totalAmount' },
+                  avgApplicationValue: { $avg: '$applicationDetails.fees.totalAmount' },
+                  successRate: {
+                    $avg: {
+                      $cond: [
+                        { $eq: ['$applicationDetails.applicationStatus.current', 'approved'] },
+                        100,
+                        0
+                      ]
+                    }
+                  },
+                  avgProcessingDays: {
+                    $avg: {
+                      $cond: [
+                        '$applicationDetails.applicationStatus.actualCompletionDate',
+                        {
+                          $divide: [
+                            {
+                              $subtract: [
+                                '$applicationDetails.applicationStatus.actualCompletionDate',
+                                '$applicationDetails.applicationStatus.submittedAt'
+                              ]
+                            },
+                            1000 * 60 * 60 * 24
+                          ]
+                        },
+                        null
+                      ]
+                    }
+                  }
+                }
+              }
+            ],
+
+            // Status breakdown
+            statusBreakdown: [
+              {
+                $group: {
+                  _id: '$applicationDetails.applicationStatus.current',
+                  count: { $sum: 1 },
+                  totalRevenue: { $sum: '$applicationDetails.fees.totalAmount' },
+                  avgProcessingDays: {
+                    $avg: {
+                      $cond: [
+                        '$applicationDetails.applicationStatus.actualCompletionDate',
+                        {
+                          $divide: [
+                            {
+                              $subtract: [
+                                '$applicationDetails.applicationStatus.actualCompletionDate',
+                                '$applicationDetails.applicationStatus.submittedAt'
+                              ]
+                            },
+                            1000 * 60 * 60 * 24
+                          ]
+                        },
+                        null
+                      ]
+                    }
+                  }
+                }
+              },
+              { $sort: { count: -1 } }
+            ],
+
+            // Visa type breakdown
+            visaTypeBreakdown: [
+              {
+                $group: {
+                  _id: '$applicationDetails.visaInfo.visaType',
+                  count: { $sum: 1 },
+                  successRate: {
+                    $avg: {
+                      $cond: [
+                        { $eq: ['$applicationDetails.applicationStatus.current', 'approved'] },
+                        100,
+                        0
+                      ]
+                    }
+                  },
+                  avgFee: { $avg: '$applicationDetails.fees.totalAmount' },
+                  avgProcessingDays: {
+                    $avg: {
+                      $cond: [
+                        '$applicationDetails.applicationStatus.actualCompletionDate',
+                        {
+                          $divide: [
+                            {
+                              $subtract: [
+                                '$applicationDetails.applicationStatus.actualCompletionDate',
+                                '$applicationDetails.applicationStatus.submittedAt'
+                              ]
+                            },
+                            1000 * 60 * 60 * 24
+                          ]
+                        },
+                        null
+                      ]
+                    }
+                  }
+                }
+              },
+              { $sort: { count: -1 } }
+            ],
+
+            // Destination country breakdown
+            destinationBreakdown: [
+              {
+                $group: {
+                  _id: '$applicationDetails.visaInfo.destinationCountry',
+                  count: { $sum: 1 },
+                  successRate: {
+                    $avg: {
+                      $cond: [
+                        { $eq: ['$applicationDetails.applicationStatus.current', 'approved'] },
+                        100,
+                        0
+                      ]
+                    }
+                  },
+                  avgFee: { $avg: '$applicationDetails.fees.totalAmount' },
+                  avgProcessingDays: {
+                    $avg: {
+                      $cond: [
+                        '$applicationDetails.applicationStatus.actualCompletionDate',
+                        {
+                          $divide: [
+                            {
+                              $subtract: [
+                                '$applicationDetails.applicationStatus.actualCompletionDate',
+                                '$applicationDetails.applicationStatus.submittedAt'
+                              ]
+                            },
+                            1000 * 60 * 60 * 24
+                          ]
+                        },
+                        null
+                      ]
+                    }
+                  }
+                }
+              },
+              { $sort: { count: -1 } },
+              { $limit: 10 }
+            ],
+
+            // Payment statistics
+            paymentStats: [
+              {
+                $group: {
+                  _id: '$applicationDetails.payment.status',
+                  count: { $sum: 1 },
+                  totalAmount: { $sum: '$applicationDetails.fees.totalAmount' },
+                  totalCollected: { $sum: '$applicationDetails.payment.amountPaid' },
+                  avgCollectionDays: {
+                    $avg: {
+                      $cond: [
+                        '$applicationDetails.payment.paymentHistory',
+                        {
+                          $divide: [
+                            {
+                              $subtract: [
+                                { $arrayElemAt: ['$applicationDetails.payment.paymentHistory.date', -1] },
+                                '$createdAt'
+                              ]
+                            },
+                            1000 * 60 * 60 * 24
+                          ]
+                        },
+                        null
+                      ]
+                    }
+                  }
+                }
+              }
+            ],
+
+            // Monthly application trends
+            monthlyTrends: [
+              {
+                $group: {
+                  _id: {
+                    year: { $year: '$createdAt' },
+                    month: { $month: '$createdAt' }
+                  },
+                  count: { $sum: 1 },
+                  revenue: { $sum: '$applicationDetails.fees.totalAmount' },
+                  approved: {
+                    $sum: {
+                      $cond: [
+                        { $eq: ['$applicationDetails.applicationStatus.current', 'approved'] },
+                        1,
+                        0
+                      ]
+                    }
+                  },
+                  avgProcessingDays: {
+                    $avg: {
+                      $cond: [
+                        '$applicationDetails.applicationStatus.actualCompletionDate',
+                        {
+                          $divide: [
+                            {
+                              $subtract: [
+                                '$applicationDetails.applicationStatus.actualCompletionDate',
+                                '$applicationDetails.applicationStatus.submittedAt'
+                              ]
+                            },
+                            1000 * 60 * 60 * 24
+                          ]
+                        },
+                        null
+                      ]
+                    }
+                  }
+                }
+              },
+              { $sort: { '_id.year': 1, '_id.month': 1 } },
+              { $limit: 12 }
+            ],
+
+            // Document statistics
+            documentStats: [
+              {
+                $group: {
+                  _id: null,
+                  avgDocumentsPerApp: {
+                    $avg: {
+                      $add: [
+                        { $cond: [{ $ifNull: ['$documents.photograph.cloudinaryUrl', false] }, 1, 0] },
+                        { $cond: [{ $ifNull: ['$documents.passportCopy.cloudinaryUrl', false] }, 1, 0] },
+                        { $size: { $ifNull: ['$documents.financialDocuments', []] } },
+                        { $size: { $ifNull: ['$documents.travelDocuments', []] } }
+                      ]
+                    }
+                  },
+                  verificationRate: {
+                    $avg: {
+                      $cond: [
+                        { $gt: ['$totalDocuments', 0] },
+                        { $divide: ['$verifiedDocuments', '$totalDocuments'] },
+                        0
+                      ]
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        }
+      ]);
+
+      res.json({
+        success: true,
+        data: statistics[0]
+      });
+    } catch (error) {
+      console.error('Get application statistics error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to retrieve application statistics',
+        error: error.message
+      });
+    }
+  },
+
+  // Get pending documents applications
+  getPendingDocumentsApplications: async (req, res) => {
+    try {
+      const { limit = 20 } = req.query;
+
+      const applications = await VisaService.find({
+        serviceType: { $in: ['application', 'combined'] },
+        'applicationDetails.applicationStatus.current': 'document-collection',
+        $or: [
+          { 'documents.photograph.cloudinaryUrl': { $exists: false } },
+          { 'documents.passportCopy.cloudinaryUrl': { $exists: false } },
+          { 'documents.financialDocuments': { $size: 0 } }
+        ]
+      })
+      .sort({ updatedAt: -1 })
+      .limit(parseInt(limit))
+      .select('trackingNumber serviceId customer.personalInfo.fullName customer.contactInfo.email applicationDetails.visaInfo.destinationCountry internal.assignedTo totalDocuments verifiedDocuments createdAt')
+      .lean();
+
+      // Calculate missing documents
+      const applicationsWithMissingDocs = applications.map(app => ({
+        ...app,
+        missingDocuments: {
+          photograph: !app.documents?.photograph?.cloudinaryUrl,
+          passportCopy: !app.documents?.passportCopy?.cloudinaryUrl,
+          financialDocuments: !app.documents?.financialDocuments || app.documents.financialDocuments.length === 0,
+          travelDocuments: !app.documents?.travelDocuments || app.documents.travelDocuments.length === 0
+        }
       }));
 
-      res.json({ success: true, data: options });
-    } catch (err) {
-      next(err);
+      res.json({
+        success: true,
+        data: applicationsWithMissingDocs,
+        statistics: {
+          total: applications.length,
+          missingPhotograph: applications.filter(app => !app.documents?.photograph?.cloudinaryUrl).length,
+          missingPassport: applications.filter(app => !app.documents?.passportCopy?.cloudinaryUrl).length,
+          missingFinancial: applications.filter(app => !app.documents?.financialDocuments || app.documents.financialDocuments.length === 0).length,
+          avgDocuments: applications.reduce((sum, app) => sum + (app.totalDocuments || 0), 0) / (applications.length || 1)
+        }
+      });
+    } catch (error) {
+      console.error('Get pending documents applications error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to retrieve pending documents applications',
+        error: error.message
+      });
     }
   }
+};
 
-  // GET STATISTICS
-  async getStatistics(req, res, next) {
+// ========== STATISTICS CONTROLLERS ==========
+
+const StatisticsController = {
+  // Get overall statistics
+  getOverview: async (req, res) => {
     try {
-      const [overallStats, revenueStats, statusChanges] = await Promise.all([
-        statisticsService.getOverallStatistics(),
-        statisticsService.getRevenueStatistics(),
-        statisticsService.getStatusChangeHistory()
+      const filters = req.query;
+      const stats = await calculateStatistics(filters);
+
+      res.json({
+        success: true,
+        data: stats
+      });
+    } catch (error) {
+      console.error('Get overview error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to get statistics',
+        error: error.message
+      });
+    }
+  },
+
+  // Get dashboard statistics
+  getDashboardStats: async (req, res) => {
+    try {
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+      const [
+        totalApplications,
+        pendingPayments,
+        upcomingAppointments,
+        recentActivities,
+        monthlyRevenue,
+        statusDistribution
+      ] = await Promise.all([
+        // Total applications
+        VisaService.countDocuments({
+          serviceType: { $ne: 'booking' },
+          createdAt: { $gte: thirtyDaysAgo }
+        }),
+
+        // Pending payments
+        VisaService.aggregate([
+          {
+            $match: {
+              'applicationDetails.payment.status': { $in: ['pending', 'partial'] },
+              'applicationDetails.fees.totalAmount': { $gt: 0 }
+            }
+          },
+          {
+            $group: {
+              _id: null,
+              totalAmount: { $sum: '$applicationDetails.fees.totalAmount' },
+              totalCollected: { $sum: '$applicationDetails.payment.amountPaid' },
+              count: { $sum: 1 }
+            }
+          }
+        ]),
+
+        // Upcoming appointments
+        VisaService.find({
+          'bookingDetails.appointment.date': { $gte: new Date() },
+          'bookingDetails.bookingStatus': { $in: ['confirmed', 'pending'] }
+        })
+          .sort({ 'bookingDetails.appointment.date': 1 })
+          .limit(10)
+          .select('serviceId customer.personalInfo.fullName bookingDetails.appointment.date bookingDetails.appointment.timeSlot'),
+
+        // Recent activities
+        VisaService.find()
+          .sort({ updatedAt: -1 })
+          .limit(10)
+          .select('serviceId trackingNumber serviceStage applicationDetails.applicationStatus.current updatedAt'),
+
+        // Monthly revenue
+        VisaService.aggregate([
+          {
+            $match: {
+              createdAt: { $gte: thirtyDaysAgo }
+            }
+          },
+          {
+            $group: {
+              _id: {
+                year: { $year: '$createdAt' },
+                month: { $month: '$createdAt' },
+                day: { $dayOfMonth: '$createdAt' }
+              },
+              revenue: {
+                $sum: {
+                  $add: [
+                    '$bookingDetails.bookingAmount',
+                    '$applicationDetails.fees.totalAmount'
+                  ]
+                }
+              },
+              applications: { $sum: 1 }
+            }
+          },
+          { $sort: { '_id.year': 1, '_id.month': 1, '_id.day': 1 } }
+        ]),
+
+        // Status distribution
+        VisaService.aggregate([
+          {
+            $group: {
+              _id: '$applicationDetails.applicationStatus.current',
+              count: { $sum: 1 }
+            }
+          },
+          { $sort: { count: -1 } }
+        ])
       ]);
 
       res.json({
         success: true,
         data: {
-          ...overallStats,
-          revenue: revenueStats,
-          statusChangeHistory: statusChanges
+          totalApplications,
+          pendingPayments: pendingPayments[0] || { totalAmount: 0, totalCollected: 0, count: 0 },
+          upcomingAppointments,
+          recentActivities,
+          monthlyRevenue,
+          statusDistribution
         }
       });
-    } catch (err) {
-      next(err);
+    } catch (error) {
+      console.error('Get dashboard stats error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to get dashboard statistics',
+        error: error.message
+      });
     }
-  }
+  },
 
-  // GET INVENTORY STATISTICS
-  async getInventoryStatistics(req, res, next) {
+  // Get agent performance statistics
+  getAgentPerformance: async (req, res) => {
     try {
-      const data = await inventoryService.getInventoryOverview();
-      res.json({ success: true, data });
-    } catch (err) {
-      next(err);
-    }
-  }
+      const { startDate, endDate } = req.query;
 
-  // SEND EMAIL
-  async sendEmail(req, res, next) {
-    try {
-      const { applicationId, customMessage } = req.body;
-
-      const visa = await Visa.findOne({ id: applicationId });
-      if (!visa) {
-        return res.status(404).json({ success: false, message: 'Visa not found' });
+      const matchStage = {};
+      if (startDate && endDate) {
+        matchStage.createdAt = {
+          $gte: new Date(startDate),
+          $lte: new Date(endDate)
+        };
       }
 
-      let result;
-      if (customMessage) {
-        result = await emailService.sendMail(
-          visa.email,
-          `Custom Update - ${visa.id}`,
-          `Dear ${visa.applicant},\n\n${customMessage}\n\nBest regards,\nVisa Processing Team`
-        );
+      const agentStats = await VisaService.aggregate([
+        { $match: matchStage },
+        {
+          $group: {
+            _id: '$internal.assignedTo.agentId',
+            agentName: { $first: '$internal.assignedTo.agentName' },
+            totalApplications: { $sum: 1 },
+            completedApplications: {
+              $sum: {
+                $cond: [
+                  {
+                    $in: [
+                      '$applicationDetails.applicationStatus.current',
+                      ['approved', 'visa-printed', 'collected']
+                    ]
+                  },
+                  1,
+                  0
+                ]
+              }
+            },
+            pendingApplications: {
+              $sum: {
+                $cond: [
+                  {
+                    $in: [
+                      '$applicationDetails.applicationStatus.current',
+                      ['pending', 'processing', 'document-review']
+                    ]
+                  },
+                  1,
+                  0
+                ]
+              }
+            },
+            totalRevenue: { $sum: '$applicationDetails.fees.totalAmount' },
+            avgProcessingTime: {
+              $avg: {
+                $cond: [
+                  '$applicationDetails.applicationStatus.actualCompletionDate',
+                  {
+                    $divide: [
+                      {
+                        $subtract: [
+                          '$applicationDetails.applicationStatus.actualCompletionDate',
+                          '$applicationDetails.applicationStatus.submittedAt'
+                        ]
+                      },
+                      1000 * 60 * 60 * 24
+                    ]
+                  },
+                  null
+                ]
+              }
+            }
+          }
+        },
+        { $sort: { totalApplications: -1 } }
+      ]);
+
+      res.json({
+        success: true,
+        data: agentStats
+      });
+    } catch (error) {
+      console.error('Get agent performance error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to get agent performance statistics',
+        error: error.message
+      });
+    }
+  },
+
+  // Get revenue statistics
+  getRevenueStats: async (req, res) => {
+    try {
+      const { period = 'monthly' } = req.query;
+
+      let groupFormat;
+      switch (period) {
+        case 'daily':
+          groupFormat = {
+            year: { $year: '$createdAt' },
+            month: { $month: '$createdAt' },
+            day: { $dayOfMonth: '$createdAt' }
+          };
+          break;
+        case 'weekly':
+          groupFormat = {
+            year: { $year: '$createdAt' },
+            week: { $week: '$createdAt' }
+          };
+          break;
+        case 'monthly':
+        default:
+          groupFormat = {
+            year: { $year: '$createdAt' },
+            month: { $month: '$createdAt' }
+          };
+      }
+
+      const revenueStats = await VisaService.aggregate([
+        {
+          $group: {
+            _id: groupFormat,
+            totalRevenue: {
+              $sum: {
+                $add: [
+                  '$bookingDetails.bookingAmount',
+                  '$applicationDetails.fees.totalAmount'
+                ]
+              }
+            },
+            bookingRevenue: { $sum: '$bookingDetails.bookingAmount' },
+            applicationRevenue: { $sum: '$applicationDetails.fees.totalAmount' },
+            applicationCount: {
+              $sum: { $cond: [{ $ne: ['$serviceType', 'booking'] }, 1, 0] }
+            },
+            bookingCount: {
+              $sum: { $cond: [{ $eq: ['$serviceType', 'booking'] }, 1, 0] }
+            },
+            avgApplicationValue: { $avg: '$applicationDetails.fees.totalAmount' }
+          }
+        },
+        { $sort: { '_id.year': 1, '_id.month': 1, '_id.day': 1, '_id.week': 1 } }
+      ]);
+
+      res.json({
+        success: true,
+        data: revenueStats
+      });
+    } catch (error) {
+      console.error('Get revenue stats error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to get revenue statistics',
+        error: error.message
+      });
+    }
+  }
+};
+
+// ========== SEARCH & QUERY CONTROLLERS ==========
+
+const QueryController = {
+  // Search applications
+  searchApplications: async (req, res) => {
+    try {
+      const {
+        trackingNumber,
+        email,
+        fullName,
+        passportNumber,
+        destinationCountry,
+        visaType,
+        status,
+        startDate,
+        endDate,
+        serviceType
+      } = req.query;
+
+      const query = {};
+
+      if (serviceType) {
+        query.serviceType = serviceType;
       } else {
-        result = await emailService.sendStatusUpdateEmail(visa);
+        query.serviceType = { $ne: 'booking' };
       }
 
-      res.json(result);
-    } catch (err) {
-      next(err);
-    }
-  }
-
-  // GET APPLICATIONS BY STATUS
-  async getApplicationsByStatus(req, res, next) {
-    try {
-      const { status } = req.params;
+      if (trackingNumber) query.trackingNumber = trackingNumber;
+      if (email) query['customer.contactInfo.email'] = { $regex: email, $options: 'i' };
+      if (fullName) query['customer.personalInfo.fullName'] = { $regex: fullName, $options: 'i' };
+      if (passportNumber) query['customer.passportInfo.passportNumber'] = passportNumber;
+      if (destinationCountry) query['applicationDetails.visaInfo.destinationCountry'] = destinationCountry;
+      if (visaType) query['applicationDetails.visaInfo.visaType'] = visaType;
+      if (status) query['applicationDetails.applicationStatus.current'] = status;
       
-      if (!Object.values(VISA_STATUS).includes(status)) {
-        return res.status(400).json({ 
-          success: false, 
-          message: 'Invalid status' 
-        });
+      if (startDate || endDate) {
+        query.createdAt = {};
+        if (startDate) query.createdAt.$gte = new Date(startDate);
+        if (endDate) query.createdAt.$lte = new Date(endDate);
       }
 
-      const applications = await Visa.find({ status })
+      const applications = await VisaService.find(query)
         .sort({ createdAt: -1 })
-        .limit(100);
-
-      const count = await Visa.countDocuments({ status });
+        .limit(50)
+        .select('serviceId trackingNumber serviceType customer.personalInfo.fullName customer.contactInfo.email applicationDetails.visaInfo.destinationCountry applicationDetails.visaInfo.visaType applicationDetails.applicationStatus.current applicationDetails.fees.totalAmount applicationDetails.payment.status createdAt')
+        .lean();
 
       res.json({
         success: true,
         data: applications,
-        count,
-        status: StatusService.getStatusDisplayName(status)
+        count: applications.length
       });
-    } catch (err) {
-      next(err);
+    } catch (error) {
+      console.error('Search applications error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to search applications',
+        error: error.message
+      });
+    }
+  },
+
+  // Get application by tracking number
+  getApplicationByTrackingNumber: async (req, res) => {
+    try {
+      const { trackingNumber } = req.params;
+
+      const application = await VisaService.findOne({ trackingNumber })
+        .select('-documents.financialDocuments.cloudinaryUrl -documents.travelDocuments.cloudinaryUrl -documents.supportingDocuments.cloudinaryUrl');
+
+      if (!application) {
+        return res.status(404).json({
+          success: false,
+          message: 'Application not found'
+        });
+      }
+
+      res.json({
+        success: true,
+        data: application
+      });
+    } catch (error) {
+      console.error('Get application error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to get application',
+        error: error.message
+      });
+    }
+  },
+
+  // Get applications by status
+  getApplicationsByStatus: async (req, res) => {
+    try {
+      const { status } = req.params;
+      const { limit = 20, page = 1 } = req.query;
+
+      const skip = (page - 1) * limit;
+
+      const [applications, total] = await Promise.all([
+        VisaService.find({ 'applicationDetails.applicationStatus.current': status })
+          .sort({ updatedAt: -1 })
+          .skip(skip)
+          .limit(parseInt(limit))
+          .select('trackingNumber serviceId customer.personalInfo.fullName customer.contactInfo.email applicationDetails.visaInfo.destinationCountry applicationDetails.visaInfo.visaType applicationDetails.fees.totalAmount applicationDetails.payment.status internal.assignedTo createdAt'),
+        VisaService.countDocuments({ 'applicationDetails.applicationStatus.current': status })
+      ]);
+
+      res.json({
+        success: true,
+        data: applications,
+        pagination: {
+          page: parseInt(page),
+          limit: parseInt(limit),
+          total,
+          pages: Math.ceil(total / limit)
+        }
+      });
+    } catch (error) {
+      console.error('Get applications by status error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to get applications by status',
+        error: error.message
+      });
+    }
+  },
+
+  // Get applications by email
+  getApplicationsByEmail: async (req, res) => {
+    try {
+      const { email } = req.params;
+
+      const applications = await VisaService.find({ 'customer.contactInfo.email': email.toLowerCase() })
+        .sort({ createdAt: -1 })
+        .select('serviceId trackingNumber serviceType serviceStage applicationDetails.visaInfo.destinationCountry applicationDetails.visaInfo.visaType applicationDetails.applicationStatus.current applicationDetails.fees.totalAmount applicationDetails.payment.status bookingDetails.bookingStatus createdAt');
+
+      res.json({
+        success: true,
+        data: applications,
+        count: applications.length
+      });
+    } catch (error) {
+      console.error('Get applications by email error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to get applications by email',
+        error: error.message
+      });
+    }
+  },
+
+  // Get all services (both bookings and applications)
+  getAllServices: async (req, res) => {
+    try {
+      const {
+        page = 1,
+        limit = 20,
+        sortBy = 'createdAt',
+        sortOrder = 'desc',
+        serviceType,
+        dateFrom,
+        dateTo,
+        search
+      } = req.query;
+
+      const skip = (parseInt(page) - 1) * parseInt(limit);
+      
+      // Build query
+      const query = {};
+      
+      if (serviceType) {
+        query.serviceType = serviceType;
+      }
+      
+      if (dateFrom || dateTo) {
+        query.createdAt = {};
+        if (dateFrom) query.createdAt.$gte = new Date(dateFrom);
+        if (dateTo) query.createdAt.$lte = new Date(dateTo);
+      }
+      
+      if (search) {
+        query.$or = [
+          { serviceId: { $regex: search, $options: 'i' } },
+          { trackingNumber: { $regex: search, $options: 'i' } },
+          { 'customer.personalInfo.fullName': { $regex: search, $options: 'i' } },
+          { 'customer.contactInfo.email': { $regex: search, $options: 'i' } },
+          { 'customer.passportInfo.passportNumber': { $regex: search, $options: 'i' } }
+        ];
+      }
+
+      // Determine sort order
+      const sort = {};
+      sort[sortBy] = sortOrder === 'asc' ? 1 : -1;
+
+      // Get services with pagination
+      const [services, total] = await Promise.all([
+        VisaService.find(query)
+          .sort(sort)
+          .skip(skip)
+          .limit(parseInt(limit))
+          .select('serviceId trackingNumber serviceType serviceStage customer.personalInfo.fullName customer.contactInfo.email bookingDetails.bookingStatus applicationDetails.visaInfo.destinationCountry applicationDetails.visaInfo.visaType applicationDetails.applicationStatus.current applicationDetails.fees.totalAmount applicationDetails.payment.status internal.assignedTo internal.priority createdAt updatedAt')
+          .lean(),
+        VisaService.countDocuments(query)
+      ]);
+
+      // Calculate statistics
+      const stats = {
+        total: total,
+        byType: services.reduce((acc, service) => {
+          const type = service.serviceType || 'unknown';
+          acc[type] = (acc[type] || 0) + 1;
+          return acc;
+        }, {}),
+        byStatus: services.reduce((acc, service) => {
+          let status;
+          if (service.serviceType === 'booking') {
+            status = service.bookingDetails?.bookingStatus || 'unknown';
+          } else {
+            status = service.applicationDetails?.applicationStatus?.current || 'unknown';
+          }
+          acc[status] = (acc[status] || 0) + 1;
+          return acc;
+        }, {}),
+        totalRevenue: services.reduce((sum, service) => 
+          sum + (service.applicationDetails?.fees?.totalAmount || 0) + (service.bookingDetails?.bookingAmount || 0), 0
+        )
+      };
+
+      res.json({
+        success: true,
+        data: {
+          services,
+          pagination: {
+            page: parseInt(page),
+            limit: parseInt(limit),
+            total,
+            totalPages: Math.ceil(total / parseInt(limit)),
+            hasNextPage: (page * limit) < total,
+            hasPrevPage: page > 1
+          },
+          statistics: stats
+        }
+      });
+    } catch (error) {
+      console.error('Get all services error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to retrieve services',
+        error: error.message
+      });
     }
   }
-}
-
-/* ===========================
-   ERROR HANDLER
-=========================== */
-
-const errorHandler = (err, req, res, next) => {
-  console.error(err);
-
-  if (err.name === 'ValidationError') {
-    return res.status(400).json({
-      success: false,
-      errors: Object.values(err.errors).map(e => e.message)
-    });
-  }
-
-  if (err.code === 11000) {
-    return res.status(400).json({
-      success: false,
-      message: 'Duplicate value error - This ID or email already exists'
-    });
-  }
-
-  res.status(500).json({
-    success: false,
-    message: err.message || 'Internal server error'
-  });
 };
 
-/* ===========================
-   EXPORTS
-=========================== */
-
+// Export all controllers
 module.exports = {
-  VisaController: new VisaController(),
-  errorHandler,
-  VISA_STATUS,
-  StatusService
+  BookingController,
+  ApplicationController,
+  StatisticsController,
+  QueryController,
+  
+  // Utility functions for direct use if needed
+  sendEmail,
+  uploadToCloudinary,
+  deleteFromCloudinary
 };
