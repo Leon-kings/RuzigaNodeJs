@@ -1,4 +1,4 @@
-const models = require('../models/Blog');
+const models = require('../models/Services');
 const nodemailer = require('nodemailer');
 const validator = require('validator');
 
