@@ -121,8 +121,8 @@ const express = require("express");
 const router = express.Router();
 const userController = require("../controllers/authController");
 const { body } = require("express-validator");
-const authMiddleware = require("../middlewares/auth");
-const adminMiddleware = require("../middlewares/admin");
+// const authMiddleware = require("../middlewares/auth");
+// const adminMiddleware = require("../middlewares/admin");
 const statisticsController = require('../controllers/statisticsController')
 
 /* ==================== PUBLIC ROUTES ==================== */
@@ -260,8 +260,6 @@ router.get("/", userController.getAllUsers);
 // Bulk create users (Admin only)
 router.post(
   "/bulk",
-  authMiddleware,
-  adminMiddleware,
   [
     body("users")
       .isArray({ min: 1 })
@@ -296,8 +294,6 @@ router.get("/:id", userController.getUserById);
 
 router.put(
   "/:id",
-  authMiddleware,
-  adminMiddleware,
   [
     body("name")
       .optional()

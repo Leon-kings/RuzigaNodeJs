@@ -663,20 +663,15 @@ const INITIAL_BOOKING_FORM = {
   paymentStatus: "pending",
   paymentMethod: "cash",
   paymentDetails: {
-    transactionId: "",
     amount: "",
     currency: "USD",
     paymentDate: "",
-    receiptUrl: ""
   },
   examSession: {
     date: "",
     center: "",
-    seatNumber: "",
-    room: ""
   },
-  score: null,
-  grade: "",
+
   notes: ""
 };
 

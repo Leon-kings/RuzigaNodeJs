@@ -2029,8 +2029,6 @@ class CSEController {
         paymentStatus: booking.paymentStatus,
         paymentMethod: booking.paymentMethod,
         examSession: booking.examSession,
-        score: booking.score,
-        grade: booking.grade,
         notes: booking.notes,
         paymentDetails: booking.paymentDetails
       }))
