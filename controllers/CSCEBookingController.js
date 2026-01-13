@@ -1978,37 +1978,77 @@ class CSEController {
   }
 
   // Get all bookings across exams
+  // async getAllBookings(req, res) {
+  //   try {
+  //     const exams = await Exam.find().select('name code bookings');
+
+  //     const allBookings = exams.flatMap(exam =>
+  //       exam.bookings.map(booking => ({
+  //         examId: exam._id,
+  //         examName: exam.name,
+  //         examCode: exam.code,
+  //         bookingId: booking._id,
+  //         studentName: booking.studentName,
+  //         studentEmail: booking.studentEmail,
+  //         studentPhone: booking.studentPhone,
+  //         studentId: booking.studentId,
+  //         registrationDate: booking.registrationDate,
+  //         status: booking.status,
+  //         paymentStatus: booking.paymentStatus,
+  //         paymentMethod: booking.paymentMethod,
+  //         examSession: booking.examSession,
+  //         score: booking.score,
+  //         grade: booking.grade,
+  //         notes: booking.notes,
+  //         paymentDetails: booking.paymentDetails
+  //       }))
+  //     );
+
+  //     res.json({ success: true, total: allBookings.length, data: allBookings });
+  //   } catch (error) {
+  //     res.status(500).json({ success: false, message: error.message });
+  //   }
+  // }
+
   async getAllBookings(req, res) {
-    try {
-      const exams = await Exam.find().select('name code bookings');
+  try {
+    const exams = await Exam.find().select('name code bookings');
 
-      const allBookings = exams.flatMap(exam =>
-        exam.bookings.map(booking => ({
-          examId: exam._id,
-          examName: exam.name,
-          examCode: exam.code,
-          bookingId: booking._id,
-          studentName: booking.studentName,
-          studentEmail: booking.studentEmail,
-          studentPhone: booking.studentPhone,
-          studentId: booking.studentId,
-          registrationDate: booking.registrationDate,
-          status: booking.status,
-          paymentStatus: booking.paymentStatus,
-          paymentMethod: booking.paymentMethod,
-          examSession: booking.examSession,
-          score: booking.score,
-          grade: booking.grade,
-          notes: booking.notes,
-          paymentDetails: booking.paymentDetails
-        }))
-      );
+    const allBookings = exams.flatMap(exam =>
+      (exam.bookings || []).map(booking => ({
+        examId: exam._id,
+        examName: exam.name,
+        examCode: exam.code,
+        bookingId: booking._id,
+        studentName: booking.studentName,
+        studentEmail: booking.studentEmail,
+        studentPhone: booking.studentPhone,
+        studentId: booking.studentId,
+        registrationDate: booking.registrationDate,
+        status: booking.status,
+        paymentStatus: booking.paymentStatus,
+        paymentMethod: booking.paymentMethod,
+        examSession: booking.examSession,
+        score: booking.score,
+        grade: booking.grade,
+        notes: booking.notes,
+        paymentDetails: booking.paymentDetails
+      }))
+    );
 
-      res.json({ success: true, total: allBookings.length, data: allBookings });
-    } catch (error) {
-      res.status(500).json({ success: false, message: error.message });
-    }
+    res.json({
+      success: true,
+      total: allBookings.length,
+      data: allBookings
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
   }
+}
+
 
   // ==================================================
   // 📈 HELPERS (SAFE)
