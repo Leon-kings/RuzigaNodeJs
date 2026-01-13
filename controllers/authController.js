@@ -718,8 +718,8 @@ exports.updateUserById = async (req, res) => {
           process.env.JWT_SECRET,
           { expiresIn: '24h' }
         );
-        
-        const verificationUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/verify-email?token=${verificationToken}`;
+
+        const verificationUrl = `${process.env.FRONTEND_URL}/verify-email?token=${verificationToken}`;
         await sendEmailWithRetry({
           to: user.email,
           subject: 'Verify Your Updated Email',
