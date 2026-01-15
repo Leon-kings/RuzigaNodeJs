@@ -100,7 +100,7 @@
 
 const express = require('express');
 const router = express.Router();
-const enquiryController = require('../controllers/EnquiryController');
+const enquiryController = require('../controllers/enquiryController');
 
 // ======================
 // ENQUIRY ROUTES
