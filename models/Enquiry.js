@@ -391,6 +391,234 @@
 
 
 
+// const mongoose = require('mongoose');
+// const moment = require('moment');
+
+// const enquirySchema = new mongoose.Schema({
+//     name: {
+//         type: String,
+//         required: [true, 'Name is required'],
+//         trim: true,
+//         minlength: [2, 'Name must be at least 2 characters long'],
+//         maxlength: [100, 'Name cannot exceed 100 characters']
+//     },
+//     email: {
+//         type: String,
+//         required: [true, 'Email is required'],
+//         trim: true,
+//         lowercase: true,
+//         match: [/^[^\s@]+@[^\s@]+\.[^\s@]+$/, 'Please enter a valid email address'],
+//         index: true
+//     },
+//     phone: {
+//         type: String,
+//         required: [true, 'Phone number is required'],
+//         trim: true,
+//         minlength: [5, 'Phone number must be at least 5 characters long'],
+//         maxlength: [20, 'Phone number cannot exceed 20 characters']
+//     },
+//     country: {
+//         type: String,
+//         required: [true, 'Country is required'],
+//         trim: true,
+//         minlength: [2, 'Country must be at least 2 characters long'],
+//         maxlength: [100, 'Country cannot exceed 100 characters']
+//     },
+//     course: {
+//         type: String,
+//         required: [true, 'Course is required'],
+//         trim: true,
+//         minlength: [2, 'Course must be at least 2 characters long'],
+//         maxlength: [200, 'Course cannot exceed 200 characters']
+//     },
+//     message: {
+//         type: String,
+//         trim: true,
+//         maxlength: [2000, 'Message cannot exceed 2000 characters'],
+//         default: ''
+//     },
+//     status: {
+//         type: String,
+//         enum: ['new', 'contacted', 'in_progress', 'qualified', 'converted', 'rejected', 'on_hold'],
+//         default: 'new',
+//         index: true
+//     },
+//     priority: {
+//         type: String,
+//         enum: ['low', 'medium', 'high', 'urgent'],
+//         default: 'medium'
+//     },
+//     source: {
+//         type: String,
+//         trim: true,
+//         default: 'website'
+//     },
+//     assignedTo: {
+//         type: mongoose.Schema.Types.ObjectId,
+//         ref: 'User',
+//         default: null
+//     },
+//     notes: [{
+//         content: { type: String, required: true, trim: true },
+//         createdBy: { type: String, default: 'system' },
+//         createdAt: { type: Date, default: Date.now }
+//     }],
+//     followUpDate: { type: Date, default: null },
+//     isDeleted: { type: Boolean, default: false, index: true },
+//     deletedAt: { type: Date, default: null }
+// }, {
+//     timestamps: true,
+//     toJSON: { virtuals: true },
+//     toObject: { virtuals: true }
+// });
+
+// // === VIRTUALS ===
+// enquirySchema.virtual('formattedDate').get(function() {
+//     return moment(this.createdAt).format('DD/MM/YYYY');
+// });
+
+// enquirySchema.virtual('timeAgo').get(function() {
+//     return moment(this.createdAt).fromNow();
+// });
+
+// enquirySchema.virtual('referenceNumber').get(function() {
+//     return `ENQ-${this._id.toString().slice(-8).toUpperCase()}`;
+// });
+
+// enquirySchema.virtual('emailLogs', {
+//     ref: 'EmailLog',
+//     localField: '_id',
+//     foreignField: 'enquiryId'
+// });
+
+// // === INDEXES ===
+// enquirySchema.index({ email: 1, createdAt: -1 });
+// enquirySchema.index({ status: 1, priority: 1 });
+// enquirySchema.index({ course: 1, createdAt: -1 });
+// enquirySchema.index({ country: 1, createdAt: -1 });
+// enquirySchema.index({ createdAt: -1 });
+// enquirySchema.index({ isDeleted: 1, status: 1 });
+// enquirySchema.index({ followUpDate: 1, status: 1 });
+
+// // === MIDDLEWARE ===
+// enquirySchema.pre('save', function(next) {
+//     this.updatedAt = Date.now();
+
+//     // Auto-set followUpDate if status changes to contacted
+//     if (this.isModified('status') && this.status === 'contacted') {
+//         this.followUpDate = moment().add(7, 'days').toDate();
+//     }
+
+//     next();
+// });
+
+// // === STATIC METHODS ===
+
+// // Get recent duplicates by email
+// enquirySchema.statics.findRecentDuplicates = async function(email, hours = 24) {
+//     return this.find({
+//         email: email.toLowerCase().trim(),
+//         createdAt: { $gte: moment().subtract(hours, 'hours').toDate() },
+//         isDeleted: false
+//     }).sort({ createdAt: -1 });
+// };
+
+// // Get statistics
+// enquirySchema.statics.getStatistics = async function(startDate, endDate) {
+//     const stats = await this.aggregate([
+//         { $match: { createdAt: { $gte: startDate, $lte: endDate }, isDeleted: false } },
+//         { $group: {
+//             _id: null,
+//             total: { $sum: 1 },
+//             byStatus: { $push: { status: "$status", count: 1 } },
+//             byCourse: { $push: { course: "$course", count: 1 } },
+//             byCountry: { $push: { country: "$country", count: 1 } },
+//             byDay: { $push: { date: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } }, count: 1 } }
+//         }},
+//         { $project: {
+//             total: 1,
+//             statusDistribution: { $arrayToObject: { $map: { input: "$byStatus", as: "item", in: { k: "$$item.status", v: { $sum: "$$item.count" } } } } },
+//             courseDistribution: { $arrayToObject: { $map: { input: "$byCourse", as: "item", in: { k: "$$item.course", v: { $sum: "$$item.count" } } } } },
+//             countryDistribution: { $arrayToObject: { $map: { input: "$byCountry", as: "item", in: { k: "$$item.country", v: { $sum: "$$item.count" } } } } },
+//             dailyDistribution: { $arrayToObject: { $map: { input: "$byDay", as: "item", in: { k: "$$item.date", v: { $sum: "$$item.count" } } } } }
+//         }}
+//     ]);
+
+//     return stats[0] || { total: 0, statusDistribution: {}, courseDistribution: {}, countryDistribution: {}, dailyDistribution: {} };
+// };
+
+// // === INSTANCE METHODS ===
+
+// // Add a note
+// enquirySchema.methods.addNote = function(content, createdBy = 'system') {
+//     this.notes.push({ content: content.trim(), createdBy, createdAt: new Date() });
+//     return this.save();
+// };
+
+// // Soft delete
+// enquirySchema.methods.softDelete = function() {
+//     this.isDeleted = true;
+//     this.deletedAt = new Date();
+//     return this.save();
+// };
+
+// // Restore
+// enquirySchema.methods.restore = function() {
+//     this.isDeleted = false;
+//     this.deletedAt = null;
+//     return this.save();
+// };
+
+// // Get email history
+// enquirySchema.methods.getEmailHistory = async function() {
+//     const EmailLog = mongoose.model('EmailLog');
+//     return EmailLog.find({ enquiryId: this._id }).sort({ createdAt: -1 }).lean();
+// };
+
+// // Export model
+// const Enquiry = mongoose.model('Enquiry', enquirySchema);
+// module.exports = Enquiry;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 const mongoose = require('mongoose');
 const moment = require('moment');
 
@@ -472,7 +700,9 @@ const enquirySchema = new mongoose.Schema({
     toObject: { virtuals: true }
 });
 
-// === VIRTUALS ===
+// ======================
+// VIRTUALS
+// ======================
 enquirySchema.virtual('formattedDate').get(function() {
     return moment(this.createdAt).format('DD/MM/YYYY');
 });
@@ -491,7 +721,9 @@ enquirySchema.virtual('emailLogs', {
     foreignField: 'enquiryId'
 });
 
-// === INDEXES ===
+// ======================
+// INDEXES
+// ======================
 enquirySchema.index({ email: 1, createdAt: -1 });
 enquirySchema.index({ status: 1, priority: 1 });
 enquirySchema.index({ course: 1, createdAt: -1 });
@@ -500,21 +732,22 @@ enquirySchema.index({ createdAt: -1 });
 enquirySchema.index({ isDeleted: 1, status: 1 });
 enquirySchema.index({ followUpDate: 1, status: 1 });
 
-// === MIDDLEWARE ===
-enquirySchema.pre('save', function(next) {
+// ======================
+// MIDDLEWARE
+// ======================
+enquirySchema.pre('save', async function() {
+    // Auto-update updatedAt
     this.updatedAt = Date.now();
 
     // Auto-set followUpDate if status changes to contacted
     if (this.isModified('status') && this.status === 'contacted') {
         this.followUpDate = moment().add(7, 'days').toDate();
     }
-
-    next();
 });
 
-// === STATIC METHODS ===
-
-// Get recent duplicates by email
+// ======================
+// STATIC METHODS
+// ======================
 enquirySchema.statics.findRecentDuplicates = async function(email, hours = 24) {
     return this.find({
         email: email.toLowerCase().trim(),
@@ -523,7 +756,6 @@ enquirySchema.statics.findRecentDuplicates = async function(email, hours = 24) {
     }).sort({ createdAt: -1 });
 };
 
-// Get statistics
 enquirySchema.statics.getStatistics = async function(startDate, endDate) {
     const stats = await this.aggregate([
         { $match: { createdAt: { $gte: startDate, $lte: endDate }, isDeleted: false } },
@@ -547,34 +779,33 @@ enquirySchema.statics.getStatistics = async function(startDate, endDate) {
     return stats[0] || { total: 0, statusDistribution: {}, courseDistribution: {}, countryDistribution: {}, dailyDistribution: {} };
 };
 
-// === INSTANCE METHODS ===
-
-// Add a note
+// ======================
+// INSTANCE METHODS
+// ======================
 enquirySchema.methods.addNote = function(content, createdBy = 'system') {
     this.notes.push({ content: content.trim(), createdBy, createdAt: new Date() });
     return this.save();
 };
 
-// Soft delete
 enquirySchema.methods.softDelete = function() {
     this.isDeleted = true;
     this.deletedAt = new Date();
     return this.save();
 };
 
-// Restore
 enquirySchema.methods.restore = function() {
     this.isDeleted = false;
     this.deletedAt = null;
     return this.save();
 };
 
-// Get email history
 enquirySchema.methods.getEmailHistory = async function() {
     const EmailLog = mongoose.model('EmailLog');
     return EmailLog.find({ enquiryId: this._id }).sort({ createdAt: -1 }).lean();
 };
 
-// Export model
+// ======================
+// EXPORT
+// ======================
 const Enquiry = mongoose.model('Enquiry', enquirySchema);
 module.exports = Enquiry;

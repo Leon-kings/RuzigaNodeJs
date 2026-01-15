@@ -1729,12 +1729,280 @@
 
 
 
+// const mongoose = require('mongoose');
+
+// /* =====================================================
+//    MAIN SCHEMA
+// ===================================================== */
+
+// const AdmissionSystemSchema = new mongoose.Schema(
+//   {
+//     /* =====================================================
+//        UNIVERSITY SECTION
+//     ===================================================== */
+//     university: {
+//       isUniversity: { type: Boolean, default: false },
+
+//       universityId: {
+//         type: String,
+//         unique: true,
+//         sparse: true,
+//         default: () => `UNI-${Date.now()}`
+//       },
+
+//       basic: {
+//         universityName: { type: String, unique: true, sparse: true },
+//         description: String,
+//         establishedYear: Number,
+//         motto: String,
+//         type: {
+//           type: String,
+//           enum: ['public', 'private', 'community', 'technical', 'research']
+//         }
+//       },
+
+//       location: {
+//         country: String,
+//         state: String,
+//         city: String,
+//         campusLocation: String,
+//         address: {
+//           street: String,
+//           postalCode: String,
+//           coordinates: {
+//             lat: Number,
+//             lng: Number
+//           }
+//         }
+//       },
+
+//       contact: {
+//         contactPerson: String,
+//         contactEmail: String,
+//         contactPhone: String,
+//         admissionEmail: String,
+//         admissionPhone: String
+//       },
+
+//       programs: [{
+//         programId: String,
+//         name: String,
+//         level: String,
+//         duration: String,
+//         tuition: {
+//           local: Number,
+//           international: Number,
+//           currency: { type: String, default: 'USD' }
+//         },
+//         seatsAvailable: Number,
+//         applicationDeadline: Date
+//       }],
+
+//       statistics: {
+//         totalApplications: { type: Number, default: 0 },
+//         acceptedApplications: { type: Number, default: 0 },
+//         successRate: { type: Number, default: 0 }
+//       },
+
+//       status: {
+//         type: String,
+//         enum: ['active', 'inactive', 'suspended'],
+//         default: 'active'
+//       }
+//     },
+
+//     /* =====================================================
+//        UNIVERSITY BOOKING SECTION
+//     ===================================================== */
+//     booking: {
+//       isBooking: { type: Boolean, default: false },
+
+//       bookingId: {
+//         type: String,
+//         unique: true,
+//         sparse: true,
+//         default: () => `BOOK-${Date.now()}`
+//       },
+
+//       universityId: {
+//         type: String, // links to university.universityId
+//         index: true
+//       },
+
+//       visitor: {
+//         firstName: String,
+//         lastName: String,
+//         email: String,
+//         phone: String,
+//         nationality: String,
+//         dateOfBirth: Date
+//       },
+
+//       details: {
+//         bookingDate: Date,
+//         bookingTime: String,
+//         bookingType: {
+//           type: String,
+//           enum: [
+//             'campus_tour',
+//             'admission_interview',
+//             'consultation',
+//             'virtual_tour'
+//           ]
+//         },
+//         numberOfGuests: { type: Number, default: 1 },
+//         preferredLanguage: { type: String, default: 'English' },
+//         meetingLink: String,
+//         location: String
+//       },
+
+//       status: {
+//         type: String,
+//         enum: ['pending', 'confirmed', 'completed', 'cancelled'],
+//         default: 'pending'
+//       },
+
+//       payment: {
+//         status: {
+//           type: String,
+//           enum: ['pending', 'paid', 'refunded'],
+//           default: 'pending'
+//         },
+//         amount: { type: Number, default: 0 }
+//       }
+//     },
+
+//     /* =====================================================
+//        ADMISSION APPLICATION SECTION
+//     ===================================================== */
+//     application: {
+//       isApplication: { type: Boolean, default: false },
+
+//       applicationId: {
+//         type: String,
+//         unique: true,
+//         sparse: true,
+//         default: () => `APP-${Date.now()}`
+//       },
+
+//       universityId: {
+//         type: String, // links to university.universityId
+//         index: true
+//       },
+
+//       applicant: {
+//         firstName: String,
+//         lastName: String,
+//         email: String,
+//         phone: String,
+//         nationality: String,
+//         dateOfBirth: Date
+//       },
+
+//       academic: {
+//         currentEducation: String,
+//         institution: String,
+//         graduationYear: Number,
+//         gpa: Number
+//       },
+
+//       target: {
+//         program: String,
+//         level: String,
+//         intakeSeason: String,
+//         intakeYear: Number
+//       },
+
+//       documents: {
+//         status: {
+//           type: String,
+//           enum: ['pending', 'uploaded', 'verified'],
+//           default: 'pending'
+//         }
+//       },
+
+//       applicationFee: {
+//         amount: { type: Number, default: 0 },
+//         status: {
+//           type: String,
+//           enum: ['pending', 'paid', 'waived'],
+//           default: 'pending'
+//         }
+//       },
+
+//       status: {
+//         type: String,
+//         enum: [
+//           'draft',
+//           'submitted',
+//           'under_review',
+//           'accepted',
+//           'rejected'
+//         ],
+//         default: 'draft'
+//       }
+//     },
+
+//     /* =====================================================
+//        COMMON SYSTEM FIELDS
+//     ===================================================== */
+//     isActive: { type: Boolean, default: true },
+
+//     createdBy: {
+//       type: mongoose.Schema.Types.ObjectId,
+//       ref: 'User'
+//     },
+
+//     updatedBy: {
+//       type: mongoose.Schema.Types.ObjectId,
+//       ref: 'User'
+//     }
+//   },
+//   {
+//     timestamps: true
+//   }
+// );
+
+// /* =====================================================
+//    INDEXES
+// ===================================================== */
+// AdmissionSystemSchema.index({ 'university.universityId': 1 });
+// AdmissionSystemSchema.index({ 'booking.bookingId': 1 });
+// AdmissionSystemSchema.index({ 'application.applicationId': 1 });
+// AdmissionSystemSchema.index({ 'booking.universityId': 1 });
+// AdmissionSystemSchema.index({ 'application.universityId': 1 });
+
+// module.exports = mongoose.model('AdmissionSystem', AdmissionSystemSchema);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 const mongoose = require('mongoose');
 
 /* =====================================================
    MAIN SCHEMA
 ===================================================== */
-
 const AdmissionSystemSchema = new mongoose.Schema(
   {
     /* =====================================================
@@ -1784,19 +2052,21 @@ const AdmissionSystemSchema = new mongoose.Schema(
         admissionPhone: String
       },
 
-      programs: [{
-        programId: String,
-        name: String,
-        level: String,
-        duration: String,
-        tuition: {
-          local: Number,
-          international: Number,
-          currency: { type: String, default: 'USD' }
-        },
-        seatsAvailable: Number,
-        applicationDeadline: Date
-      }],
+      programs: [
+        {
+          programId: String,
+          name: String,
+          level: String,
+          duration: String,
+          tuition: {
+            local: Number,
+            international: Number,
+            currency: { type: String, default: 'USD' }
+          },
+          seatsAvailable: Number,
+          applicationDeadline: Date
+        }
+      ],
 
       statistics: {
         totalApplications: { type: Number, default: 0 },
