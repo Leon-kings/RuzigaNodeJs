@@ -1374,6 +1374,456 @@
 
 
 
+// const Enquiry = require('../models/Enquiry');
+// const EmailLog = require('../models/EmailLog');
+// const mongoose = require('mongoose');
+// const moment = require('moment');
+// const nodemailer = require('nodemailer');
+
+// class EnquiryController {
+//     constructor() {
+//         this.initEmailTransporter();
+//         this.verifyEmailTransporter();
+//     }
+
+//     // ======================
+//     // EMAIL TRANSPORTER
+//     // ======================
+//     initEmailTransporter() {
+//         const emailUser = process.env.SMTP_USER;
+//         const emailPass = process.env.SMTP_PASS;
+
+//         if (!emailUser || !emailPass) {
+//             console.warn('⚠️ SMTP credentials missing. Emails will be disabled.');
+//             this.transporter = null;
+//             return;
+//         }
+
+//         this.transporter = nodemailer.createTransport({
+//             host: process.env.SMTP_HOST || 'smtp.gmail.com',
+//             port: parseInt(process.env.SMTP_PORT) || 587,
+//             secure: process.env.SMTP_SECURE === 'true',
+//             auth: { user: emailUser, pass: emailPass },
+//             tls: { rejectUnauthorized: false },
+//             pool: true,
+//             maxConnections: 5,
+//             maxMessages: 100
+//         });
+
+//         console.log('✅ Email transporter initialized');
+//     }
+
+//     async verifyEmailTransporter() {
+//         if (!this.transporter) return false;
+//         try {
+//             await this.transporter.verify();
+//             console.log('✅ Email transporter verified');
+//             return true;
+//         } catch (error) {
+//             console.error('❌ Email verification failed:', error.message);
+//             return false;
+//         }
+//     }
+
+//     async sendEmail(options) {
+//         if (!this.transporter) return null;
+
+//         const mailOptions = {
+//             from: `"Enquiry System" <${process.env.SMTP_USER}>`,
+//             to: options.to,
+//             subject: options.subject,
+//             html: options.html,
+//             text: options.text || this.stripHtml(options.html)
+//         };
+
+//         const emailLog = new EmailLog({
+//             enquiryId: options.enquiryId,
+//             recipientType: options.recipientType,
+//             emailType: options.emailType,
+//             recipientEmail: options.to,
+//             subject: options.subject,
+//             content: options.html,
+//             status: 'pending',
+//             metadata: options.metadata || {}
+//         });
+
+//         try {
+//             await emailLog.save();
+
+//             const sendPromise = this.transporter.sendMail(mailOptions);
+//             const timeoutPromise = new Promise((_, reject) =>
+//                 setTimeout(() => reject(new Error('Email timeout')), 30000)
+//             );
+
+//             const info = await Promise.race([sendPromise, timeoutPromise]);
+
+//             emailLog.status = 'sent';
+//             emailLog.messageId = info.messageId;
+//             emailLog.sentAt = new Date();
+//             await emailLog.save();
+
+//             console.log(`✅ Email sent: ${options.to}`);
+//             return info;
+
+//         } catch (error) {
+//             console.error('❌ Email send error:', error.message);
+//             await EmailLog.findOneAndUpdate(
+//                 { enquiryId: options.enquiryId, recipientEmail: options.to },
+//                 { status: 'failed', errorMessage: error.message, sentAt: new Date() },
+//                 { new: true, sort: { createdAt: -1 } }
+//             );
+//             return null;
+//         }
+//     }
+
+//     stripHtml(html) {
+//         return html.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
+//     }
+
+//     async sendEnquiryEmails(enquiry) {
+//         if (!this.transporter) return { userEmail: 'skipped', adminEmail: 'skipped' };
+
+//         const userEmail = this.sendEmail({
+//             to: enquiry.email,
+//             subject: `Enquiry Confirmation - ${enquiry.course}`,
+//             html: this.getUserEmailTemplate(enquiry),
+//             enquiryId: enquiry._id,
+//             recipientType: 'user',
+//             emailType: 'confirmation'
+//         });
+
+//         const adminEmail = this.sendEmail({
+//             to: process.env.ADMIN_EMAIL || enquiry.email,
+//             subject: `📋 New Enquiry: ${enquiry.name} - ${enquiry.course}`,
+//             html: this.getAdminEmailTemplate(enquiry),
+//             enquiryId: enquiry._id,
+//             recipientType: 'admin',
+//             emailType: 'notification'
+//         });
+
+//         const [userResult, adminResult] = await Promise.allSettled([userEmail, adminEmail]);
+
+//         return {
+//             userEmail: userResult.status === 'fulfilled' && userResult.value ? 'sent' : 'failed',
+//             adminEmail: adminResult.status === 'fulfilled' && adminResult.value ? 'sent' : 'failed'
+//         };
+//     }
+
+//     // ======================
+//     // TEMPLATES
+//     // ======================
+//     getUserEmailTemplate(enquiry) { /* same HTML as before */ return `<html>...User Template...</html>`; }
+//     getAdminEmailTemplate(enquiry) { /* same HTML as before */ return `<html>...Admin Template...</html>`; }
+//     getFollowupEmailTemplate(enquiry, message) { /* same HTML */ return `<html>...Followup Template...</html>`; }
+
+//     // ======================
+//     // CRUD OPERATIONS
+//     // ======================
+//     async createEnquiry(req, res) {
+//         try {
+//             const { name, email, phone, country, course, message } = req.body;
+
+//             // Validation
+//             const errors = [];
+//             if (!name || name.trim().length < 2) errors.push('Name too short');
+//             if (!email || !this.validateEmail(email)) errors.push('Invalid email');
+//             if (!phone || phone.trim().length < 5) errors.push('Invalid phone');
+//             if (!country || country.trim().length < 2) errors.push('Invalid country');
+//             if (!course || course.trim().length < 2) errors.push('Invalid course');
+//             if (errors.length) return res.status(400).json({ success: false, errors });
+
+//             // Duplicate check
+//             const recent = await Enquiry.findOne({
+//                 email: email.toLowerCase(),
+//                 createdAt: { $gte: moment().subtract(24, 'hours').toDate() },
+//                 isDeleted: false
+//             });
+//             if (recent) return res.status(409).json({ success: false, message: 'Duplicate enquiry recently submitted' });
+
+//             // Save
+//             const enquiry = new Enquiry({
+//                 name: name.trim(),
+//                 email: email.toLowerCase().trim(),
+//                 phone: phone.trim(),
+//                 country: country.trim(),
+//                 course: course.trim(),
+//                 message: message?.trim() || '',
+//                 status: 'new',
+//                 source: req.headers['user-agent'] || 'unknown'
+//             });
+//             await enquiry.save();
+
+//             // Send emails in background
+//             this.sendEnquiryEmails(enquiry).then(r => console.log('Email results:', r));
+
+//             res.status(201).json({
+//                 success: true,
+//                 message: 'Enquiry submitted successfully',
+//                 data: {
+//                     id: enquiry._id,
+//                     name: enquiry.name,
+//                     email: enquiry.email,
+//                     course: enquiry.course,
+//                     status: enquiry.status,
+//                     createdAt: enquiry.createdAt,
+//                     referenceNumber: `ENQ-${enquiry._id.toString().slice(-8).toUpperCase()}`
+//                 }
+//             });
+
+//         } catch (error) {
+//             console.error('❌ Create enquiry error:', error);
+//             res.status(500).json({ success: false, message: 'Failed to create enquiry' });
+//         }
+//     }
+
+//     async getAllEnquiries(req, res) {
+//         try {
+//             const { page = 1, limit = 20, status, course, startDate, endDate, search, sortBy = 'createdAt', sortOrder = 'desc' } = req.query;
+//             const query = { isDeleted: false };
+//             if (status) query.status = status;
+//             if (course) query.course = { $regex: course, $options: 'i' };
+//             if (startDate || endDate) query.createdAt = {};
+//             if (startDate) query.createdAt.$gte = new Date(startDate);
+//             if (endDate) query.createdAt.$lte = new Date(endDate);
+//             if (search) query.$or = ['name','email','phone','country','course','message'].map(f => ({ [f]: { $regex: search, $options: 'i' } }));
+
+//             const [enquiries, total] = await Promise.all([
+//                 Enquiry.find(query).sort({ [sortBy]: sortOrder === 'desc' ? -1 : 1 })
+//                     .skip((page-1)*limit).limit(parseInt(limit)).lean(),
+//                 Enquiry.countDocuments(query)
+//             ]);
+
+//             res.json({ success: true, data: enquiries, pagination: { total, page: parseInt(page), limit: parseInt(limit) } });
+
+//         } catch (error) {
+//             console.error('❌ Get all enquiries error:', error);
+//             res.status(500).json({ success: false, message: 'Failed to fetch enquiries' });
+//         }
+//     }
+
+//     async getEnquiryById(req, res) {
+//         try {
+//             const { id } = req.params;
+//             if (!mongoose.Types.ObjectId.isValid(id)) return res.status(400).json({ success: false, message: 'Invalid ID' });
+
+//             const enquiry = await Enquiry.findOne({ _id: id, isDeleted: false }).lean();
+//             if (!enquiry) return res.status(404).json({ success: false, message: 'Enquiry not found' });
+
+//             const emailLogs = await EmailLog.find({ enquiryId: id }).sort({ createdAt: -1 }).lean();
+//             res.json({ success: true, data: { ...enquiry, emailHistory: emailLogs } });
+
+//         } catch (error) {
+//             console.error('❌ Get enquiry by ID error:', error);
+//             res.status(500).json({ success: false, message: 'Failed to fetch enquiry' });
+//         }
+//     }
+
+//     async updateEnquiry(req, res) {
+//         try {
+//             const { id } = req.params;
+//             const updateData = req.body;
+//             if (!mongoose.Types.ObjectId.isValid(id)) return res.status(400).json({ success: false, message: 'Invalid ID' });
+
+//             const allowed = ['status','message','notes','assignedTo','priority'];
+//             const updates = Object.keys(updateData).reduce((acc, key) => allowed.includes(key) ? (acc[key] = updateData[key], acc) : acc, {});
+//             updates.updatedAt = Date.now();
+
+//             const enquiry = await Enquiry.findOneAndUpdate({ _id: id, isDeleted: false }, updates, { new: true, runValidators: true });
+//             if (!enquiry) return res.status(404).json({ success: false, message: 'Enquiry not found' });
+
+//             res.json({ success: true, message: 'Enquiry updated', data: enquiry });
+
+//         } catch (error) {
+//             console.error('❌ Update enquiry error:', error);
+//             res.status(500).json({ success: false, message: 'Failed to update enquiry' });
+//         }
+//     }
+
+//     async deleteEnquiry(req, res) {
+//         try {
+//             const { id } = req.params;
+//             if (!mongoose.Types.ObjectId.isValid(id)) return res.status(400).json({ success: false, message: 'Invalid ID' });
+
+//             const enquiry = await Enquiry.findOneAndUpdate(
+//                 { _id: id, isDeleted: false },
+//                 { isDeleted: true, deletedAt: Date.now(), updatedAt: Date.now() },
+//                 { new: true }
+//             );
+
+//             if (!enquiry) return res.status(404).json({ success: false, message: 'Enquiry not found' });
+
+//             res.json({ success: true, message: 'Enquiry deleted', data: { id: enquiry._id, deletedAt: enquiry.deletedAt } });
+
+//         } catch (error) {
+//             console.error('❌ Delete enquiry error:', error);
+//             res.status(500).json({ success: false, message: 'Failed to delete enquiry' });
+//         }
+//     }
+
+//     // ======================
+//     // EMAIL UTILITIES
+//     // ======================
+//     validateEmail(email) {
+//         return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+//     }
+
+//     async sendFollowupEmail(req, res) {
+//         try {
+//             const { enquiryId, message } = req.body;
+//             if (!enquiryId || !message) return res.status(400).json({ success: false, message: 'ID & message required' });
+//             if (!mongoose.Types.ObjectId.isValid(enquiryId)) return res.status(400).json({ success: false, message: 'Invalid ID' });
+
+//             const enquiry = await Enquiry.findOne({ _id: enquiryId, isDeleted: false });
+//             if (!enquiry) return res.status(404).json({ success: false, message: 'Enquiry not found' });
+
+//             const result = await this.sendEmail({
+//                 to: enquiry.email,
+//                 subject: `Follow-up: ${enquiry.course}`,
+//                 html: this.getFollowupEmailTemplate(enquiry, message),
+//                 enquiryId: enquiry._id,
+//                 recipientType: 'user',
+//                 emailType: 'followup',
+//                 metadata: { followup: true, followupMessage: message }
+//             });
+
+//             if (!result) return res.status(500).json({ success: false, message: 'Failed to send follow-up' });
+
+//             res.json({ success: true, message: 'Follow-up sent', data: { enquiryId: enquiry._id, recipient: enquiry.email } });
+
+//         } catch (error) {
+//             console.error('❌ Follow-up email error:', error);
+//             res.status(500).json({ success: false, message: 'Failed to send follow-up' });
+//         }
+//     }
+
+//     // ======================
+//     // DASHBOARD & STATS
+//     // ======================
+//     async getDashboardStatistics(req, res) {
+//         try {
+//             const now = moment().startOf('day');
+//             const counts = await Enquiry.countDocuments({ isDeleted: false });
+
+//             res.json({ success: true, data: { totalEnquiries: counts } });
+//         } catch (error) {
+//             console.error('❌ Dashboard error:', error);
+//             res.status(500).json({ success: false, message: 'Failed to fetch dashboard stats' });
+//         }
+//     }
+
+//     async healthCheck(req, res) {
+//         try {
+//             const checks = {
+//                 database: mongoose.connection.readyState === 1,
+//                 email: !!this.transporter,
+//                 uptime: process.uptime()
+//             };
+//             res.status(checks.database ? 200 : 503).json({ status: checks.database ? 'healthy' : 'degraded', checks });
+//         } catch (error) {
+//             res.status(503).json({ status: 'unhealthy', error: error.message });
+//         }
+//     }
+// }
+
+// const enquiryController = new EnquiryController();
+// module.exports = enquiryController;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 const Enquiry = require('../models/Enquiry');
 const EmailLog = require('../models/EmailLog');
 const mongoose = require('mongoose');
@@ -1512,9 +1962,9 @@ class EnquiryController {
     // ======================
     // TEMPLATES
     // ======================
-    getUserEmailTemplate(enquiry) { /* same HTML as before */ return `<html>...User Template...</html>`; }
-    getAdminEmailTemplate(enquiry) { /* same HTML as before */ return `<html>...Admin Template...</html>`; }
-    getFollowupEmailTemplate(enquiry, message) { /* same HTML */ return `<html>...Followup Template...</html>`; }
+    getUserEmailTemplate(enquiry) { return `<html>...User Template...</html>`; }
+    getAdminEmailTemplate(enquiry) { return `<html>...Admin Template...</html>`; }
+    getFollowupEmailTemplate(enquiry, message) { return `<html>...Followup Template...</html>`; }
 
     // ======================
     // CRUD OPERATIONS
@@ -1523,7 +1973,6 @@ class EnquiryController {
         try {
             const { name, email, phone, country, course, message } = req.body;
 
-            // Validation
             const errors = [];
             if (!name || name.trim().length < 2) errors.push('Name too short');
             if (!email || !this.validateEmail(email)) errors.push('Invalid email');
@@ -1532,7 +1981,6 @@ class EnquiryController {
             if (!course || course.trim().length < 2) errors.push('Invalid course');
             if (errors.length) return res.status(400).json({ success: false, errors });
 
-            // Duplicate check
             const recent = await Enquiry.findOne({
                 email: email.toLowerCase(),
                 createdAt: { $gte: moment().subtract(24, 'hours').toDate() },
@@ -1540,7 +1988,6 @@ class EnquiryController {
             });
             if (recent) return res.status(409).json({ success: false, message: 'Duplicate enquiry recently submitted' });
 
-            // Save
             const enquiry = new Enquiry({
                 name: name.trim(),
                 email: email.toLowerCase().trim(),
@@ -1553,7 +2000,6 @@ class EnquiryController {
             });
             await enquiry.save();
 
-            // Send emails in background
             this.sendEnquiryEmails(enquiry).then(r => console.log('Email results:', r));
 
             res.status(201).json({
