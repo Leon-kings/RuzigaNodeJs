@@ -2121,6 +2121,7 @@
 const mongoose = require('mongoose');
 const nodemailer = require('nodemailer');
 const Exam = require('../models/Exam');
+const Booking = require('../models/CSCEBook')
 
 class CSEController {
   constructor() {
@@ -2411,31 +2412,108 @@ class CSEController {
     }
   }
 
+  // async getAllBookings(req, res) {
+  //   try {
+  //     const exams = await Exam.find().select('name code bookings');
+
+  //     const allBookings = exams.flatMap(exam =>
+  //       (exam.bookings || []).map(booking => ({
+  //         examId: exam._id,
+  //         examName: exam.name,
+  //         examCode: exam.code,
+  //         bookingId: booking._id,
+  //         studentName: booking.studentName,
+  //         studentEmail: booking.studentEmail,
+  //         studentPhone: booking.studentPhone,
+  //         registrationDate: booking.registrationDate,
+  //         status: booking.status,
+  //         examSession: booking.examSession,
+  //         notes: booking.notes
+  //       }))
+  //     );
+
+  //     res.json({ success: true, total: allBookings.length, data: allBookings });
+  //   } catch (error) {
+  //     res.status(500).json({ success: false, message: error.message });
+  //   }
+  // }
+
+
+//   async getAllBookings(req, res) {
+//   try {
+//     const bookings = await Booking.find()
+//       .populate('examId', 'name code')
+//       .lean();
+
+//     const allBookings = bookings.map(b => ({
+//       bookingId: b._id,
+//       studentName: b.studentName,
+//       studentEmail: b.studentEmail,
+//       studentPhone: b.studentPhone,
+//       registrationDate: b.registrationDate,
+//       status: b.status,
+//       examSession: b.examSession,
+//       notes: b.notes,
+//       examId: b.examId?._id,
+//       examName: b.examId?.name,
+//       examCode: b.examId?.code
+//     }));
+
+//     res.json({
+//       success: true,
+//       total: allBookings.length,
+//       data: allBookings
+//     });
+//   } catch (error) {
+//     res.status(500).json({ success: false, message: error.message });
+//   }
+// }
+
+
+  // =========================
   async getAllBookings(req, res) {
     try {
-      const exams = await Exam.find().select('name code bookings');
+      // Fetch all exams with their registrations
+      const exams = await Exam.find()
+        .select('name code registrations') // we only need these fields
+        .lean(); // use lean() for plain JS objects
 
+      // Flatten registrations for all exams
       const allBookings = exams.flatMap(exam =>
-        (exam.bookings || []).map(booking => ({
+        (exam.registrations || []).map(reg => ({
           examId: exam._id,
           examName: exam.name,
           examCode: exam.code,
-          bookingId: booking._id,
-          studentName: booking.studentName,
-          studentEmail: booking.studentEmail,
-          studentPhone: booking.studentPhone,
-          registrationDate: booking.registrationDate,
-          status: booking.status,
-          examSession: booking.examSession,
-          notes: booking.notes
+          registrationId: reg._id,
+          studentName: reg.userName,
+          studentEmail: reg.userEmail,
+          studentPhone: reg.userPhone,
+          organization: reg.organization,
+          registrationDate: reg.registrationDate,
+          status: reg.status,
+          examSession: reg.examSession,
+          notes: reg.notes,
+          attachments: reg.attachments || []
         }))
       );
 
-      res.json({ success: true, total: allBookings.length, data: allBookings });
+      res.json({
+        success: true,
+        total: allBookings.length,
+        data: allBookings
+      });
     } catch (error) {
-      res.status(500).json({ success: false, message: error.message });
+      console.error('Error fetching bookings:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to fetch bookings',
+        error: error.message
+      });
     }
   }
+
+
+
 
   // ==================================================
   // 📊 DASHBOARD (CLEAN)
@@ -2461,6 +2539,7 @@ class CSEController {
     }
   }
 }
+
 
 // ✅ SINGLE INSTANCE EXPORT
 module.exports = new CSEController();

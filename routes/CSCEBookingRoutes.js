@@ -39,17 +39,6 @@
 
 // // // module.exports = router;
 
-
-
-
-
-
-
-
-
-
-
-
 // // const express = require('express');
 // // const router = express.Router();
 
@@ -168,7 +157,6 @@
 // //   cseController.getAllRegistrations
 // // );
 
-
 // // // Update registration status (Admin only)
 // // router.put(
 // //   '/exams/:examId/registrations/:registrationId',
@@ -190,23 +178,6 @@
 // // );
 
 // // module.exports = router;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 // const express = require('express');
 // const router = express.Router();
@@ -250,29 +221,9 @@
 
 // module.exports = router;
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const cseController = require('../controllers/CSCEBookingController');
-
-
+const cseController = require("../controllers/CSCEBookingController");
 
 /* =====================================================
    📌 USER BOOKING ROUTES
@@ -280,16 +231,15 @@ const cseController = require('../controllers/CSCEBookingController');
 
 // Create booking for an exam
 router.post(
-  '/:examId/bookings',
+  "/:examId/bookings",
 
   cseController.createBooking
 );
 
 // Get bookings for a specific exam (admin)
 router.get(
-  '/:examId/bookings',
+  "/:examId/bookings",
 
- 
   cseController.getExamBookings
 );
 
@@ -299,25 +249,22 @@ router.get(
 
 // Update booking status
 router.put(
-  '/:examId/bookings/:bookingId',
+  "/:examId/bookings/:bookingId",
 
- 
   cseController.updateBookingStatus
 );
 
 // Delete booking
 router.delete(
-  '/:examId/bookings/:bookingId',
+  "/:examId/bookings/:bookingId",
 
- 
   cseController.deleteBooking
 );
 
 // Get all bookings across all exams
 router.get(
-  '/bookings/all',
+  "/bookings/all",
 
- 
   cseController.getAllBookings
 );
 
