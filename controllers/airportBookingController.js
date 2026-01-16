@@ -4808,11 +4808,209 @@
 
 
 
+// const { Plane, AirportBooking } = require("../models/AirportBooking");
+// const { validationResult } = require("express-validator");
+// const cloudinary = require("cloudinary").v2;
+// const upload = require("../services/planeUpload");
+// const nodemailer = require("nodemailer");
+
+// /* =========================
+//    EMAIL CONFIG
+// ========================= */
+// const transporter = nodemailer.createTransport({
+//   host: process.env.SMTP_HOST || "smtp.gmail.com",
+//   port: 587,
+//   secure: false,
+//   auth: {
+//     user: process.env.SMTP_USER,
+//     pass: process.env.SMTP_PASS,
+//   },
+// });
+
+// const sendEmail = async (to, subject, html) => {
+//   await transporter.sendMail({
+//     from: `"Airport Services" <${process.env.EMAIL_FROM}>`,
+//     to,
+//     subject,
+//     html,
+//   });
+// };
+
+// /* =========================
+//    BOOKINGS
+// ========================= */
+// exports.getAllBookings = async (req, res) => {
+//   const bookings = await AirportBooking.find()
+//     .populate("plane", "registrationNumber model images")
+//     .sort({ createdAt: -1 });
+
+//   res.json({ success: true, data: bookings });
+// };
+
+// exports.getBooking = async (req, res) => {
+//   const booking = await AirportBooking.findById(req.params.id).populate(
+//     "plane"
+//   );
+//   if (!booking) return res.status(404).json({ success: false });
+//   res.json({ success: true, data: booking });
+// };
+
+// exports.createBooking = async (req, res) => {
+//   const errors = validationResult(req);
+//   if (!errors.isEmpty())
+//     return res.status(400).json({ errors: errors.array() });
+
+//   const prices = {
+//     standard: 50,
+//     vip_service: 150,
+//     executive: 100,
+//     family: 75,
+//     group: 40,
+//   };
+
+//   const base = prices[req.body.serviceType] || 50;
+//   const totalAmount =
+//     base * req.body.numberOfPassengers +
+//     (req.body.numberOfBags || 0) * 10;
+
+//   const booking = await AirportBooking.create({
+//     ...req.body,
+//     totalAmount,
+//     statistics: { totalRevenue: totalAmount },
+//   });
+
+//   await sendEmail(
+//     booking.email,
+//     "Booking Confirmation",
+//     "<p>Your booking is confirmed.</p>"
+//   );
+
+//   await booking.incrementEmailCount();
+
+//   res.status(201).json({ success: true, data: booking });
+// };
+
+// exports.updateBooking = async (req, res) => {
+//   const booking = await AirportBooking.findByIdAndUpdate(
+//     req.params.id,
+//     req.body,
+//     { new: true }
+//   );
+//   res.json({ success: true, data: booking });
+// };
+
+// exports.deleteBooking = async (req, res) => {
+//   await AirportBooking.findByIdAndDelete(req.params.id);
+//   res.json({ success: true });
+// };
+
+// exports.updateStatus = async (req, res) => {
+//   const booking = await AirportBooking.findByIdAndUpdate(
+//     req.params.id,
+//     { status: req.body.status },
+//     { new: true }
+//   );
+//   res.json({ success: true, data: booking });
+// };
+
+// /* =========================
+//    PLANES
+// ========================= */
+// exports.getAllPlanes = async (req, res) => {
+//   const planes = await Plane.find();
+//   res.json({ success: true, data: planes });
+// };
+
+// exports.getPlane = async (req, res) => {
+//   const plane = await Plane.findById(req.params.id);
+//   res.json({ success: true, data: plane });
+// };
+
+// exports.createPlane = async (req, res) => {
+//   const data = { ...req.body };
+
+//   if (req.file) {
+//     data.images = [
+//       {
+//         url: req.file.path,
+//         publicId: req.file.filename,
+//         isPrimary: true,
+//       },
+//     ];
+//   }
+
+//   const plane = await Plane.create(data);
+//   res.status(201).json({ success: true, data: plane });
+// };
+
+// exports.updatePlane = async (req, res) => {
+//   const plane = await Plane.findByIdAndUpdate(
+//     req.params.id,
+//     req.body,
+//     { new: true }
+//   );
+//   res.json({ success: true, data: plane });
+// };
+
+// exports.deletePlane = async (req, res) => {
+//   const plane = await Plane.findById(req.params.id);
+//   if (!plane) return res.status(404).json({ success: false });
+
+//   for (const img of plane.images) {
+//     await cloudinary.uploader.destroy(img.publicId);
+//   }
+
+//   await plane.deleteOne();
+//   res.json({ success: true });
+// };
+
+// exports.uploadPlaneImage = async (req, res) => {
+//   upload.single("image")(req, res, async (err) => {
+//     if (err) return res.status(400).json({ message: err.message });
+
+//     const plane = await Plane.findById(req.params.id);
+//     if (!plane) return res.status(404).json({ success: false });
+
+//     plane.images.push({
+//       url: req.file.path,
+//       publicId: req.file.filename,
+//       isPrimary: plane.images.length === 0,
+//     });
+
+//     await plane.save();
+//     res.json({ success: true, data: plane });
+//   });
+// };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 const { Plane, AirportBooking } = require("../models/AirportBooking");
 const { validationResult } = require("express-validator");
 const cloudinary = require("cloudinary").v2;
 const upload = require("../services/planeUpload");
 const nodemailer = require("nodemailer");
+const mongoose = require("mongoose");
 
 /* =========================
    EMAIL CONFIG
@@ -4828,6 +5026,7 @@ const transporter = nodemailer.createTransport({
 });
 
 const sendEmail = async (to, subject, html) => {
+  // could later enqueue this
   await transporter.sendMail({
     from: `"Airport Services" <${process.env.EMAIL_FROM}>`,
     to,
@@ -4841,9 +5040,8 @@ const sendEmail = async (to, subject, html) => {
 ========================= */
 exports.getAllBookings = async (req, res) => {
   const bookings = await AirportBooking.find()
-    .populate("plane", "registrationNumber model images")
+    .populate("plane", "registrationNumber model images isAvailable")
     .sort({ createdAt: -1 });
-
   res.json({ success: true, data: bookings });
 };
 
@@ -4860,34 +5058,60 @@ exports.createBooking = async (req, res) => {
   if (!errors.isEmpty())
     return res.status(400).json({ errors: errors.array() });
 
-  const prices = {
-    standard: 50,
-    vip_service: 150,
-    executive: 100,
-    family: 75,
-    group: 40,
-  };
+  const session = await mongoose.startSession();
+  session.startTransaction();
 
-  const base = prices[req.body.serviceType] || 50;
-  const totalAmount =
-    base * req.body.numberOfPassengers +
-    (req.body.numberOfBags || 0) * 10;
+  try {
+    // validate plane exists
+    const plane = await Plane.findById(req.body.plane).session(session);
+    if (!plane || !plane.isAvailable) {
+      throw new Error("Selected plane does not exist or is unavailable");
+    }
 
-  const booking = await AirportBooking.create({
-    ...req.body,
-    totalAmount,
-    statistics: { totalRevenue: totalAmount },
-  });
+    const prices = {
+      standard: 50,
+      vip_service: 150,
+      executive: 100,
+      family: 75,
+      group: 40,
+    };
 
-  await sendEmail(
-    booking.email,
-    "Booking Confirmation",
-    "<p>Your booking is confirmed.</p>"
-  );
+    const base = prices[req.body.serviceType] || 50;
+    const totalAmount =
+      base * req.body.numberOfPassengers + (req.body.numberOfBags || 0) * 10;
 
-  await booking.incrementEmailCount();
+    const booking = await AirportBooking.create(
+      [
+        {
+          ...req.body,
+          totalAmount,
+          statistics: { totalRevenue: totalAmount },
+        },
+      ],
+      { session }
+    );
 
-  res.status(201).json({ success: true, data: booking });
+    // Optionally mark plane as unavailable for this booking period
+    plane.isAvailable = false;
+    await plane.save({ session });
+
+    await session.commitTransaction();
+    session.endSession();
+
+    // send email outside transaction
+    sendEmail(
+      booking[0].email,
+      "Booking Confirmation",
+      "<p>Your booking is confirmed.</p>"
+    );
+    await booking[0].incrementEmailCount();
+
+    res.status(201).json({ success: true, data: booking[0] });
+  } catch (err) {
+    await session.abortTransaction();
+    session.endSession();
+    res.status(500).json({ success: false, message: err.message });
+  }
 };
 
 exports.updateBooking = async (req, res) => {
@@ -4923,32 +5147,25 @@ exports.getAllPlanes = async (req, res) => {
 
 exports.getPlane = async (req, res) => {
   const plane = await Plane.findById(req.params.id);
+  if (!plane) return res.status(404).json({ success: false });
   res.json({ success: true, data: plane });
 };
 
 exports.createPlane = async (req, res) => {
   const data = { ...req.body };
-
   if (req.file) {
     data.images = [
-      {
-        url: req.file.path,
-        publicId: req.file.filename,
-        isPrimary: true,
-      },
+      { url: req.file.path, publicId: req.file.filename, isPrimary: true },
     ];
   }
-
   const plane = await Plane.create(data);
   res.status(201).json({ success: true, data: plane });
 };
 
 exports.updatePlane = async (req, res) => {
-  const plane = await Plane.findByIdAndUpdate(
-    req.params.id,
-    req.body,
-    { new: true }
-  );
+  const plane = await Plane.findByIdAndUpdate(req.params.id, req.body, {
+    new: true,
+  });
   res.json({ success: true, data: plane });
 };
 
