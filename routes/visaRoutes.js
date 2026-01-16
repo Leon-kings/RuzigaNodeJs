@@ -235,12 +235,116 @@
 
 
 
+// const express = require('express');
+// const router = express.Router();
+// const multer = require('multer');
+// const {
+//   BookingController,
+//   ApplicationController,
+//   StatisticsController,
+//   QueryController
+// } = require('../controllers/visaController');
+
+// // Configure multer for file uploads
+// const storage = multer.memoryStorage();
+// const upload = multer({
+//   storage: storage,
+//   limits: {
+//     fileSize: 10 * 1024 * 1024 // 10MB limit
+//   },
+//   fileFilter: (req, file, cb) => {
+//     const allowedTypes = /jpeg|jpg|png|pdf|doc|docx/;
+//     const extname = allowedTypes.test(file.originalname.toLowerCase().split('.').pop());
+//     const mimetype = allowedTypes.test(file.mimetype);
+    
+//     if (extname && mimetype) {
+//       return cb(null, true);
+//     }
+//     cb(new Error('Only images and PDF/DOC files are allowed'));
+//   }
+// });
+
+// // ========== BOOKING ROUTES ==========
+
+// // Create and manage bookings
+// router.post('/bookings', BookingController.createBooking);
+// router.get('/bookings', BookingController.getAllBookings);
+// router.get('/bookings/:bookingId', BookingController.getBookingById);
+// router.put('/bookings/:bookingId', BookingController.updateBooking);
+// router.post('/bookings/:bookingId/schedule', BookingController.scheduleAppointment);
+// router.post('/bookings/:bookingId/convert-to-application', BookingController.convertToApplication);
+// router.delete('/bookings/:bookingId/cancel', BookingController.cancelBooking);
+
+// // Booking queries
+// router.get('/bookings/customer/:email', BookingController.getBookingsByCustomerEmail);
+// router.get('/bookings/upcoming/appointments', BookingController.getUpcomingAppointments);
+// router.get('/bookings/statistics', BookingController.getBookingStatistics);
+
+// // ========== APPLICATION ROUTES ==========
+
+// // Create and manage applications
+// router.post('/applications', ApplicationController.createApplication);
+// router.get('/applications', ApplicationController.getAllApplications);
+// router.get('/applications/tracking/:trackingNumber', ApplicationController.getApplicationByTrackingNumber);
+// router.put('/applications/:trackingNumber/status', ApplicationController.updateStatus);
+// router.put('/applications/:trackingNumber/payments', ApplicationController.updatePayment);
+
+// // Document management
+// router.post('/applications/:trackingNumber/documents', upload.single('file'), ApplicationController.uploadDocument);
+// router.put('/applications/:trackingNumber/documents/verify', ApplicationController.verifyDocument);
+
+// // Application queries
+// router.get('/applications/status/:status', ApplicationController.getApplicationsByStatus);
+// router.get('/applications/customer/:email', ApplicationController.getApplicationsByEmail);
+// router.get('/applications/pending/documents', ApplicationController.getPendingDocumentsApplications);
+// router.get('/applications/statistics', ApplicationController.getApplicationStatistics);
+
+// // ========== STATISTICS ROUTES ==========
+// router.get('/statistics/overview', StatisticsController.getOverview);
+// router.get('/statistics/dashboard', StatisticsController.getDashboardStats);
+// router.get('/statistics/agent-performance', StatisticsController.getAgentPerformance);
+// router.get('/statistics/revenue', StatisticsController.getRevenueStats);
+
+// // ========== QUERY ROUTES ==========
+// router.get('/search', QueryController.searchApplications);
+// router.get('/services', QueryController.getAllServices);
+
+// module.exports = router;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 const express = require('express');
 const router = express.Router();
 const multer = require('multer');
 const {
   BookingController,
   ApplicationController,
+  DocumentController,
   StatisticsController,
   QueryController
 } = require('../controllers/visaController');
@@ -271,14 +375,11 @@ router.post('/bookings', BookingController.createBooking);
 router.get('/bookings', BookingController.getAllBookings);
 router.get('/bookings/:bookingId', BookingController.getBookingById);
 router.put('/bookings/:bookingId', BookingController.updateBooking);
-router.post('/bookings/:bookingId/schedule', BookingController.scheduleAppointment);
+router.post('/bookings/:bookingId/confirm-appointment', BookingController.confirmAppointment);
+router.post('/bookings/:bookingId/complete-consultation', BookingController.markConsultationCompleted);
 router.post('/bookings/:bookingId/convert-to-application', BookingController.convertToApplication);
-router.delete('/bookings/:bookingId/cancel', BookingController.cancelBooking);
-
-// Booking queries
-router.get('/bookings/customer/:email', BookingController.getBookingsByCustomerEmail);
+router.post('/bookings/:bookingId/cancel', BookingController.cancelBooking);
 router.get('/bookings/upcoming/appointments', BookingController.getUpcomingAppointments);
-router.get('/bookings/statistics', BookingController.getBookingStatistics);
 
 // ========== APPLICATION ROUTES ==========
 
@@ -286,27 +387,28 @@ router.get('/bookings/statistics', BookingController.getBookingStatistics);
 router.post('/applications', ApplicationController.createApplication);
 router.get('/applications', ApplicationController.getAllApplications);
 router.get('/applications/tracking/:trackingNumber', ApplicationController.getApplicationByTrackingNumber);
-router.put('/applications/:trackingNumber/status', ApplicationController.updateStatus);
-router.put('/applications/:trackingNumber/payments', ApplicationController.updatePayment);
+router.put('/applications/:trackingNumber', ApplicationController.updateApplication);
+router.put('/applications/:trackingNumber/status', ApplicationController.updateApplicationStatus);
+router.put('/applications/:trackingNumber/payment', ApplicationController.updatePayment);
+router.post('/applications/:trackingNumber/add-country', ApplicationController.addAppliedCountry);
 
 // Document management
 router.post('/applications/:trackingNumber/documents', upload.single('file'), ApplicationController.uploadDocument);
 router.put('/applications/:trackingNumber/documents/verify', ApplicationController.verifyDocument);
 
 // Application queries
-router.get('/applications/status/:status', ApplicationController.getApplicationsByStatus);
-router.get('/applications/customer/:email', ApplicationController.getApplicationsByEmail);
-router.get('/applications/pending/documents', ApplicationController.getPendingDocumentsApplications);
-router.get('/applications/statistics', ApplicationController.getApplicationStatistics);
+router.get('/applications/customer/:email', ApplicationController.getApplicationsByCustomerEmail);
 
-// ========== STATISTICS ROUTES ==========
-router.get('/statistics/overview', StatisticsController.getOverview);
-router.get('/statistics/dashboard', StatisticsController.getDashboardStats);
-router.get('/statistics/agent-performance', StatisticsController.getAgentPerformance);
-router.get('/statistics/revenue', StatisticsController.getRevenueStats);
+// ========== DOCUMENT ROUTES ==========
+router.get('/applications/:trackingNumber/documents', DocumentController.getApplicationDocuments);
+router.delete('/applications/:trackingNumber/documents', DocumentController.deleteDocument);
 
 // ========== QUERY ROUTES ==========
-router.get('/search', QueryController.searchApplications);
-router.get('/services', QueryController.getAllServices);
+router.get('/search', ApplicationController.searchApplications); // Using ApplicationController.searchApplications
+router.get('/applications/search', ApplicationController.searchApplications); // Alternative route
+
+// ========== STATISTICS ROUTES ==========
+router.get('/statistics/dashboard', StatisticsController.getDashboardStats);
+router.get('/statistics/overview', StatisticsController.getDashboardStats); // Alias for compatibility
 
 module.exports = router;
