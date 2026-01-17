@@ -558,34 +558,33 @@ exports.getAllUsers = async (req, res) => {
   }
 };
 
-exports.getUserByEmail = async (req, res) => {
-  try {
-    const { email } = req.params;
+// exports.getUserByEmail = async (req, res) => {
+//   try {
+//     const { email } = req.params;
 
-    const user = await User.findOne({ email: email.toLowerCase() })
-      .select('-password');
+//     const user = await User.findOne({ email: email.toLowerCase() })
+//       .select('-password');
 
-    if (!user) {
-      return res.status(404).json({ 
-        success: false, 
-        message: 'User not found' 
-      });
-    }
+//     if (!user) {
+//       return res.status(404).json({ 
+//         success: false, 
+//         message: 'User not found' 
+//       });
+//     }
 
-    res.json({
-      success: true,
-      data: user
-    });
-  } catch (error) {
-    console.error('Get user by email error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Server error fetching user by email',
-      error: error.message
-    });
-  }
-};
-
+//     res.json({
+//       success: true,
+//       data: user
+//     });
+//   } catch (error) {
+//     console.error('Get user by email error:', error);
+//     res.status(500).json({
+//       success: false,
+//       message: 'Server error fetching user by email',
+//       error: error.message
+//     });
+//   }
+// };
 
 // Get user by ID (READ)
 exports.getUserById = async (req, res) => {
@@ -604,6 +603,35 @@ exports.getUserById = async (req, res) => {
     res.status(500).json({ message: 'Server error' });
   }
 };
+
+exports.getUserByEmail = async (req, res) => {
+  try {
+    const { email } = req.params;
+
+    if (!email) {
+      return res.status(400).json({ success: false, message: 'Email is required' });
+    }
+
+    const user = await User.findOne({ email: email.toLowerCase() }).select('-password');
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    res.json({
+      success: true,
+      data: user
+    });
+  } catch (error) {
+    console.error('Get user by email error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error fetching user by email',
+      error: error.message
+    });
+  }
+};
+
 
 // Get current user profile (READ)
 exports.getCurrentUser = async (req, res) => {
