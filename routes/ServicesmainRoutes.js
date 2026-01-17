@@ -12,8 +12,8 @@ router.post('/', validateFormData, mainController.createFormData);
 router.get('/', mainController.getAllFormData);
 
 // READ - Get single form submission
-router.get('/:id', mainController.getFormDataById);
 router.get('/:email', mainController.getFormDataByEmail);
+router.get('/:id', mainController.getFormDataById);
 
 // UPDATE - Update form submission
 router.put('/:id', validateFormData, mainController.updateFormData);

@@ -32,9 +32,11 @@ router.post('/create', bookingController.createBooking);
 // Get all bookings
 router.get('/book', bookingController.getAllBookings);
 
-// Get single booking by ID/Email
+// ✅ GET bookings by email (EXPLICIT)
+router.get('/email/:email', bookingController.getBookingsByEmail);
+
+// ✅ GET single booking by ID
 router.get('/:id', bookingController.getBooking);
-router.get('/:email', bookingController.getBookingsByEmail);
 
 // Update booking
 router.put('/:id', bookingController.updateBooking);

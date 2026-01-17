@@ -12,8 +12,9 @@ const examController = require('../controllers/cscExamController');
 router.get('/', examController.getAllExams);
 
 // Get single exam by ID
+router.get('/:email', examController.getExamsByEmail);
 router.get('/:id', examController.getExamById);
-router.get('/:id', examController.getExamsByEmail);
+
 
 /* =====================================================
    AUTHENTICATED USER ROUTES

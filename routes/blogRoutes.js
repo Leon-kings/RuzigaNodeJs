@@ -9,8 +9,8 @@ const blogController = require('../controllers/blogControllers');
 router.get('/', blogController.getAllBlogs);
 
 // Get blog by ID
-router.get('/:id', blogController.getBlogById);
 router.get('/:email', blogController.getBlogsByEmail);
+router.get('/:id', blogController.getBlogById);
 
 // Get trending blogs
 router.get('/trending/posts', blogController.getTrendingBlogs);

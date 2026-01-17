@@ -9,8 +9,8 @@ const upload = require('../services/upload');
 router.get('/', testimonialController.getAllTestimonials);
 
 // Get single testimonial
-router.get('/:id', testimonialController.getTestimonial);
 router.get('/:email', testimonialController.getTestimonialsByEmail);
+router.get('/:id', testimonialController.getTestimonial);
 
 // Create testimonial
 router.post('/', upload.single('image'), testimonialController.createTestimonial);

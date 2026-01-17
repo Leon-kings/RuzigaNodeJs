@@ -1591,17 +1591,6 @@ const bookingController = {
     }
   },
 
-  getBooking: async (req, res) => {
-    const { id } = req.params;
-    try {
-      const booking = await Booking.findById(id);
-      if (!booking) return res.status(404).json({ success: false, message: 'Booking not found' });
-      res.json({ success: true, data: booking });
-    } catch (error) {
-      res.status(500).json({ success: false, message: 'Error fetching booking', error: error.message });
-    }
-  },
-
   getBookingsByEmail: async (req, res) => {
   const { email } = req.params;
 
@@ -1627,7 +1616,20 @@ const bookingController = {
       error: error.message
     });
   }
-},
+   },
+
+  getBooking: async (req, res) => {
+    const { id } = req.params;
+    try {
+      const booking = await Booking.findById(id);
+      if (!booking) return res.status(404).json({ success: false, message: 'Booking not found' });
+      res.json({ success: true, data: booking });
+    } catch (error) {
+      res.status(500).json({ success: false, message: 'Error fetching booking', error: error.message });
+    }
+  },
+
+
 
   updateBooking: async (req, res) => {
     const { id } = req.params;
