@@ -156,6 +156,8 @@ router.post(
   userController.register
 );
 
+router.get("/:email", userController.getUserByEmail);
+
 // Login
 router.post(
   "/login",
@@ -291,7 +293,7 @@ router.get('/five-year', statisticsController.getFiveYearStatistics);
 
 // Single user operations (Admin only) — KEEP LAST
 router.get("/:id", userController.getUserById);
-router.get("/:email", userController.getUserByEmail);
+
 
 router.put(
   "/:id",
