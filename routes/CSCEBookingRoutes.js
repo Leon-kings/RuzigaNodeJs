@@ -16,15 +16,16 @@ router.post(
 
 // Get bookings for a specific exam (admin)
 router.get(
-  "/:examId/bookings",
-
-  cseController.getExamBookings
-);
-router.get(
   "/:email/bookings",
 
   cseController.getBookingsByEmail
 );
+router.get(
+  "/:examId/bookings",
+
+  cseController.getExamBookings
+);
+
 
 /* =====================================================
    📌 ADMIN BOOKING MANAGEMENT

@@ -39,8 +39,8 @@ router.get(
   contactController.getAllContacts
 );
 
-router.get('/:id', contactController.getContactById);
 router.get('/:email', contactController.getContactsByEmail);
+router.get('/:id', contactController.getContactById);
 
 router.get(
   '/:email',

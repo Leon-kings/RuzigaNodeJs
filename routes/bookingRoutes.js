@@ -16,8 +16,9 @@ router.get('/admin/statistics', bookingController.getBookingStats);
 router.get('/admin/all', bookingController.getAllBookings);
 
 // Get booking by ID
-router.get('/admin/:id', bookingController.getBookingById);
 router.get('/admin/:email', bookingController.getBookingsByEmail);
+router.get('/admin/:id', bookingController.getBookingById);
+
 
 // Update booking status
 router.put('/admin/:id', bookingController.updateBookingStatus);

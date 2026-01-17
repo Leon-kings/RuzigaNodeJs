@@ -11,11 +11,12 @@ const faqController = require("../controllers/faqController");
 // Get all published FAQs
 router.get("/", faqController.getFAQs);
 
+// Get single FAQ by Email (increments views)
+router.get("/:email", faqController.getQuestionsByEmail);
 // Get single FAQ by ID (increments views)
 router.get("/:id", faqController.getFAQById);
 
-// Get single FAQ by Email (increments views)
-router.get("/:email", faqController.getQuestionsByEmail);
+
 
 // Submit a new question
 router.post("/questions", faqController.submitQuestion);

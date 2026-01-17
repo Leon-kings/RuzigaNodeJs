@@ -134,8 +134,9 @@ router.post('/:id/followup', enquiryController.sendFollowupEmail.bind(enquiryCon
 // ======================
 
 // Get a single enquiry by ID
-router.get('/:id', enquiryController.getEnquiryById.bind(enquiryController));
 router.get('/:email', enquiryController.getEnquiriesByEmail.bind(enquiryController));
+router.get('/:id', enquiryController.getEnquiryById.bind(enquiryController));
+
 
 // Update enquiry by ID (status, notes, etc.)
 router.put('/:id', enquiryController.updateEnquiry.bind(enquiryController));

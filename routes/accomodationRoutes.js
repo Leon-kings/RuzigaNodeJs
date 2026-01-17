@@ -60,8 +60,9 @@ router.post('/create', uploadMultipleImages, accommodationController.createAccom
 router.get('/', accommodationController.getAllAccommodations);
 
 // Get single accommodation
-router.get('/:id', accommodationController.getAccommodation);
 router.get('/:email', accommodationController.getAccommodationByEmail);
+router.get('/:id', accommodationController.getAccommodation);
+
 
 // Update accommodation
 router.put('/:id', accommodationController.updateAccommodation);

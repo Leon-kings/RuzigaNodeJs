@@ -31,8 +31,9 @@ router.post("/planes/:id/upload-image", controller.uploadPlaneImage);
    BOOKINGS
 ======================= */
 router.get("/", controller.getAllBookings);
-router.get("/:id", controller.getBooking); // ⚠️ Booking ID
 router.get("/:email", controller.getBookingsByEmail);
+router.get("/:id", controller.getBooking); // ⚠️ Booking ID
+
 
 router.post(
   "/",
