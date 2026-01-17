@@ -5045,6 +5045,30 @@ exports.getAllBookings = async (req, res) => {
   res.json({ success: true, data: bookings });
 };
 
+exports.getBookingsByEmail = async (req, res) => {
+  try {
+    const { email } = req.params;
+
+    const bookings = await AirportBooking.find({ "customer.email": email.toLowerCase() })
+      .populate("plane", "registrationNumber model images isAvailable")
+      .sort({ createdAt: -1 });
+
+    res.json({
+      success: true,
+      total: bookings.length,
+      data: bookings
+    });
+  } catch (error) {
+    console.error('Get bookings by email error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch bookings by email',
+      error: error.message
+    });
+  }
+};
+
+
 exports.getBooking = async (req, res) => {
   const booking = await AirportBooking.findById(req.params.id).populate(
     "plane"

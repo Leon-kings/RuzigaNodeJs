@@ -684,6 +684,75 @@ exports.getAllBookings = async (req, res) => {
   }
 };
 
+exports.getBookingsByEmail = async (req, res) => {
+  try {
+    const { email } = req.params;
+    const {
+      page = 1,
+      limit = 20,
+      status,
+      category,
+      startDate,
+      endDate,
+      search,
+      sortBy = 'bookingDate',
+      sortOrder = 'desc'
+    } = req.query;
+
+    // Build query
+    const query = { 'customer.email': email.toLowerCase() };
+    if (status) query.status = status;
+    if (category) query['service.category'] = category;
+    
+    if (startDate || endDate) {
+      query.bookingDate = {};
+      if (startDate) query.bookingDate.$gte = new Date(startDate);
+      if (endDate) query.bookingDate.$lte = new Date(endDate);
+    }
+    
+    if (search) {
+      query.$or = [
+        { 'customer.fullName': { $regex: search, $options: 'i' } },
+        { 'service.name': { $regex: search, $options: 'i' } }
+      ];
+    }
+
+    // Pagination
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+    const total = await Booking.countDocuments(query);
+
+    // Sorting
+    const sort = {};
+    sort[sortBy] = sortOrder === 'asc' ? 1 : -1;
+
+    // Execute query
+    const bookings = await Booking.find(query)
+      .sort(sort)
+      .skip(skip)
+      .limit(parseInt(limit))
+      .lean();
+
+    res.status(200).json({
+      success: true,
+      data: bookings,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total,
+        pages: Math.ceil(total / parseInt(limit))
+      }
+    });
+
+  } catch (error) {
+    console.error('Get bookings by email error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch bookings by email'
+    });
+  }
+};
+
+
 // 3. Get Booking by ID
 exports.getBookingById = async (req, res) => {
   try {

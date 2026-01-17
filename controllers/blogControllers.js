@@ -1649,6 +1649,52 @@ exports.getAllBlogs = async (req, res) => {
     });
   }
 };
+// Get blog by email
+exports.getBlogsByEmail = async (req, res) => {
+  try {
+    const { email } = req.params;
+    const { page = 1, limit = 10, category, search, status } = req.query;
+
+    const query = {
+      email: email.toLowerCase()
+    };
+
+    if (status && status !== 'all') {
+      query.status = status;
+    }
+
+    if (category && category !== 'all') query.category = category;
+
+    if (search) {
+      query.$or = [
+        { title: new RegExp(search, 'i') },
+        { excerpt: new RegExp(search, 'i') },
+        { tags: new RegExp(search, 'i') }
+      ];
+    }
+
+    const blogs = await models.Blog.find(query)
+      .sort('-createdAt')
+      .skip((page - 1) * limit)
+      .limit(parseInt(limit));
+
+    const total = await models.Blog.countDocuments(query);
+
+    res.json({
+      success: true,
+      data: blogs,
+      total,
+      totalPages: Math.ceil(total / limit),
+      currentPage: parseInt(page)
+    });
+  } catch (error) {
+    console.error('Get blogs by email error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching blogs by email'
+    });
+  }
+};
 
 // Get blog by ID
 exports.getBlogById = async (req, res) => {

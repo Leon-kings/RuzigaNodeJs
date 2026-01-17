@@ -32,8 +32,9 @@ router.post('/create', bookingController.createBooking);
 // Get all bookings
 router.get('/book', bookingController.getAllBookings);
 
-// Get single booking by ID
+// Get single booking by ID/Email
 router.get('/:id', bookingController.getBooking);
+router.get('/:email', bookingController.getBookingsByEmail);
 
 // Update booking
 router.put('/:id', bookingController.updateBooking);

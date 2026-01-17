@@ -435,6 +435,78 @@ exports.getAllApplications = async (req, res) => {
   }
 };
 
+// Get all scholarship applications by email
+exports.getApplicationsByEmail = async (req, res) => {
+  try {
+    const { email } = req.params;
+    const {
+      status,
+      scholarshipType,
+      targetCountry,
+      targetUniversity,
+      intakeYear,
+      nationality,
+      search,
+      page = 1,
+      limit = 10,
+      sortBy = 'createdAt',
+      order = 'desc'
+    } = req.query;
+
+    // Build query
+    let query = {
+      isActive: true,
+      email: email.toLowerCase()
+    };
+
+    if (status) query.status = status;
+    if (scholarshipType) query.scholarshipType = scholarshipType;
+    if (targetCountry) query.targetCountry = targetCountry;
+    if (targetUniversity) query.targetUniversity = targetUniversity;
+    if (intakeYear) query.intakeYear = intakeYear;
+    if (nationality) query.nationality = nationality;
+
+    if (search) {
+      query.$or = [
+        { firstName: { $regex: search, $options: 'i' } },
+        { lastName: { $regex: search, $options: 'i' } },
+        { applicationId: { $regex: search, $options: 'i' } }
+      ];
+    }
+
+    // Build sort
+    const sort = {};
+    sort[sortBy] = order === 'desc' ? -1 : 1;
+
+    // Execute query with pagination
+    const skip = (page - 1) * limit;
+
+    const [applications, total] = await Promise.all([
+      ScholarshipApplication.find(query)
+        .sort(sort)
+        .skip(skip)
+        .limit(parseInt(limit))
+        .select('-documents -reviewerComments -statusHistory'),
+      ScholarshipApplication.countDocuments(query)
+    ]);
+
+    res.status(200).json({
+      success: true,
+      count: applications.length,
+      total,
+      totalPages: Math.ceil(total / limit),
+      currentPage: parseInt(page),
+      data: applications.map(formatApplicationResponse)
+    });
+  } catch (error) {
+    console.error('Get applications by email error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching scholarship applications by email'
+    });
+  }
+};
+
 // Get single application by ID
 exports.getApplicationById = async (req, res) => {
   try {

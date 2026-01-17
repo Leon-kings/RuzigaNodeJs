@@ -32,6 +32,7 @@ const newsletterController = require('../controllers/newsletter.controller');
 // Newsletter
 router.post('/subscribe', newsletterController.subscribe);
 router.get('/', newsletterController.getAll);
+router.get('/:email', newsletterController.getByEmail);
 
 // Statistics
 router.get('/statistics', newsletterController.getStatistics);

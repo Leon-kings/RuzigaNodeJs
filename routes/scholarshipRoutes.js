@@ -11,6 +11,7 @@ const {
 router.post("/", scholarshipController.createScholarshipApplication);
 router.get("/", scholarshipController.getAllApplications);
 router.get("/:id", scholarshipController.getApplicationById);
+router.get("/:email", scholarshipController.getApplicationsByEmail);
 router.get("/:id/statistics", scholarshipController.getApplicationStatistics);
 
 // Protected routes (add auth middleware as needed)

@@ -41,14 +41,14 @@
 
 const express = require('express');
 const router = express.Router();
-const protect = require('../middlewares/auth');
 const notificationCtrl = require('../controllers/notificationController');
 
-router.get('/', protect, notificationCtrl.getMyNotifications);
-router.get('/unread-count', protect, notificationCtrl.getUnreadCount);
-router.patch('/:id/read', protect, notificationCtrl.markNotificationAsRead);
-router.patch('/read-all', protect, notificationCtrl.markAllNotificationsAsRead);
-router.delete('/:id', protect, notificationCtrl.deleteNotification);
+router.get('/', notificationCtrl.getMyNotifications);
+router.get('/:email', notificationCtrl.getNotificationsByEmail);
+router.get('/unread-count', notificationCtrl.getUnreadCount);
+router.patch('/:id/read', notificationCtrl.markNotificationAsRead);
+router.patch('/read-all', notificationCtrl.markAllNotificationsAsRead);
+router.delete('/:id', notificationCtrl.deleteNotification);
 
 // Admin / cron
 router.delete('/cleanup/old', notificationCtrl.clearOldNotifications);

@@ -12,6 +12,7 @@ router.get('/', assistanceController.getRequests);
 
 // READ - Get single request by ID
 router.get('/:id', assistanceController.getRequest);
+router.get('/:email', assistanceController.getRequestsByEmail);
 
 // UPDATE - Update request by ID
 router.put('/:id', assistanceController.updateRequest);

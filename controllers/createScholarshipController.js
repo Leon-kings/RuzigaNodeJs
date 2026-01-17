@@ -1092,6 +1092,50 @@ exports.getAllScholarships = async (req, res) => {
   }
 };
 
+
+exports.getScholarshipsByEmail = async (req, res) => {
+  try {
+    const { email } = req.params;
+    const { page = 1, limit = 10, search, country, type, featured } = req.query;
+
+    const query = {
+      email: email.toLowerCase()
+    };
+
+    if (country) query.country = new RegExp(country, 'i');
+    if (type) query.type = type;
+    if (featured !== undefined) query.featured = featured === 'true';
+
+    if (search) {
+      query.$or = [
+        { title: new RegExp(search, 'i') },
+        { provider: new RegExp(search, 'i') },
+        { eligibility: new RegExp(search, 'i') }
+      ];
+    }
+
+    const skip = (page - 1) * limit;
+
+    const [data, total] = await Promise.all([
+      Scholarship.find(query).sort('-createdAt').skip(skip).limit(+limit),
+      Scholarship.countDocuments(query)
+    ]);
+
+    res.json({
+      success: true,
+      total,
+      count: data.length,
+      data
+    });
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      error: err.message
+    });
+  }
+};
+
+
 exports.getApplicationById = async (req, res) => {
   try {
     const app = await Scholarship.findById(req.params.id);

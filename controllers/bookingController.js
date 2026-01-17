@@ -332,6 +332,66 @@ exports.getAllBookings = async (req, res) => {
   }
 };
 
+exports.getBookingsByEmail = async (req, res) => {
+  try {
+    const { email } = req.params;
+    const { 
+      page = 1, 
+      limit = 20, 
+      status, 
+      service, 
+      country,
+      startDate, 
+      endDate,
+      search 
+    } = req.query;
+
+    const query = { email: email.toLowerCase() };
+
+    // Apply same filters as getAllBookings
+    if (status && status !== 'all') query.status = status;
+    if (service && service !== 'all') query.service = service;
+    if (country && country !== 'all') query.country = country;
+
+    if (startDate || endDate) {
+      query.date = {};
+      if (startDate) query.date.$gte = new Date(startDate);
+      if (endDate) query.date.$lte = new Date(endDate);
+    }
+
+    if (search) {
+      query.$or = [
+        { name: new RegExp(search, 'i') },
+        { email: new RegExp(search, 'i') },
+        { phone: new RegExp(search, 'i') }
+      ];
+    }
+
+    const bookings = await models.Booking.find(query)
+      .sort('-createdAt')
+      .skip((page - 1) * limit)
+      .limit(parseInt(limit))
+      .populate('postId', 'title slug');
+
+    const total = await models.Booking.countDocuments(query);
+
+    res.json({
+      success: true,
+      data: bookings,
+      total,
+      totalPages: Math.ceil(total / limit),
+      currentPage: parseInt(page)
+    });
+  } catch (error) {
+    console.error('Get bookings by email error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching bookings by email'
+    });
+  }
+};
+
+
 // Admin: Get booking by ID
 exports.getBookingById = async (req, res) => {
   try {

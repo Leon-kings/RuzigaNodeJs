@@ -61,6 +61,7 @@ router.get('/', accommodationController.getAllAccommodations);
 
 // Get single accommodation
 router.get('/:id', accommodationController.getAccommodation);
+router.get('/:email', accommodationController.getAccommodationByEmail);
 
 // Update accommodation
 router.put('/:id', accommodationController.updateAccommodation);

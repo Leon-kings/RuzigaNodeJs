@@ -162,6 +162,83 @@ class AssistanceController {
       });
     }
   }
+async getRequestsByEmail(req, res) {
+  try {
+    const {
+      issueType,
+      priority,
+      status,
+      assignedTo,
+      startDate,
+      endDate,
+      search,
+      sortBy = 'createdAt',
+      sortOrder = 'desc',
+      page = 1,
+      limit = 20
+    } = req.query;
+
+    const { email } = req.params;
+
+    // Build query
+    const query = {
+      email: email.toLowerCase()
+    };
+
+    if (status) query.status = status;
+    if (issueType) query.issueType = issueType;
+    if (priority) query.priority = priority;
+    if (assignedTo) query.assignedTo = assignedTo;
+
+    // Date range
+    if (startDate || endDate) {
+      query.createdAt = {};
+      if (startDate) query.createdAt.$gte = new Date(startDate);
+      if (endDate) query.createdAt.$lte = new Date(endDate);
+    }
+
+    // Search
+    if (search) {
+      query.$or = [
+        { name: { $regex: search, $options: 'i' } },
+        { message: { $regex: search, $options: 'i' } },
+        { notes: { $regex: search, $options: 'i' } }
+      ];
+    }
+
+    const skip = (page - 1) * limit;
+    const sort = { [sortBy]: sortOrder === 'desc' ? -1 : 1 };
+
+    const [requests, total] = await Promise.all([
+      AssistanceRequest.find(query)
+        .sort(sort)
+        .skip(skip)
+        .limit(parseInt(limit))
+        .select('-__v'),
+      AssistanceRequest.countDocuments(query)
+    ]);
+
+    res.json({
+      success: true,
+      data: requests.map(req => this.formatResponse(req)),
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total,
+        totalPages: Math.ceil(total / limit),
+        hasNext: page * limit < total,
+        hasPrev: page > 1
+      }
+    });
+
+  } catch (error) {
+    console.error('Get requests by email error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch assistance requests by email'
+    });
+  }
+}
 
   // ========== READ (Single) ==========
   async getRequest(req, res) {

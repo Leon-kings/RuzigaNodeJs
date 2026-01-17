@@ -73,6 +73,72 @@ exports.getAllTestimonials = async (req, res) => {
   }
 };
 
+exports.getTestimonialsByEmail = async (req, res) => {
+  try {
+    const { email } = req.params;
+    const {
+      status,
+      search,
+      sort,
+      page = 1,
+      limit = 20
+    } = req.query;
+
+    // Build query
+    let query = { email: email.toLowerCase() };
+
+    // Status filter
+    if (status && status !== 'all') {
+      query.status = status;
+    }
+
+    // Search filter
+    if (search) {
+      query.$or = [
+        { name: { $regex: search, $options: 'i' } },
+        { university: { $regex: search, $options: 'i' } },
+        { program: { $regex: search, $options: 'i' } },
+        { country: { $regex: search, $options: 'i' } },
+        { content: { $regex: search, $options: 'i' } }
+      ];
+    }
+
+    // Build sort
+    let sortOption = { createdAt: -1 }; // Default: newest first
+    if (sort === 'oldest') sortOption = { createdAt: 1 };
+    else if (sort === 'highest-rating') sortOption = { rating: -1 };
+    else if (sort === 'lowest-rating') sortOption = { rating: 1 };
+
+    // Pagination
+    const skip = (page - 1) * limit;
+
+    // Execute query
+    const testimonials = await Testimonial.find(query)
+      .sort(sortOption)
+      .skip(skip)
+      .limit(parseInt(limit));
+
+    // Total count for pagination
+    const total = await Testimonial.countDocuments(query);
+
+    res.status(200).json({
+      success: true,
+      count: testimonials.length,
+      total,
+      pages: Math.ceil(total / limit),
+      currentPage: parseInt(page),
+      data: testimonials
+    });
+  } catch (error) {
+    console.error('Get testimonials by email error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error while fetching testimonials by email'
+    });
+  }
+};
+
+
 // Create testimonial
 exports.createTestimonial = async (req, res) => {
   try {
