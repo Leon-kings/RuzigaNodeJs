@@ -558,6 +558,35 @@ exports.getAllUsers = async (req, res) => {
   }
 };
 
+exports.getUserByEmail = async (req, res) => {
+  try {
+    const { email } = req.params;
+
+    const user = await User.findOne({ email: email.toLowerCase() })
+      .select('-password');
+
+    if (!user) {
+      return res.status(404).json({ 
+        success: false, 
+        message: 'User not found' 
+      });
+    }
+
+    res.json({
+      success: true,
+      data: user
+    });
+  } catch (error) {
+    console.error('Get user by email error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error fetching user by email',
+      error: error.message
+    });
+  }
+};
+
+
 // Get user by ID (READ)
 exports.getUserById = async (req, res) => {
   try {
