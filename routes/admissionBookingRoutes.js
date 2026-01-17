@@ -388,6 +388,7 @@ router.get(
 
 router.get("/applications/:id", AdmissionController.getRecord);
 
+
 router.put(
   "/applications/:id",
   upload.array("documents", 20),

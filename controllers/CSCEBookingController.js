@@ -2512,6 +2512,50 @@ class CSEController {
     }
   }
 
+async getBookingsByEmail(req, res) {
+  try {
+    const { email } = req.params;
+
+    // Fetch all exams with their registrations
+    const exams = await Exam.find()
+      .select('name code registrations')
+      .lean();
+
+    // Filter registrations by student email
+    const filteredBookings = exams.flatMap(exam =>
+      (exam.registrations || [])
+        .filter(reg => reg.userEmail.toLowerCase() === email.toLowerCase())
+        .map(reg => ({
+          examId: exam._id,
+          examName: exam.name,
+          examCode: exam.code,
+          registrationId: reg._id,
+          studentName: reg.userName,
+          studentEmail: reg.userEmail,
+          studentPhone: reg.userPhone,
+          organization: reg.organization,
+          registrationDate: reg.registrationDate,
+          status: reg.status,
+          examSession: reg.examSession,
+          notes: reg.notes,
+          attachments: reg.attachments || []
+        }))
+    );
+
+    res.json({
+      success: true,
+      total: filteredBookings.length,
+      data: filteredBookings
+    });
+  } catch (error) {
+    console.error('Error fetching bookings by email:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch bookings by email',
+      error: error.message
+    });
+  }
+}
 
 
 

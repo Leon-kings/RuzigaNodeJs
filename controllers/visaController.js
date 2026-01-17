@@ -4336,6 +4336,110 @@ const BookingController = {
       });
     }
   },
+getBookingsByEmail: async (req, res) => {
+    try {
+      const { email } = req.params;
+      const {
+        page = 1,
+        limit = 20,
+        sortBy = 'createdAt',
+        sortOrder = 'desc',
+        status,
+        type,
+        dateFrom,
+        dateTo,
+        customerName,
+        agentId
+      } = req.query;
+
+      const skip = (parseInt(page) - 1) * parseInt(limit);
+
+      // Build query for bookings by email
+      const query = {
+        serviceType: { $in: ['booking', 'combined'] },
+        'customer.contactInfo.email': email.toLowerCase()
+      };
+
+      // Apply other filters
+      if (status) query['bookingDetails.bookingStatus'] = status;
+      if (type) query['bookingDetails.type'] = type;
+      if (dateFrom || dateTo) {
+        query.createdAt = {};
+        if (dateFrom) query.createdAt.$gte = new Date(dateFrom);
+        if (dateTo) query.createdAt.$lte = new Date(dateTo);
+      }
+      if (customerName) {
+        query['customer.personalInfo.fullName'] = { $regex: customerName, $options: 'i' };
+      }
+      if (agentId && mongoose.Types.ObjectId.isValid(agentId)) {
+        query['internal.assignedTo.agentId'] = new mongoose.Types.ObjectId(agentId);
+      }
+
+      // Sort
+      const sort = {};
+      sort[sortBy] = sortOrder === 'asc' ? 1 : -1;
+
+      // Fetch bookings
+      const [bookings, total] = await Promise.all([
+        VisaService.find(query)
+          .sort(sort)
+          .skip(skip)
+          .limit(parseInt(limit))
+          .select('-documents -communications -statusHistory -auditLog -__v')
+          .lean(),
+        VisaService.countDocuments(query)
+      ]);
+
+      // Calculate statistics
+      const stats = {
+        totalBookings: total,
+        byStatus: bookings.reduce((acc, booking) => {
+          const status = booking.bookingDetails?.bookingStatus || 'unknown';
+          acc[status] = (acc[status] || 0) + 1;
+          return acc;
+        }, {}),
+        byType: bookings.reduce((acc, booking) => {
+          const type = booking.bookingDetails?.type || 'unknown';
+          acc[type] = (acc[type] || 0) + 1;
+          return acc;
+        }, {}),
+        totalRevenue: bookings.reduce((sum, booking) => 
+          sum + (booking.bookingDetails?.bookingAmount || 0), 0
+        ),
+        upcomingAppointments: bookings.filter(booking => 
+          booking.bookingDetails?.appointment?.date && 
+          new Date(booking.bookingDetails.appointment.date) > new Date()
+        ).length,
+        confirmedAppointments: bookings.filter(booking => 
+          booking.bookingDetails?.appointment?.confirmed === true
+        ).length
+      };
+
+      res.json({
+        success: true,
+        data: {
+          bookings,
+          pagination: {
+            page: parseInt(page),
+            limit: parseInt(limit),
+            total,
+            totalPages: Math.ceil(total / parseInt(limit)),
+            hasNextPage: (parseInt(page) * parseInt(limit)) < total,
+            hasPrevPage: parseInt(page) > 1
+          },
+          statistics: stats
+        }
+      });
+    } catch (error) {
+      console.error('Get bookings by email error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to retrieve bookings by email',
+        error: error.message
+      });
+    }
+  },
+
 
   // Cancel booking
   cancelBooking: async (req, res) => {

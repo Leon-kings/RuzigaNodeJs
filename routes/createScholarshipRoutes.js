@@ -59,6 +59,7 @@ router.get('/featured', (req, res, next) => {
 
 // Get scholarship by ID
 router.get('/:id', scholarshipController.getApplicationById);
+router.get('/:email', scholarshipController.getScholarshipsByEmail);
 
 // Create scholarship
 router.post(

@@ -163,6 +163,84 @@ async createContact(req, res) {
     }
   }
 
+  async getContactsByEmail(req, res) {
+  try {
+    const {
+      page = 1,
+      limit = 10,
+      status = 'all',
+      search = '',
+      startDate,
+      endDate,
+      sortBy = 'createdAt',
+      sortOrder = 'desc'
+    } = req.query;
+
+    const { email } = req.params;
+
+    const query = {
+      email: email.toLowerCase()
+    };
+
+    // Status filter
+    if (status !== 'all') {
+      query.status = status;
+    }
+
+    // Search filter (exclude email since it's fixed)
+    if (search) {
+      query.$or = [
+        { name: { $regex: search, $options: 'i' } },
+        { subject: { $regex: search, $options: 'i' } },
+        { message: { $regex: search, $options: 'i' } }
+      ];
+    }
+
+    // Date range filter
+    if (startDate || endDate) {
+      query.createdAt = {};
+      if (startDate) query.createdAt.$gte = new Date(startDate);
+      if (endDate) query.createdAt.$lte = new Date(endDate);
+    }
+
+    // Sort configuration
+    const sort = {};
+    sort[sortBy] = sortOrder === 'desc' ? -1 : 1;
+
+    // Pagination
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+
+    const [contacts, total] = await Promise.all([
+      Contact.find(query)
+        .sort(sort)
+        .skip(skip)
+        .limit(parseInt(limit))
+        .select('-__v'),
+      Contact.countDocuments(query)
+    ]);
+
+    res.status(200).json({
+      success: true,
+      data: contacts,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total,
+        pages: Math.ceil(total / parseInt(limit)),
+        hasNext: (parseInt(page) * parseInt(limit)) < total,
+        hasPrev: parseInt(page) > 1
+      }
+    });
+  } catch (error) {
+    console.error('Get contacts by email error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch contacts by email'
+    });
+  }
+}
+
+
   // READ - Get single contact by ID
   async getContactById(req, res) {
     try {

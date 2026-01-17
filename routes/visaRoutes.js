@@ -373,6 +373,7 @@ const upload = multer({
 // Create and manage bookings
 router.post('/bookings', BookingController.createBooking);
 router.get('/bookings', BookingController.getAllBookings);
+router.get('/bookings/:email', BookingController.getBookingsByEmail);
 router.get('/bookings/:bookingId', BookingController.getBookingById);
 router.put('/bookings/:bookingId', BookingController.updateBooking);
 router.post('/bookings/:bookingId/confirm-appointment', BookingController.confirmAppointment);

@@ -1241,6 +1241,30 @@ exports.getQuestions = async (req, res) => {
   }
 };
 
+exports.getQuestionsByEmail = async (req, res) => {
+  try {
+    const { email } = req.params;
+    const { status, category, search } = req.query;
+
+    const filter = { email: email.toLowerCase() };
+
+    if (status) filter.status = status;
+    if (category) filter.category = category;
+    if (search) filter.question = { $regex: search, $options: "i" };
+
+    const questions = await Question.find(filter).sort({ createdAt: -1 });
+
+    res.json({
+      success: true,
+      count: questions.length,
+      data: questions
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+
 // Answer Question
 exports.answerQuestion = async (req, res) => {
   try {

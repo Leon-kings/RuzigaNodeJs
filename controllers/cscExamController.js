@@ -933,6 +933,8 @@ exports.getAllExams = async (req, res) => {
   }
 };
 
+
+
 // ================= GET SINGLE EXAM =================
 exports.getExamById = async (req, res) => {
   const exam = await Exam.findById(req.params.id);
@@ -948,6 +950,43 @@ exports.getExamById = async (req, res) => {
 
   res.json({ success: true, data });
 };
+
+exports.getExamsByEmail = async (req, res) => {
+  try {
+    const { email } = req.params;
+    const { search, page = 1, limit = 10 } = req.query;
+
+    const query = {
+      isActive: true,
+      email: email.toLowerCase(),
+      ...(search && {
+        $or: [
+          { name: new RegExp(search, 'i') },
+          { description: new RegExp(search, 'i') }
+        ]
+      })
+    };
+
+    const skip = (page - 1) * limit;
+
+    const [exams, total] = await Promise.all([
+      Exam.find(query).skip(skip).limit(+limit),
+      Exam.countDocuments(query)
+    ]);
+
+    res.json({
+      success: true,
+      total,
+      data: exams.map(formatExam)
+    });
+  } catch (e) {
+    res.status(500).json({
+      success: false,
+      message: e.message
+    });
+  }
+};
+
 
 // ================= UPDATE EXAM =================
 exports.updateExam = async (req, res) => {

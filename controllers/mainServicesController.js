@@ -131,6 +131,87 @@ class MainController {
     }
   }
 
+  async getFormDataByEmail(req, res) {
+    try {
+      const { email } = req.params;
+      const {
+        page = 1,
+        limit = 10,
+        status,
+        search,
+        country,
+        program,
+        sortBy = 'submittedAt',
+        sortOrder = 'desc'
+      } = req.query;
+
+      // Build query
+      const query = { email: email.toLowerCase() };
+      
+      if (status && status !== 'all') {
+        query.status = status;
+      }
+      
+      if (country && country !== 'all') {
+        query.targetCountry = country;
+      }
+      
+      if (program && program !== 'all') {
+        query.program = program;
+      }
+      
+      if (search) {
+        query.$or = [
+          { fullName: { $regex: search, $options: 'i' } },
+          { phone: { $regex: search, $options: 'i' } },
+          { requirements: { $regex: search, $options: 'i' } }
+        ];
+      }
+
+      // Build sort
+      const sort = {};
+      sort[sortBy] = sortOrder === 'desc' ? -1 : 1;
+
+      // Execute query with pagination
+      const submissions = await FormData.find(query)
+        .sort(sort)
+        .limit(limit * 1)
+        .skip((page - 1) * limit)
+        .select('-__v');
+
+      const total = await FormData.countDocuments(query);
+
+      // Get filter options for frontend (optional, still for user)
+      const countries = await FormData.distinct('targetCountry');
+      const programs = await FormData.distinct('program');
+      const statuses = ['pending', 'contacted', 'approved', 'rejected'];
+
+      res.json({
+        success: true,
+        data: submissions,
+        pagination: {
+          total,
+          page: parseInt(page),
+          limit: parseInt(limit),
+          pages: Math.ceil(total / limit)
+        },
+        filters: {
+          countries,
+          programs,
+          statuses
+        }
+      });
+    } catch (error) {
+      console.error('Get form data by email error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error fetching form data by email',
+        error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      });
+    }
+  }
+
+
   // READ - Get single form submission by ID
   async getFormDataById(req, res) {
     try {

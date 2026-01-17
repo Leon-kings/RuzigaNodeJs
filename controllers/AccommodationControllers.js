@@ -1482,16 +1482,41 @@ createAccommodation: async (req, res) => {
     }
   },
 
+  // getAccommodation: async (req, res) => {
+  //   const { id } = req.params;
+  //   try {
+  //     const accommodation = await Accommodation.findById(id);
+  //     if (!accommodation) return res.status(404).json({ success: false, message: 'Accommodation not found' });
+  //     res.json({ success: true, data: accommodation });
+  //   } catch (error) {
+  //     res.status(500).json({ success: false, message: 'Error fetching accommodation', error: error.message });
+  //   }
+  // },
   getAccommodation: async (req, res) => {
-    const { id } = req.params;
-    try {
-      const accommodation = await Accommodation.findById(id);
-      if (!accommodation) return res.status(404).json({ success: false, message: 'Accommodation not found' });
-      res.json({ success: true, data: accommodation });
-    } catch (error) {
-      res.status(500).json({ success: false, message: 'Error fetching accommodation', error: error.message });
+  const { id } = req.params;
+  try {
+    const accommodation = await Accommodation.findById(id);
+    if (!accommodation) return res.status(404).json({ success: false, message: 'Accommodation not found' });
+    res.json({ success: true, data: accommodation });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Error fetching accommodation', error: error.message });
+  }
+},
+
+getAccommodationByEmail: async (req, res) => {
+  const { email } = req.params;
+
+  try {
+    const accommodation = await Accommodation.findOne({ email });
+    if (!accommodation) {
+      return res.status(404).json({ success: false, message: 'Accommodation not found for this email' });
     }
-  },
+    res.json({ success: true, data: accommodation });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Error fetching accommodation by email', error: error.message });
+  }
+},
+
 
   updateAccommodation: async (req, res) => {
     const { id } = req.params;
@@ -1576,6 +1601,33 @@ const bookingController = {
       res.status(500).json({ success: false, message: 'Error fetching booking', error: error.message });
     }
   },
+
+  getBookingsByEmail: async (req, res) => {
+  const { email } = req.params;
+
+  try {
+    const bookings = await Booking.find({ email }).sort({ createdAt: -1 });
+
+    if (!bookings || bookings.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'No bookings found for this email'
+      });
+    }
+
+    res.json({
+      success: true,
+      count: bookings.length,
+      data: bookings
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching bookings by email',
+      error: error.message
+    });
+  }
+},
 
   updateBooking: async (req, res) => {
     const { id } = req.params;

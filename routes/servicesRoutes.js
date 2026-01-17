@@ -16,6 +16,7 @@ router.get('/date-range', bookingController.getBookingsByDateRange);
 
 // Single booking routes
 router.get('/:id', bookingController.getBookingById);
+router.get('/:email', bookingController.getBookingsByEmail);
 router.put('/:id/status', bookingController.updateBookingStatus);
 router.post('/:id/notes', bookingController.addNoteToBooking);
 router.delete('/:id', bookingController.deleteBooking);

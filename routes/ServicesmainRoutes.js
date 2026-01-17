@@ -13,6 +13,7 @@ router.get('/', mainController.getAllFormData);
 
 // READ - Get single form submission
 router.get('/:id', mainController.getFormDataById);
+router.get('/:email', mainController.getFormDataByEmail);
 
 // UPDATE - Update form submission
 router.put('/:id', validateFormData, mainController.updateFormData);

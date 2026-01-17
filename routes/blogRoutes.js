@@ -10,6 +10,7 @@ router.get('/', blogController.getAllBlogs);
 
 // Get blog by ID
 router.get('/:id', blogController.getBlogById);
+router.get('/:email', blogController.getBlogsByEmail);
 
 // Get trending blogs
 router.get('/trending/posts', blogController.getTrendingBlogs);

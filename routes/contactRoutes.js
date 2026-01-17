@@ -40,6 +40,7 @@ router.get(
 );
 
 router.get('/:id', contactController.getContactById);
+router.get('/:email', contactController.getContactsByEmail);
 
 router.get(
   '/:email',

@@ -15,7 +15,7 @@
 //         try {
 //             const emailUser = process.env.SMTP_USER;
 //             const emailPass = process.env.SMTP_PASS;
-            
+
 //             if (!emailUser || !emailPass) {
 //                 console.warn('⚠️ SMTP credentials not found. Email functionality will be disabled.');
 //                 this.transporter = null;
@@ -110,7 +110,7 @@
 
 //         } catch (error) {
 //             console.error('❌ Error sending email:', error.message);
-            
+
 //             // Update email log with failure
 //             try {
 //                 await EmailLog.findOneAndUpdate(
@@ -125,7 +125,7 @@
 //             } catch (logError) {
 //                 console.error('❌ Failed to update email log:', logError.message);
 //             }
-            
+
 //             // Don't throw error to prevent enquiry creation from failing
 //             return null;
 //         }
@@ -138,7 +138,7 @@
 //     async sendEnquiryEmails(enquiry) {
 //         try {
 //             console.log(`📧 Starting email process for enquiry ${enquiry._id}`);
-            
+
 //             // Check if email is configured
 //             if (!this.transporter) {
 //                 console.warn('⚠️ Email not configured. Skipping email sending.');
@@ -219,7 +219,7 @@
 //                     <div class="content">
 //                         <p>Dear <strong>${enquiry.name}</strong>,</p>
 //                         <p>Thank you for your interest in our <strong>${enquiry.course}</strong> course. We have received your enquiry and our team will contact you shortly.</p>
-                        
+
 //                         <div class="details">
 //                             <h3>Enquiry Details:</h3>
 //                             <div class="detail-row">
@@ -249,13 +249,13 @@
 //                             </div>
 //                             ` : ''}
 //                         </div>
-                        
+
 //                         <div class="highlight">
 //                             <strong>📞 What's Next?</strong>
 //                             <p>Our admissions team will contact you within <strong>24-48 hours</strong> at the provided contact details.</p>
 //                             <p>For urgent inquiries, please call us directly or reply to this email.</p>
 //                         </div>
-                        
+
 //                         <p>Best regards,<br>
 //                         <strong>The Education Team</strong></p>
 //                     </div>
@@ -305,13 +305,13 @@
 //                         <div class="alert-badge">ACTION REQUIRED</div>
 //                         <p>Immediate attention needed</p>
 //                     </div>
-                    
+
 //                     <div class="content">
 //                         <div class="action-required">
 //                             <h3>⏰ Time-sensitive Action Required</h3>
 //                             <p>A new student enquiry requires your prompt attention. Please contact the student within <strong>24 hours</strong>.</p>
 //                         </div>
-                        
+
 //                         <div class="student-info">
 //                             <h2>Student Information</h2>
 //                             <div class="info-grid">
@@ -334,7 +334,7 @@
 //                                         <span class="value">${enquiry.country}</span>
 //                                     </div>
 //                                 </div>
-                                
+
 //                                 <div class="info-card">
 //                                     <h3>Enquiry Details</h3>
 //                                     <div class="info-item">
@@ -355,7 +355,7 @@
 //                                     </div>
 //                                 </div>
 //                             </div>
-                            
+
 //                             ${enquiry.message ? `
 //                             <div class="info-card">
 //                                 <h3>Student Message</h3>
@@ -363,7 +363,7 @@
 //                             </div>
 //                             ` : ''}
 //                         </div>
-                        
+
 //                         <div class="action-required">
 //                             <h3>📋 Next Steps</h3>
 //                             <ol class="action-steps">
@@ -375,7 +375,7 @@
 //                             <p><strong>Priority:</strong> High - New prospective student</p>
 //                         </div>
 //                     </div>
-                    
+
 //                     <div class="footer">
 //                         <p>This is an automated notification from the Enquiry Management System.</p>
 //                         <p>Enquiry received at: ${new Date().toLocaleString()}</p>
@@ -536,7 +536,7 @@
 //             // Apply filters
 //             if (status) query.status = status;
 //             if (course) query.course = { $regex: course, $options: 'i' };
-            
+
 //             // Date range filter
 //             if (startDate || endDate) {
 //                 query.createdAt = {};
@@ -677,7 +677,7 @@
 //             // Prevent updating certain fields
 //             const allowedUpdates = ['status', 'message', 'notes', 'assignedTo', 'priority'];
 //             const updates = {};
-            
+
 //             Object.keys(updateData).forEach(key => {
 //                 if (allowedUpdates.includes(key)) {
 //                     updates[key] = updateData[key];
@@ -690,8 +690,8 @@
 //             const enquiry = await Enquiry.findOneAndUpdate(
 //                 { _id: id, isDeleted: false },
 //                 updates,
-//                 { 
-//                     new: true, 
+//                 {
+//                     new: true,
 //                     runValidators: true,
 //                     context: 'query'
 //                 }
@@ -712,7 +712,7 @@
 
 //         } catch (error) {
 //             console.error('❌ Error updating enquiry:', error);
-            
+
 //             if (error.name === 'ValidationError') {
 //                 return res.status(400).json({
 //                     success: false,
@@ -742,8 +742,8 @@
 
 //             const enquiry = await Enquiry.findOneAndUpdate(
 //                 { _id: id, isDeleted: false },
-//                 { 
-//                     isDeleted: true, 
+//                 {
+//                     isDeleted: true,
 //                     deletedAt: Date.now(),
 //                     updatedAt: Date.now()
 //                 },
@@ -778,7 +778,7 @@
 //     async getEnquiriesByEmail(req, res) {
 //         try {
 //             const { email } = req.params;
-            
+
 //             if (!email || !this.validateEmail(email)) {
 //                 return res.status(400).json({
 //                     success: false,
@@ -905,7 +905,7 @@
 //             const thisMonth = moment().startOf('month');
 //             const lastMonth = moment().subtract(1, 'month').startOf('month');
 //             const thisYear = moment().startOf('year');
-            
+
 //             const [
 //                 totalEnquiries,
 //                 todayEnquiries,
@@ -971,14 +971,14 @@
 //             };
 
 //             // Calculate growth percentages with safety checks
-//             const dayGrowth = data.yesterdayEnquiries > 0 
-//                 ? ((data.todayEnquiries - data.yesterdayEnquiries) / data.yesterdayEnquiries) * 100 
+//             const dayGrowth = data.yesterdayEnquiries > 0
+//                 ? ((data.todayEnquiries - data.yesterdayEnquiries) / data.yesterdayEnquiries) * 100
 //                 : data.todayEnquiries > 0 ? 100 : 0;
-            
+
 //             const weekGrowth = data.lastWeekEnquiries > 0
 //                 ? ((data.thisWeekEnquiries - data.lastWeekEnquiries) / data.lastWeekEnquiries) * 100
 //                 : data.thisWeekEnquiries > 0 ? 100 : 0;
-            
+
 //             const monthGrowth = data.lastMonthEnquiries > 0
 //                 ? ((data.thisMonthEnquiries - data.lastMonthEnquiries) / data.lastMonthEnquiries) * 100
 //                 : data.thisMonthEnquiries > 0 ? 100 : 0;
@@ -1019,9 +1019,9 @@
 //     async sendTestEmail(req, res) {
 //         try {
 //             const { to, subject, message } = req.body;
-            
+
 //             const testEmail = to || process.env.ADMIN_EMAIL || process.env.SMTP_USER;
-            
+
 //             if (!testEmail) {
 //                 return res.status(400).json({
 //                     success: false,
@@ -1118,7 +1118,7 @@
 //             }
 //             if (status) query.status = status;
 //             if (emailType) query.emailType = emailType;
-            
+
 //             if (startDate || endDate) {
 //                 query.sentAt = {};
 //                 if (startDate) {
@@ -1217,7 +1217,7 @@
 //                 enquiryId: enquiry._id,
 //                 recipientType: 'user',
 //                 emailType: 'followup',
-//                 metadata: { 
+//                 metadata: {
 //                     followup: true,
 //                     followupMessage: message,
 //                     sentBy: req.user?.id || 'system'
@@ -1316,63 +1316,6 @@
 // // Create singleton instance
 // const enquiryController = new EnquiryController();
 // module.exports = enquiryController;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 // const Enquiry = require('../models/Enquiry');
 // const EmailLog = require('../models/EmailLog');
@@ -1728,447 +1671,522 @@
 // const enquiryController = new EnquiryController();
 // module.exports = enquiryController;
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-const Enquiry = require('../models/Enquiry');
-const EmailLog = require('../models/EmailLog');
-const mongoose = require('mongoose');
-const moment = require('moment');
-const nodemailer = require('nodemailer');
+const Enquiry = require("../models/Enquiry");
+const EmailLog = require("../models/EmailLog");
+const mongoose = require("mongoose");
+const moment = require("moment");
+const nodemailer = require("nodemailer");
 
 class EnquiryController {
-    constructor() {
-        this.initEmailTransporter();
-        this.verifyEmailTransporter();
+  constructor() {
+    this.initEmailTransporter();
+    this.verifyEmailTransporter();
+  }
+
+  // ======================
+  // EMAIL TRANSPORTER
+  // ======================
+  initEmailTransporter() {
+    const emailUser = process.env.SMTP_USER;
+    const emailPass = process.env.SMTP_PASS;
+
+    if (!emailUser || !emailPass) {
+      console.warn("⚠️ SMTP credentials missing. Emails will be disabled.");
+      this.transporter = null;
+      return;
     }
 
-    // ======================
-    // EMAIL TRANSPORTER
-    // ======================
-    initEmailTransporter() {
-        const emailUser = process.env.SMTP_USER;
-        const emailPass = process.env.SMTP_PASS;
+    this.transporter = nodemailer.createTransport({
+      host: process.env.SMTP_HOST || "smtp.gmail.com",
+      port: parseInt(process.env.SMTP_PORT) || 587,
+      secure: process.env.SMTP_SECURE === "true",
+      auth: { user: emailUser, pass: emailPass },
+      tls: { rejectUnauthorized: false },
+      pool: true,
+      maxConnections: 5,
+      maxMessages: 100,
+    });
 
-        if (!emailUser || !emailPass) {
-            console.warn('⚠️ SMTP credentials missing. Emails will be disabled.');
-            this.transporter = null;
-            return;
-        }
+    console.log("✅ Email transporter initialized");
+  }
 
-        this.transporter = nodemailer.createTransport({
-            host: process.env.SMTP_HOST || 'smtp.gmail.com',
-            port: parseInt(process.env.SMTP_PORT) || 587,
-            secure: process.env.SMTP_SECURE === 'true',
-            auth: { user: emailUser, pass: emailPass },
-            tls: { rejectUnauthorized: false },
-            pool: true,
-            maxConnections: 5,
-            maxMessages: 100
+  async verifyEmailTransporter() {
+    if (!this.transporter) return false;
+    try {
+      await this.transporter.verify();
+      console.log("✅ Email transporter verified");
+      return true;
+    } catch (error) {
+      console.error("❌ Email verification failed:", error.message);
+      return false;
+    }
+  }
+
+  async sendEmail(options) {
+    if (!this.transporter) return null;
+
+    const mailOptions = {
+      from: `"Enquiry System" <${process.env.SMTP_USER}>`,
+      to: options.to,
+      subject: options.subject,
+      html: options.html,
+      text: options.text || this.stripHtml(options.html),
+    };
+
+    const emailLog = new EmailLog({
+      enquiryId: options.enquiryId,
+      recipientType: options.recipientType,
+      emailType: options.emailType,
+      recipientEmail: options.to,
+      subject: options.subject,
+      content: options.html,
+      status: "pending",
+      metadata: options.metadata || {},
+    });
+
+    try {
+      await emailLog.save();
+
+      const sendPromise = this.transporter.sendMail(mailOptions);
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("Email timeout")), 30000)
+      );
+
+      const info = await Promise.race([sendPromise, timeoutPromise]);
+
+      emailLog.status = "sent";
+      emailLog.messageId = info.messageId;
+      emailLog.sentAt = new Date();
+      await emailLog.save();
+
+      console.log(`✅ Email sent: ${options.to}`);
+      return info;
+    } catch (error) {
+      console.error("❌ Email send error:", error.message);
+      await EmailLog.findOneAndUpdate(
+        { enquiryId: options.enquiryId, recipientEmail: options.to },
+        { status: "failed", errorMessage: error.message, sentAt: new Date() },
+        { new: true, sort: { createdAt: -1 } }
+      );
+      return null;
+    }
+  }
+
+  stripHtml(html) {
+    return html
+      .replace(/<[^>]*>/g, "")
+      .replace(/\s+/g, " ")
+      .trim();
+  }
+
+  async sendEnquiryEmails(enquiry) {
+    if (!this.transporter)
+      return { userEmail: "skipped", adminEmail: "skipped" };
+
+    const userEmail = this.sendEmail({
+      to: enquiry.email,
+      subject: `Enquiry Confirmation - ${enquiry.course}`,
+      html: this.getUserEmailTemplate(enquiry),
+      enquiryId: enquiry._id,
+      recipientType: "user",
+      emailType: "confirmation",
+    });
+
+    const adminEmail = this.sendEmail({
+      to: process.env.ADMIN_EMAIL || enquiry.email,
+      subject: `📋 New Enquiry: ${enquiry.name} - ${enquiry.course}`,
+      html: this.getAdminEmailTemplate(enquiry),
+      enquiryId: enquiry._id,
+      recipientType: "admin",
+      emailType: "notification",
+    });
+
+    const [userResult, adminResult] = await Promise.allSettled([
+      userEmail,
+      adminEmail,
+    ]);
+
+    return {
+      userEmail:
+        userResult.status === "fulfilled" && userResult.value
+          ? "sent"
+          : "failed",
+      adminEmail:
+        adminResult.status === "fulfilled" && adminResult.value
+          ? "sent"
+          : "failed",
+    };
+  }
+
+  // ======================
+  // TEMPLATES
+  // ======================
+  getUserEmailTemplate(enquiry) {
+    return `<html>...User Template...</html>`;
+  }
+  getAdminEmailTemplate(enquiry) {
+    return `<html>...Admin Template...</html>`;
+  }
+  getFollowupEmailTemplate(enquiry, message) {
+    return `<html>...Followup Template...</html>`;
+  }
+
+  // ======================
+  // CRUD OPERATIONS
+  // ======================
+  async createEnquiry(req, res) {
+    try {
+      const { name, email, phone, country, course, message } = req.body;
+
+      const errors = [];
+      if (!name || name.trim().length < 2) errors.push("Name too short");
+      if (!email || !this.validateEmail(email)) errors.push("Invalid email");
+      if (!phone || phone.trim().length < 5) errors.push("Invalid phone");
+      if (!country || country.trim().length < 2) errors.push("Invalid country");
+      if (!course || course.trim().length < 2) errors.push("Invalid course");
+      if (errors.length)
+        return res.status(400).json({ success: false, errors });
+
+      const recent = await Enquiry.findOne({
+        email: email.toLowerCase(),
+        createdAt: { $gte: moment().subtract(24, "hours").toDate() },
+        isDeleted: false,
+      });
+      if (recent)
+        return res
+          .status(409)
+          .json({
+            success: false,
+            message: "Duplicate enquiry recently submitted",
+          });
+
+      const enquiry = new Enquiry({
+        name: name.trim(),
+        email: email.toLowerCase().trim(),
+        phone: phone.trim(),
+        country: country.trim(),
+        course: course.trim(),
+        message: message?.trim() || "",
+        status: "new",
+        source: req.headers["user-agent"] || "unknown",
+      });
+      await enquiry.save();
+
+      this.sendEnquiryEmails(enquiry).then((r) =>
+        console.log("Email results:", r)
+      );
+
+      res.status(201).json({
+        success: true,
+        message: "Enquiry submitted successfully",
+        data: {
+          id: enquiry._id,
+          name: enquiry.name,
+          email: enquiry.email,
+          course: enquiry.course,
+          status: enquiry.status,
+          createdAt: enquiry.createdAt,
+          referenceNumber: `ENQ-${enquiry._id
+            .toString()
+            .slice(-8)
+            .toUpperCase()}`,
+        },
+      });
+    } catch (error) {
+      console.error("❌ Create enquiry error:", error);
+      res
+        .status(500)
+        .json({ success: false, message: "Failed to create enquiry" });
+    }
+  }
+
+  async getAllEnquiries(req, res) {
+    try {
+      const {
+        page = 1,
+        limit = 20,
+        status,
+        course,
+        startDate,
+        endDate,
+        search,
+        sortBy = "createdAt",
+        sortOrder = "desc",
+      } = req.query;
+      const query = { isDeleted: false };
+      if (status) query.status = status;
+      if (course) query.course = { $regex: course, $options: "i" };
+      if (startDate || endDate) query.createdAt = {};
+      if (startDate) query.createdAt.$gte = new Date(startDate);
+      if (endDate) query.createdAt.$lte = new Date(endDate);
+      if (search)
+        query.$or = [
+          "name",
+          "email",
+          "phone",
+          "country",
+          "course",
+          "message",
+        ].map((f) => ({ [f]: { $regex: search, $options: "i" } }));
+
+      const [enquiries, total] = await Promise.all([
+        Enquiry.find(query)
+          .sort({ [sortBy]: sortOrder === "desc" ? -1 : 1 })
+          .skip((page - 1) * limit)
+          .limit(parseInt(limit))
+          .lean(),
+        Enquiry.countDocuments(query),
+      ]);
+
+      res.json({
+        success: true,
+        data: enquiries,
+        pagination: { total, page: parseInt(page), limit: parseInt(limit) },
+      });
+    } catch (error) {
+      console.error("❌ Get all enquiries error:", error);
+      res
+        .status(500)
+        .json({ success: false, message: "Failed to fetch enquiries" });
+    }
+  }
+
+  async getEnquiriesByEmail(req, res) {
+    try {
+      const { email } = req.params;
+      const {
+        page = 1,
+        limit = 20,
+        status,
+        course,
+        startDate,
+        endDate,
+        search,
+        sortBy = "createdAt",
+        sortOrder = "desc",
+      } = req.query;
+
+      const query = {
+        isDeleted: false,
+        email: email.toLowerCase(),
+      };
+
+      if (status) query.status = status;
+      if (course) query.course = { $regex: course, $options: "i" };
+      if (startDate || endDate) query.createdAt = {};
+      if (startDate) query.createdAt.$gte = new Date(startDate);
+      if (endDate) query.createdAt.$lte = new Date(endDate);
+
+      if (search) {
+        query.$or = ["name", "phone", "country", "course", "message"].map(
+          (f) => ({ [f]: { $regex: search, $options: "i" } })
+        );
+      }
+
+      const [enquiries, total] = await Promise.all([
+        Enquiry.find(query)
+          .sort({ [sortBy]: sortOrder === "desc" ? -1 : 1 })
+          .skip((page - 1) * limit)
+          .limit(parseInt(limit))
+          .lean(),
+        Enquiry.countDocuments(query),
+      ]);
+
+      res.json({
+        success: true,
+        data: enquiries,
+        pagination: { total, page: parseInt(page), limit: parseInt(limit) },
+      });
+    } catch (error) {
+      console.error("❌ Get enquiries by email error:", error);
+      res
+        .status(500)
+        .json({
+          success: false,
+          message: "Failed to fetch enquiries by email",
         });
-
-        console.log('✅ Email transporter initialized');
     }
+  }
 
-    async verifyEmailTransporter() {
-        if (!this.transporter) return false;
-        try {
-            await this.transporter.verify();
-            console.log('✅ Email transporter verified');
-            return true;
-        } catch (error) {
-            console.error('❌ Email verification failed:', error.message);
-            return false;
-        }
+  async getEnquiryById(req, res) {
+    try {
+      const { id } = req.params;
+      if (!mongoose.Types.ObjectId.isValid(id))
+        return res.status(400).json({ success: false, message: "Invalid ID" });
+
+      const enquiry = await Enquiry.findOne({
+        _id: id,
+        isDeleted: false,
+      }).lean();
+      if (!enquiry)
+        return res
+          .status(404)
+          .json({ success: false, message: "Enquiry not found" });
+
+      const emailLogs = await EmailLog.find({ enquiryId: id })
+        .sort({ createdAt: -1 })
+        .lean();
+      res.json({
+        success: true,
+        data: { ...enquiry, emailHistory: emailLogs },
+      });
+    } catch (error) {
+      console.error("❌ Get enquiry by ID error:", error);
+      res
+        .status(500)
+        .json({ success: false, message: "Failed to fetch enquiry" });
     }
+  }
 
-    async sendEmail(options) {
-        if (!this.transporter) return null;
+  async updateEnquiry(req, res) {
+    try {
+      const { id } = req.params;
+      const updateData = req.body;
+      if (!mongoose.Types.ObjectId.isValid(id))
+        return res.status(400).json({ success: false, message: "Invalid ID" });
 
-        const mailOptions = {
-            from: `"Enquiry System" <${process.env.SMTP_USER}>`,
-            to: options.to,
-            subject: options.subject,
-            html: options.html,
-            text: options.text || this.stripHtml(options.html)
-        };
+      const allowed = ["status", "message", "notes", "assignedTo", "priority"];
+      const updates = Object.keys(updateData).reduce(
+        (acc, key) =>
+          allowed.includes(key) ? ((acc[key] = updateData[key]), acc) : acc,
+        {}
+      );
+      updates.updatedAt = Date.now();
 
-        const emailLog = new EmailLog({
-            enquiryId: options.enquiryId,
-            recipientType: options.recipientType,
-            emailType: options.emailType,
-            recipientEmail: options.to,
-            subject: options.subject,
-            content: options.html,
-            status: 'pending',
-            metadata: options.metadata || {}
-        });
+      const enquiry = await Enquiry.findOneAndUpdate(
+        { _id: id, isDeleted: false },
+        updates,
+        { new: true, runValidators: true }
+      );
+      if (!enquiry)
+        return res
+          .status(404)
+          .json({ success: false, message: "Enquiry not found" });
 
-        try {
-            await emailLog.save();
-
-            const sendPromise = this.transporter.sendMail(mailOptions);
-            const timeoutPromise = new Promise((_, reject) =>
-                setTimeout(() => reject(new Error('Email timeout')), 30000)
-            );
-
-            const info = await Promise.race([sendPromise, timeoutPromise]);
-
-            emailLog.status = 'sent';
-            emailLog.messageId = info.messageId;
-            emailLog.sentAt = new Date();
-            await emailLog.save();
-
-            console.log(`✅ Email sent: ${options.to}`);
-            return info;
-
-        } catch (error) {
-            console.error('❌ Email send error:', error.message);
-            await EmailLog.findOneAndUpdate(
-                { enquiryId: options.enquiryId, recipientEmail: options.to },
-                { status: 'failed', errorMessage: error.message, sentAt: new Date() },
-                { new: true, sort: { createdAt: -1 } }
-            );
-            return null;
-        }
+      res.json({ success: true, message: "Enquiry updated", data: enquiry });
+    } catch (error) {
+      console.error("❌ Update enquiry error:", error);
+      res
+        .status(500)
+        .json({ success: false, message: "Failed to update enquiry" });
     }
+  }
 
-    stripHtml(html) {
-        return html.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
+  async deleteEnquiry(req, res) {
+    try {
+      const { id } = req.params;
+      if (!mongoose.Types.ObjectId.isValid(id))
+        return res.status(400).json({ success: false, message: "Invalid ID" });
+
+      const enquiry = await Enquiry.findOneAndUpdate(
+        { _id: id, isDeleted: false },
+        { isDeleted: true, deletedAt: Date.now(), updatedAt: Date.now() },
+        { new: true }
+      );
+
+      if (!enquiry)
+        return res
+          .status(404)
+          .json({ success: false, message: "Enquiry not found" });
+
+      res.json({
+        success: true,
+        message: "Enquiry deleted",
+        data: { id: enquiry._id, deletedAt: enquiry.deletedAt },
+      });
+    } catch (error) {
+      console.error("❌ Delete enquiry error:", error);
+      res
+        .status(500)
+        .json({ success: false, message: "Failed to delete enquiry" });
     }
+  }
 
-    async sendEnquiryEmails(enquiry) {
-        if (!this.transporter) return { userEmail: 'skipped', adminEmail: 'skipped' };
+  // ======================
+  // EMAIL UTILITIES
+  // ======================
+  validateEmail(email) {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  }
 
-        const userEmail = this.sendEmail({
-            to: enquiry.email,
-            subject: `Enquiry Confirmation - ${enquiry.course}`,
-            html: this.getUserEmailTemplate(enquiry),
-            enquiryId: enquiry._id,
-            recipientType: 'user',
-            emailType: 'confirmation'
-        });
+  async sendFollowupEmail(req, res) {
+    try {
+      const { enquiryId, message } = req.body;
+      if (!enquiryId || !message)
+        return res
+          .status(400)
+          .json({ success: false, message: "ID & message required" });
+      if (!mongoose.Types.ObjectId.isValid(enquiryId))
+        return res.status(400).json({ success: false, message: "Invalid ID" });
 
-        const adminEmail = this.sendEmail({
-            to: process.env.ADMIN_EMAIL || enquiry.email,
-            subject: `📋 New Enquiry: ${enquiry.name} - ${enquiry.course}`,
-            html: this.getAdminEmailTemplate(enquiry),
-            enquiryId: enquiry._id,
-            recipientType: 'admin',
-            emailType: 'notification'
-        });
+      const enquiry = await Enquiry.findOne({
+        _id: enquiryId,
+        isDeleted: false,
+      });
+      if (!enquiry)
+        return res
+          .status(404)
+          .json({ success: false, message: "Enquiry not found" });
 
-        const [userResult, adminResult] = await Promise.allSettled([userEmail, adminEmail]);
+      const result = await this.sendEmail({
+        to: enquiry.email,
+        subject: `Follow-up: ${enquiry.course}`,
+        html: this.getFollowupEmailTemplate(enquiry, message),
+        enquiryId: enquiry._id,
+        recipientType: "user",
+        emailType: "followup",
+        metadata: { followup: true, followupMessage: message },
+      });
 
-        return {
-            userEmail: userResult.status === 'fulfilled' && userResult.value ? 'sent' : 'failed',
-            adminEmail: adminResult.status === 'fulfilled' && adminResult.value ? 'sent' : 'failed'
-        };
+      if (!result)
+        return res
+          .status(500)
+          .json({ success: false, message: "Failed to send follow-up" });
+
+      res.json({
+        success: true,
+        message: "Follow-up sent",
+        data: { enquiryId: enquiry._id, recipient: enquiry.email },
+      });
+    } catch (error) {
+      console.error("❌ Follow-up email error:", error);
+      res
+        .status(500)
+        .json({ success: false, message: "Failed to send follow-up" });
     }
+  }
 
-    // ======================
-    // TEMPLATES
-    // ======================
-    getUserEmailTemplate(enquiry) { return `<html>...User Template...</html>`; }
-    getAdminEmailTemplate(enquiry) { return `<html>...Admin Template...</html>`; }
-    getFollowupEmailTemplate(enquiry, message) { return `<html>...Followup Template...</html>`; }
+  // ======================
+  // DASHBOARD & STATS
+  // ======================
+  async getDashboardStatistics(req, res) {
+    try {
+      const now = moment().startOf("day");
+      const counts = await Enquiry.countDocuments({ isDeleted: false });
 
-    // ======================
-    // CRUD OPERATIONS
-    // ======================
-    async createEnquiry(req, res) {
-        try {
-            const { name, email, phone, country, course, message } = req.body;
-
-            const errors = [];
-            if (!name || name.trim().length < 2) errors.push('Name too short');
-            if (!email || !this.validateEmail(email)) errors.push('Invalid email');
-            if (!phone || phone.trim().length < 5) errors.push('Invalid phone');
-            if (!country || country.trim().length < 2) errors.push('Invalid country');
-            if (!course || course.trim().length < 2) errors.push('Invalid course');
-            if (errors.length) return res.status(400).json({ success: false, errors });
-
-            const recent = await Enquiry.findOne({
-                email: email.toLowerCase(),
-                createdAt: { $gte: moment().subtract(24, 'hours').toDate() },
-                isDeleted: false
-            });
-            if (recent) return res.status(409).json({ success: false, message: 'Duplicate enquiry recently submitted' });
-
-            const enquiry = new Enquiry({
-                name: name.trim(),
-                email: email.toLowerCase().trim(),
-                phone: phone.trim(),
-                country: country.trim(),
-                course: course.trim(),
-                message: message?.trim() || '',
-                status: 'new',
-                source: req.headers['user-agent'] || 'unknown'
-            });
-            await enquiry.save();
-
-            this.sendEnquiryEmails(enquiry).then(r => console.log('Email results:', r));
-
-            res.status(201).json({
-                success: true,
-                message: 'Enquiry submitted successfully',
-                data: {
-                    id: enquiry._id,
-                    name: enquiry.name,
-                    email: enquiry.email,
-                    course: enquiry.course,
-                    status: enquiry.status,
-                    createdAt: enquiry.createdAt,
-                    referenceNumber: `ENQ-${enquiry._id.toString().slice(-8).toUpperCase()}`
-                }
-            });
-
-        } catch (error) {
-            console.error('❌ Create enquiry error:', error);
-            res.status(500).json({ success: false, message: 'Failed to create enquiry' });
-        }
+      res.json({ success: true, data: { totalEnquiries: counts } });
+    } catch (error) {
+      console.error("❌ Dashboard error:", error);
+      res
+        .status(500)
+        .json({ success: false, message: "Failed to fetch dashboard stats" });
     }
+  }
 
-    async getAllEnquiries(req, res) {
-        try {
-            const { page = 1, limit = 20, status, course, startDate, endDate, search, sortBy = 'createdAt', sortOrder = 'desc' } = req.query;
-            const query = { isDeleted: false };
-            if (status) query.status = status;
-            if (course) query.course = { $regex: course, $options: 'i' };
-            if (startDate || endDate) query.createdAt = {};
-            if (startDate) query.createdAt.$gte = new Date(startDate);
-            if (endDate) query.createdAt.$lte = new Date(endDate);
-            if (search) query.$or = ['name','email','phone','country','course','message'].map(f => ({ [f]: { $regex: search, $options: 'i' } }));
-
-            const [enquiries, total] = await Promise.all([
-                Enquiry.find(query).sort({ [sortBy]: sortOrder === 'desc' ? -1 : 1 })
-                    .skip((page-1)*limit).limit(parseInt(limit)).lean(),
-                Enquiry.countDocuments(query)
-            ]);
-
-            res.json({ success: true, data: enquiries, pagination: { total, page: parseInt(page), limit: parseInt(limit) } });
-
-        } catch (error) {
-            console.error('❌ Get all enquiries error:', error);
-            res.status(500).json({ success: false, message: 'Failed to fetch enquiries' });
-        }
+  async healthCheck(req, res) {
+    try {
+      const checks = {
+        database: mongoose.connection.readyState === 1,
+        email: !!this.transporter,
+        uptime: process.uptime(),
+      };
+      res
+        .status(checks.database ? 200 : 503)
+        .json({ status: checks.database ? "healthy" : "degraded", checks });
+    } catch (error) {
+      res.status(503).json({ status: "unhealthy", error: error.message });
     }
-
-    async getEnquiryById(req, res) {
-        try {
-            const { id } = req.params;
-            if (!mongoose.Types.ObjectId.isValid(id)) return res.status(400).json({ success: false, message: 'Invalid ID' });
-
-            const enquiry = await Enquiry.findOne({ _id: id, isDeleted: false }).lean();
-            if (!enquiry) return res.status(404).json({ success: false, message: 'Enquiry not found' });
-
-            const emailLogs = await EmailLog.find({ enquiryId: id }).sort({ createdAt: -1 }).lean();
-            res.json({ success: true, data: { ...enquiry, emailHistory: emailLogs } });
-
-        } catch (error) {
-            console.error('❌ Get enquiry by ID error:', error);
-            res.status(500).json({ success: false, message: 'Failed to fetch enquiry' });
-        }
-    }
-
-    async updateEnquiry(req, res) {
-        try {
-            const { id } = req.params;
-            const updateData = req.body;
-            if (!mongoose.Types.ObjectId.isValid(id)) return res.status(400).json({ success: false, message: 'Invalid ID' });
-
-            const allowed = ['status','message','notes','assignedTo','priority'];
-            const updates = Object.keys(updateData).reduce((acc, key) => allowed.includes(key) ? (acc[key] = updateData[key], acc) : acc, {});
-            updates.updatedAt = Date.now();
-
-            const enquiry = await Enquiry.findOneAndUpdate({ _id: id, isDeleted: false }, updates, { new: true, runValidators: true });
-            if (!enquiry) return res.status(404).json({ success: false, message: 'Enquiry not found' });
-
-            res.json({ success: true, message: 'Enquiry updated', data: enquiry });
-
-        } catch (error) {
-            console.error('❌ Update enquiry error:', error);
-            res.status(500).json({ success: false, message: 'Failed to update enquiry' });
-        }
-    }
-
-    async deleteEnquiry(req, res) {
-        try {
-            const { id } = req.params;
-            if (!mongoose.Types.ObjectId.isValid(id)) return res.status(400).json({ success: false, message: 'Invalid ID' });
-
-            const enquiry = await Enquiry.findOneAndUpdate(
-                { _id: id, isDeleted: false },
-                { isDeleted: true, deletedAt: Date.now(), updatedAt: Date.now() },
-                { new: true }
-            );
-
-            if (!enquiry) return res.status(404).json({ success: false, message: 'Enquiry not found' });
-
-            res.json({ success: true, message: 'Enquiry deleted', data: { id: enquiry._id, deletedAt: enquiry.deletedAt } });
-
-        } catch (error) {
-            console.error('❌ Delete enquiry error:', error);
-            res.status(500).json({ success: false, message: 'Failed to delete enquiry' });
-        }
-    }
-
-    // ======================
-    // EMAIL UTILITIES
-    // ======================
-    validateEmail(email) {
-        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-    }
-
-    async sendFollowupEmail(req, res) {
-        try {
-            const { enquiryId, message } = req.body;
-            if (!enquiryId || !message) return res.status(400).json({ success: false, message: 'ID & message required' });
-            if (!mongoose.Types.ObjectId.isValid(enquiryId)) return res.status(400).json({ success: false, message: 'Invalid ID' });
-
-            const enquiry = await Enquiry.findOne({ _id: enquiryId, isDeleted: false });
-            if (!enquiry) return res.status(404).json({ success: false, message: 'Enquiry not found' });
-
-            const result = await this.sendEmail({
-                to: enquiry.email,
-                subject: `Follow-up: ${enquiry.course}`,
-                html: this.getFollowupEmailTemplate(enquiry, message),
-                enquiryId: enquiry._id,
-                recipientType: 'user',
-                emailType: 'followup',
-                metadata: { followup: true, followupMessage: message }
-            });
-
-            if (!result) return res.status(500).json({ success: false, message: 'Failed to send follow-up' });
-
-            res.json({ success: true, message: 'Follow-up sent', data: { enquiryId: enquiry._id, recipient: enquiry.email } });
-
-        } catch (error) {
-            console.error('❌ Follow-up email error:', error);
-            res.status(500).json({ success: false, message: 'Failed to send follow-up' });
-        }
-    }
-
-    // ======================
-    // DASHBOARD & STATS
-    // ======================
-    async getDashboardStatistics(req, res) {
-        try {
-            const now = moment().startOf('day');
-            const counts = await Enquiry.countDocuments({ isDeleted: false });
-
-            res.json({ success: true, data: { totalEnquiries: counts } });
-        } catch (error) {
-            console.error('❌ Dashboard error:', error);
-            res.status(500).json({ success: false, message: 'Failed to fetch dashboard stats' });
-        }
-    }
-
-    async healthCheck(req, res) {
-        try {
-            const checks = {
-                database: mongoose.connection.readyState === 1,
-                email: !!this.transporter,
-                uptime: process.uptime()
-            };
-            res.status(checks.database ? 200 : 503).json({ status: checks.database ? 'healthy' : 'degraded', checks });
-        } catch (error) {
-            res.status(503).json({ status: 'unhealthy', error: error.message });
-        }
-    }
+  }
 }
 
 const enquiryController = new EnquiryController();
