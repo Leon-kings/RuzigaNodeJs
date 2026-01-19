@@ -1591,24 +1591,47 @@ const bookingController = {
     }
   },
 
+  // getBookingsByEmail: async (req, res) => {
+  // const { email } = req.params;
+
+  // try {
+  //   const bookings = await Booking.find({ email }).sort({ createdAt: -1 });
+
+  //   if (!bookings || bookings.length === 0) {
+  //     return res.status(404).json({
+  //       success: false,
+  //       message: 'No bookings found for this email'
+  //     });
+  //   }
+
+  //   res.json({
+  //     success: true,
+  //     count: bookings.length,
+  //     data: bookings
+  //   });
+  // } catch (error) {
+  //   res.status(500).json({
+  //     success: false,
+  //     message: 'Error fetching bookings by email',
+  //     error: error.message
+  //   });
+  // }
+  //  },
   getBookingsByEmail: async (req, res) => {
   const { email } = req.params;
 
   try {
     const bookings = await Booking.find({ email }).sort({ createdAt: -1 });
 
-    if (!bookings || bookings.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: 'No bookings found for this email'
-      });
-    }
-
-    res.json({
+    return res.status(200).json({
       success: true,
       count: bookings.length,
-      data: bookings
+      data: bookings, // empty array is OK
+      message: bookings.length === 0 
+        ? 'No bookings found for this email'
+        : 'Bookings fetched successfully'
     });
+
   } catch (error) {
     res.status(500).json({
       success: false,
@@ -1616,7 +1639,8 @@ const bookingController = {
       error: error.message
     });
   }
-   },
+},
+
 
   getBooking: async (req, res) => {
     const { id } = req.params;
