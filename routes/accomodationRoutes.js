@@ -48,26 +48,70 @@
 
 
 
+// const express = require('express');
+// const router = express.Router();
+// const { accommodationController } = require('../controllers/AccommodationControllers');
+// const { uploadMultipleImages } = require('../services/accomodationCloudinaryConfig');
+
+// // Create accommodation
+// router.post('/create', uploadMultipleImages, accommodationController.createAccommodation);
+
+// // Get all accommodations
+// router.get('/', accommodationController.getAllAccommodations);
+
+// // Get single accommodation
+// router.get('/:email', accommodationController.getAccommodationByEmail);
+// router.get('/:id', accommodationController.getAccommodation);
+
+
+// // Update accommodation
+// router.put('/:id', accommodationController.updateAccommodation);
+
+// // Delete accommodation
+// router.delete('/:id', accommodationController.deleteAccommodation);
+
+// module.exports = router;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 const express = require('express');
 const router = express.Router();
 const { accommodationController } = require('../controllers/AccommodationControllers');
 const { uploadMultipleImages } = require('../services/accomodationCloudinaryConfig');
 
-// Create accommodation
+// CREATE
 router.post('/create', uploadMultipleImages, accommodationController.createAccommodation);
 
-// Get all accommodations
+// GET ALL
 router.get('/', accommodationController.getAllAccommodations);
 
-// Get single accommodation
-router.get('/:email', accommodationController.getAccommodationByEmail);
+// GET BY ID
 router.get('/:id', accommodationController.getAccommodation);
 
+// SEARCH BY EMAIL (no collision)
+router.get('/email/:email', accommodationController.getAccommodationByEmail);
 
-// Update accommodation
+// UPDATE
 router.put('/:id', accommodationController.updateAccommodation);
 
-// Delete accommodation
+// DELETE
 router.delete('/:id', accommodationController.deleteAccommodation);
 
 module.exports = router;
