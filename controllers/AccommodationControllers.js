@@ -1390,16 +1390,366 @@
 
 
 
-const { Accommodation, Booking } = require('../models/Accommodation');
-const mongoose = require('mongoose');
-const nodemailer = require('nodemailer');
-const { 
-  uploadMultipleImages, 
-  generateThumbnailUrl, 
-  deleteImageFromCloudinary 
-} = require('../services/accomodationCloudinaryConfig');
+// const { Accommodation, Booking } = require('../models/Accommodation');
+// const mongoose = require('mongoose');
+// const nodemailer = require('nodemailer');
+// const { 
+//   uploadMultipleImages, 
+//   generateThumbnailUrl, 
+//   deleteImageFromCloudinary 
+// } = require('../services/accomodationCloudinaryConfig');
 
-// -------------------- EMAIL CONFIG --------------------
+// // -------------------- EMAIL CONFIG --------------------
+// const transporter = nodemailer.createTransport({
+//   host: process.env.SMTP_HOST || 'smtp.gmail.com',
+//   port: process.env.SMTP_PORT || 587,
+//   secure: false,
+//   auth: {
+//     user: process.env.SMTP_USER,
+//     pass: process.env.SMTP_PASS
+//   }
+// });
+
+// // -------------------- EMAIL SERVICE --------------------
+// const emailService = {
+//   sendBookingConfirmation: async (booking, accommodation) => {
+//     try {
+//       await transporter.sendMail({
+//         from: `"Student Accommodation" <${process.env.SMTP_USER}>`,
+//         to: booking.email,
+//         subject: `Booking Confirmation - ${booking.bookingReference}`,
+//         html: `<p>Booking confirmed for ${accommodation.name}</p>`
+//       });
+//     } catch (err) { console.error(err); }
+//   },
+//   sendAdminNotification: async (booking, accommodation) => {
+//     try {
+//       await transporter.sendMail({
+//         from: `"Booking System" <${process.env.SMTP_USER}>`,
+//         to: process.env.ADMIN_EMAIL || accommodation.contact,
+//         subject: `New Booking Received - ${booking.bookingReference}`,
+//         html: `<p>New booking for ${accommodation.name}</p>`
+//       });
+//     } catch (err) { console.error(err); }
+//   },
+//   sendStatusUpdate: async (booking, oldStatus, newStatus) => {
+//     try {
+//       await transporter.sendMail({
+//         from: `"Student Accommodation" <${process.env.SMTP_USER}>`,
+//         to: booking.email,
+//         subject: `Booking Status Updated - ${booking.bookingReference}`,
+//         html: `<p>Status updated: ${oldStatus} → ${newStatus}</p>`
+//       });
+//     } catch (err) { console.error(err); }
+//   }
+// };
+
+// // -------------------- ACCOMMODATION CONTROLLER --------------------
+// const accommodationController = {
+ 
+// // createAccommodation: async (req, res) => {
+// //   try {
+// //     const images = [];
+// //     if (req.files && req.files.length > 0) {
+// //       for (const file of req.files) {
+// //         images.push({
+// //           public_id: file.filename || file.originalname,
+// //           url: file.path, // Cloudinary URL
+// //           thumbnailUrl: generateThumbnailUrl(file.path)
+// //         });
+// //       }
+// //     }
+
+// //     if (typeof req.body.amenities === 'string') req.body.amenities = JSON.parse(req.body.amenities);
+// //     if (typeof req.body.features === 'string') req.body.features = JSON.parse(req.body.features);
+
+// //     const accommodation = new Accommodation({ ...req.body, images });
+// //     await accommodation.save();
+
+// //     res.status(201).json({ success: true, message: 'Accommodation created', data: accommodation });
+// //   } catch (error) {
+// //     res.status(400).json({ success: false, message: 'Error creating accommodation', error: error.message });
+// //   }
+// // }
+// createAccommodation: async (req, res, next) => {
+//   try {
+//     const images = [];
+
+//     if (req.files && req.files.length > 0) {
+//       for (const file of req.files) {
+//         images.push({
+//           public_id: file.filename || file.originalname,
+//           url: file.path,
+//           thumbnailUrl: generateThumbnailUrl(file.path),
+//         });
+//       }
+//     }
+
+//     if (typeof req.body.amenities === "string") {
+//       req.body.amenities = JSON.parse(req.body.amenities);
+//     }
+
+//     if (typeof req.body.features === "string") {
+//       req.body.features = JSON.parse(req.body.features);
+//     }
+
+//     const accommodation = new Accommodation({ ...req.body, images });
+//     await accommodation.save();
+
+//     res.status(201).json({
+//       success: true,
+//       message: "Accommodation created",
+//       data: accommodation,
+//     });
+//   } catch (error) {
+//     res.status(400).json({
+//       success: false,
+//       message: "Error creating accommodation",
+//       error: error.message,
+//     });
+//   }
+// },
+
+//   getAllAccommodations: async (req, res) => {
+//     try {
+//       const accommodations = await Accommodation.find().sort({ createdAt: -1 });
+//       res.json({ success: true, count: accommodations.length, data: accommodations });
+//     } catch (error) {
+//       res.status(500).json({ success: false, message: 'Error fetching accommodations', error: error.message });
+//     }
+//   },
+
+//   // getAccommodation: async (req, res) => {
+//   //   const { id } = req.params;
+//   //   try {
+//   //     const accommodation = await Accommodation.findById(id);
+//   //     if (!accommodation) return res.status(404).json({ success: false, message: 'Accommodation not found' });
+//   //     res.json({ success: true, data: accommodation });
+//   //   } catch (error) {
+//   //     res.status(500).json({ success: false, message: 'Error fetching accommodation', error: error.message });
+//   //   }
+//   // },
+//   getAccommodation: async (req, res) => {
+//   const { id } = req.params;
+//   try {
+//     const accommodation = await Accommodation.findById(id);
+//     if (!accommodation) return res.status(404).json({ success: false, message: 'Accommodation not found' });
+//     res.json({ success: true, data: accommodation });
+//   } catch (error) {
+//     res.status(500).json({ success: false, message: 'Error fetching accommodation', error: error.message });
+//   }
+// },
+
+// getAccommodationByEmail: async (req, res) => {
+//   const { email } = req.params;
+
+//   try {
+//     const accommodation = await Accommodation.findOne({ email });
+//     if (!accommodation) {
+//       return res.status(404).json({ success: false, message: 'Accommodation not found for this email' });
+//     }
+//     res.json({ success: true, data: accommodation });
+//   } catch (error) {
+//     res.status(500).json({ success: false, message: 'Error fetching accommodation by email', error: error.message });
+//   }
+// },
+
+
+//   updateAccommodation: async (req, res) => {
+//     const { id } = req.params;
+//     try {
+//       const accommodation = await Accommodation.findById(id);
+//       if (!accommodation) return res.status(404).json({ success: false, message: 'Accommodation not found' });
+
+//       // Parse JSON fields if needed
+//       if (req.body.amenities && typeof req.body.amenities === 'string') req.body.amenities = JSON.parse(req.body.amenities);
+//       if (req.body.features && typeof req.body.features === 'string') req.body.features = JSON.parse(req.body.features);
+
+//       // Update fields except images
+//       Object.keys(req.body).forEach(key => {
+//         if (key !== 'images') accommodation[key] = req.body[key];
+//       });
+
+//       await accommodation.save();
+//       res.json({ success: true, message: 'Accommodation updated', data: accommodation });
+//     } catch (error) {
+//       res.status(400).json({ success: false, message: 'Error updating accommodation', error: error.message });
+//     }
+//   },
+
+//   deleteAccommodation: async (req, res) => {
+//     const { id } = req.params;
+//     try {
+//       const accommodation = await Accommodation.findById(id);
+//       if (!accommodation) return res.status(404).json({ success: false, message: 'Accommodation not found' });
+
+//       // Delete images from Cloudinary
+//       for (const img of accommodation.images) {
+//         try { await deleteImageFromCloudinary(img.public_id); } catch (err) { console.error(err); }
+//       }
+
+//       await accommodation.deleteOne();
+//       res.json({ success: true, message: 'Accommodation deleted' });
+//     } catch (error) {
+//       res.status(500).json({ success: false, message: 'Error deleting accommodation', error: error.message });
+//     }
+//   }
+// };
+
+// // -------------------- BOOKING CONTROLLER --------------------
+// const bookingController = {
+//   createBooking: async (req, res) => {
+//     const { accommodationId } = req.body;
+//     if (!mongoose.Types.ObjectId.isValid(accommodationId))
+//       return res.status(400).json({ success: false, message: 'Invalid accommodation ID' });
+
+//     try {
+//       const accommodation = await Accommodation.findById(accommodationId);
+//       if (!accommodation) return res.status(404).json({ success: false, message: 'Accommodation not found' });
+
+//       const booking = new Booking(req.body);
+//       await booking.save();
+
+//       await emailService.sendBookingConfirmation(booking, accommodation);
+//       await emailService.sendAdminNotification(booking, accommodation);
+
+//       res.status(201).json({ success: true, message: 'Booking created', data: booking });
+//     } catch (error) {
+//       res.status(400).json({ success: false, message: 'Error creating booking', error: error.message });
+//     }
+//   },
+
+//   getAllBookings: async (req, res) => {
+//     try {
+//       const bookings = await Booking.find();
+//       res.json({ success: true, count: bookings.length, data: bookings });
+//     } catch (error) {
+//       res.status(500).json({ success: false, message: 'Error fetching bookings', error: error.message });
+//     }
+//   },
+
+//   // getBookingsByEmail: async (req, res) => {
+//   // const { email } = req.params;
+
+//   // try {
+//   //   const bookings = await Booking.find({ email }).sort({ createdAt: -1 });
+
+//   //   if (!bookings || bookings.length === 0) {
+//   //     return res.status(404).json({
+//   //       success: false,
+//   //       message: 'No bookings found for this email'
+//   //     });
+//   //   }
+
+//   //   res.json({
+//   //     success: true,
+//   //     count: bookings.length,
+//   //     data: bookings
+//   //   });
+//   // } catch (error) {
+//   //   res.status(500).json({
+//   //     success: false,
+//   //     message: 'Error fetching bookings by email',
+//   //     error: error.message
+//   //   });
+//   // }
+//   //  },
+//   getBookingsByEmail: async (req, res) => {
+//   const { email } = req.params;
+
+//   try {
+//     const bookings = await Booking.find({ email }).sort({ createdAt: -1 });
+
+//     return res.status(200).json({
+//       success: true,
+//       count: bookings.length,
+//       data: bookings, // empty array is OK
+//       message: bookings.length === 0 
+//         ? 'No bookings found for this email'
+//         : 'Bookings fetched successfully'
+//     });
+
+//   } catch (error) {
+//     res.status(500).json({
+//       success: false,
+//       message: 'Error fetching bookings by email',
+//       error: error.message
+//     });
+//   }
+// },
+
+
+//   getBooking: async (req, res) => {
+//     const { id } = req.params;
+//     try {
+//       const booking = await Booking.findById(id);
+//       if (!booking) return res.status(404).json({ success: false, message: 'Booking not found' });
+//       res.json({ success: true, data: booking });
+//     } catch (error) {
+//       res.status(500).json({ success: false, message: 'Error fetching booking', error: error.message });
+//     }
+//   },
+
+
+
+//   updateBooking: async (req, res) => {
+//     const { id } = req.params;
+//     try {
+//       const booking = await Booking.findByIdAndUpdate(id, req.body, { new: true });
+//       if (!booking) return res.status(404).json({ success: false, message: 'Booking not found' });
+//       res.json({ success: true, message: 'Booking updated', data: booking });
+//     } catch (error) {
+//       res.status(400).json({ success: false, message: 'Error updating booking', error: error.message });
+//     }
+//   },
+
+//   deleteBooking: async (req, res) => {
+//     const { id } = req.params;
+//     try {
+//       const booking = await Booking.findByIdAndDelete(id);
+//       if (!booking) return res.status(404).json({ success: false, message: 'Booking not found' });
+//       res.json({ success: true, message: 'Booking deleted', data: booking });
+//     } catch (error) {
+//       res.status(500).json({ success: false, message: 'Error deleting booking', error: error.message });
+//     }
+//   }
+// };
+
+// module.exports = { accommodationController, bookingController, emailService };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+const { Accommodation } = require('../models/Accommodation');
+const nodemailer = require('nodemailer');
+const { generateThumbnailUrl, deleteImageFromCloudinary } = require('../services/accomodationCloudinaryConfig');
+
+// -------------------- EMAIL SERVICE --------------------
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST || 'smtp.gmail.com',
   port: process.env.SMTP_PORT || 587,
@@ -1410,106 +1760,55 @@ const transporter = nodemailer.createTransport({
   }
 });
 
-// -------------------- EMAIL SERVICE --------------------
-const emailService = {
-  sendBookingConfirmation: async (booking, accommodation) => {
-    try {
-      await transporter.sendMail({
-        from: `"Student Accommodation" <${process.env.SMTP_USER}>`,
-        to: booking.email,
-        subject: `Booking Confirmation - ${booking.bookingReference}`,
-        html: `<p>Booking confirmed for ${accommodation.name}</p>`
-      });
-    } catch (err) { console.error(err); }
-  },
-  sendAdminNotification: async (booking, accommodation) => {
-    try {
-      await transporter.sendMail({
-        from: `"Booking System" <${process.env.SMTP_USER}>`,
-        to: process.env.ADMIN_EMAIL || accommodation.contact,
-        subject: `New Booking Received - ${booking.bookingReference}`,
-        html: `<p>New booking for ${accommodation.name}</p>`
-      });
-    } catch (err) { console.error(err); }
-  },
-  sendStatusUpdate: async (booking, oldStatus, newStatus) => {
-    try {
-      await transporter.sendMail({
-        from: `"Student Accommodation" <${process.env.SMTP_USER}>`,
-        to: booking.email,
-        subject: `Booking Status Updated - ${booking.bookingReference}`,
-        html: `<p>Status updated: ${oldStatus} → ${newStatus}</p>`
-      });
-    } catch (err) { console.error(err); }
+const sendEmail = async ({ to, subject, html }) => {
+  try {
+    await transporter.sendMail({ from: `"Accommodation System" <${process.env.SMTP_USER}>`, to, subject, html });
+  } catch (err) {
+    console.error('Email sending error:', err.message);
   }
 };
 
-// -------------------- ACCOMMODATION CONTROLLER --------------------
+// -------------------- CONTROLLER --------------------
 const accommodationController = {
- 
-// createAccommodation: async (req, res) => {
-//   try {
-//     const images = [];
-//     if (req.files && req.files.length > 0) {
-//       for (const file of req.files) {
-//         images.push({
-//           public_id: file.filename || file.originalname,
-//           url: file.path, // Cloudinary URL
-//           thumbnailUrl: generateThumbnailUrl(file.path)
-//         });
-//       }
-//     }
 
-//     if (typeof req.body.amenities === 'string') req.body.amenities = JSON.parse(req.body.amenities);
-//     if (typeof req.body.features === 'string') req.body.features = JSON.parse(req.body.features);
+  // CREATE
+  createAccommodation: async (req, res) => {
+    try {
+      const images = [];
 
-//     const accommodation = new Accommodation({ ...req.body, images });
-//     await accommodation.save();
+      if (req.files?.length > 0) {
+        for (const file of req.files) {
+          images.push({
+            public_id: file.filename || file.originalname,
+            url: file.path,
+            thumbnailUrl: generateThumbnailUrl(file.path),
+          });
+        }
+      }
 
-//     res.status(201).json({ success: true, message: 'Accommodation created', data: accommodation });
-//   } catch (error) {
-//     res.status(400).json({ success: false, message: 'Error creating accommodation', error: error.message });
-//   }
-// }
-createAccommodation: async (req, res, next) => {
-  try {
-    const images = [];
+      // Parse amenities/features if string
+      if (typeof req.body.amenities === 'string') req.body.amenities = JSON.parse(req.body.amenities);
+      if (typeof req.body.features === 'string') req.body.features = JSON.parse(req.body.features);
 
-    if (req.files && req.files.length > 0) {
-      for (const file of req.files) {
-        images.push({
-          public_id: file.filename || file.originalname,
-          url: file.path,
-          thumbnailUrl: generateThumbnailUrl(file.path),
+      const accommodation = new Accommodation({ ...req.body, images });
+      await accommodation.save();
+
+      // OPTIONAL: send email to owner/admin
+      if (req.body.email) {
+        await sendEmail({
+          to: req.body.email,
+          subject: 'Accommodation Created',
+          html: `<p>Your accommodation <b>${accommodation.name}</b> was successfully created.</p>`
         });
       }
+
+      res.status(201).json({ success: true, message: 'Accommodation created', data: accommodation });
+    } catch (error) {
+      res.status(400).json({ success: false, message: 'Error creating accommodation', error: error.message });
     }
+  },
 
-    if (typeof req.body.amenities === "string") {
-      req.body.amenities = JSON.parse(req.body.amenities);
-    }
-
-    if (typeof req.body.features === "string") {
-      req.body.features = JSON.parse(req.body.features);
-    }
-
-    const accommodation = new Accommodation({ ...req.body, images });
-    await accommodation.save();
-
-    res.status(201).json({
-      success: true,
-      message: "Accommodation created",
-      data: accommodation,
-    });
-  } catch (error) {
-    res.status(400).json({
-      success: false,
-      message: "Error creating accommodation",
-      error: error.message,
-    });
-  }
-},
-
+  // GET ALL
   getAllAccommodations: async (req, res) => {
     try {
       const accommodations = await Accommodation.find().sort({ createdAt: -1 });
@@ -1519,56 +1818,46 @@ createAccommodation: async (req, res, next) => {
     }
   },
 
-  // getAccommodation: async (req, res) => {
-  //   const { id } = req.params;
-  //   try {
-  //     const accommodation = await Accommodation.findById(id);
-  //     if (!accommodation) return res.status(404).json({ success: false, message: 'Accommodation not found' });
-  //     res.json({ success: true, data: accommodation });
-  //   } catch (error) {
-  //     res.status(500).json({ success: false, message: 'Error fetching accommodation', error: error.message });
-  //   }
-  // },
+  // GET BY ID
   getAccommodation: async (req, res) => {
-  const { id } = req.params;
-  try {
-    const accommodation = await Accommodation.findById(id);
-    if (!accommodation) return res.status(404).json({ success: false, message: 'Accommodation not found' });
-    res.json({ success: true, data: accommodation });
-  } catch (error) {
-    res.status(500).json({ success: false, message: 'Error fetching accommodation', error: error.message });
-  }
-},
-
-getAccommodationByEmail: async (req, res) => {
-  const { email } = req.params;
-
-  try {
-    const accommodation = await Accommodation.findOne({ email });
-    if (!accommodation) {
-      return res.status(404).json({ success: false, message: 'Accommodation not found for this email' });
-    }
-    res.json({ success: true, data: accommodation });
-  } catch (error) {
-    res.status(500).json({ success: false, message: 'Error fetching accommodation by email', error: error.message });
-  }
-},
-
-
-  updateAccommodation: async (req, res) => {
-    const { id } = req.params;
     try {
-      const accommodation = await Accommodation.findById(id);
+      const accommodation = await Accommodation.findById(req.params.id);
+      if (!accommodation) return res.status(404).json({ success: false, message: 'Accommodation not found' });
+      res.json({ success: true, data: accommodation });
+    } catch (error) {
+      res.status(500).json({ success: false, message: 'Error fetching accommodation', error: error.message });
+    }
+  },
+
+  // SEARCH BY EMAIL
+  getAccommodationByEmail: async (req, res) => {
+    try {
+      const accommodation = await Accommodation.findOne({ email: req.params.email });
+      if (!accommodation) return res.status(404).json({ success: false, message: 'Accommodation not found for this email' });
+
+      // OPTIONAL: send email notification
+      await sendEmail({
+        to: req.params.email,
+        subject: 'Accommodation Found',
+        html: `<p>Your accommodation <b>${accommodation.name}</b> was found.</p>`
+      });
+
+      res.json({ success: true, data: accommodation });
+    } catch (error) {
+      res.status(500).json({ success: false, message: 'Error fetching accommodation by email', error: error.message });
+    }
+  },
+
+  // UPDATE
+  updateAccommodation: async (req, res) => {
+    try {
+      const accommodation = await Accommodation.findById(req.params.id);
       if (!accommodation) return res.status(404).json({ success: false, message: 'Accommodation not found' });
 
-      // Parse JSON fields if needed
       if (req.body.amenities && typeof req.body.amenities === 'string') req.body.amenities = JSON.parse(req.body.amenities);
       if (req.body.features && typeof req.body.features === 'string') req.body.features = JSON.parse(req.body.features);
 
-      // Update fields except images
-      Object.keys(req.body).forEach(key => {
-        if (key !== 'images') accommodation[key] = req.body[key];
-      });
+      Object.keys(req.body).forEach(key => { if (key !== 'images') accommodation[key] = req.body[key]; });
 
       await accommodation.save();
       res.json({ success: true, message: 'Accommodation updated', data: accommodation });
@@ -1577,15 +1866,15 @@ getAccommodationByEmail: async (req, res) => {
     }
   },
 
+  // DELETE
   deleteAccommodation: async (req, res) => {
-    const { id } = req.params;
     try {
-      const accommodation = await Accommodation.findById(id);
+      const accommodation = await Accommodation.findById(req.params.id);
       if (!accommodation) return res.status(404).json({ success: false, message: 'Accommodation not found' });
 
       // Delete images from Cloudinary
       for (const img of accommodation.images) {
-        try { await deleteImageFromCloudinary(img.public_id); } catch (err) { console.error(err); }
+        await deleteImageFromCloudinary(img.public_id);
       }
 
       await accommodation.deleteOne();
@@ -1596,123 +1885,4 @@ getAccommodationByEmail: async (req, res) => {
   }
 };
 
-// -------------------- BOOKING CONTROLLER --------------------
-const bookingController = {
-  createBooking: async (req, res) => {
-    const { accommodationId } = req.body;
-    if (!mongoose.Types.ObjectId.isValid(accommodationId))
-      return res.status(400).json({ success: false, message: 'Invalid accommodation ID' });
-
-    try {
-      const accommodation = await Accommodation.findById(accommodationId);
-      if (!accommodation) return res.status(404).json({ success: false, message: 'Accommodation not found' });
-
-      const booking = new Booking(req.body);
-      await booking.save();
-
-      await emailService.sendBookingConfirmation(booking, accommodation);
-      await emailService.sendAdminNotification(booking, accommodation);
-
-      res.status(201).json({ success: true, message: 'Booking created', data: booking });
-    } catch (error) {
-      res.status(400).json({ success: false, message: 'Error creating booking', error: error.message });
-    }
-  },
-
-  getAllBookings: async (req, res) => {
-    try {
-      const bookings = await Booking.find();
-      res.json({ success: true, count: bookings.length, data: bookings });
-    } catch (error) {
-      res.status(500).json({ success: false, message: 'Error fetching bookings', error: error.message });
-    }
-  },
-
-  // getBookingsByEmail: async (req, res) => {
-  // const { email } = req.params;
-
-  // try {
-  //   const bookings = await Booking.find({ email }).sort({ createdAt: -1 });
-
-  //   if (!bookings || bookings.length === 0) {
-  //     return res.status(404).json({
-  //       success: false,
-  //       message: 'No bookings found for this email'
-  //     });
-  //   }
-
-  //   res.json({
-  //     success: true,
-  //     count: bookings.length,
-  //     data: bookings
-  //   });
-  // } catch (error) {
-  //   res.status(500).json({
-  //     success: false,
-  //     message: 'Error fetching bookings by email',
-  //     error: error.message
-  //   });
-  // }
-  //  },
-  getBookingsByEmail: async (req, res) => {
-  const { email } = req.params;
-
-  try {
-    const bookings = await Booking.find({ email }).sort({ createdAt: -1 });
-
-    return res.status(200).json({
-      success: true,
-      count: bookings.length,
-      data: bookings, // empty array is OK
-      message: bookings.length === 0 
-        ? 'No bookings found for this email'
-        : 'Bookings fetched successfully'
-    });
-
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Error fetching bookings by email',
-      error: error.message
-    });
-  }
-},
-
-
-  getBooking: async (req, res) => {
-    const { id } = req.params;
-    try {
-      const booking = await Booking.findById(id);
-      if (!booking) return res.status(404).json({ success: false, message: 'Booking not found' });
-      res.json({ success: true, data: booking });
-    } catch (error) {
-      res.status(500).json({ success: false, message: 'Error fetching booking', error: error.message });
-    }
-  },
-
-
-
-  updateBooking: async (req, res) => {
-    const { id } = req.params;
-    try {
-      const booking = await Booking.findByIdAndUpdate(id, req.body, { new: true });
-      if (!booking) return res.status(404).json({ success: false, message: 'Booking not found' });
-      res.json({ success: true, message: 'Booking updated', data: booking });
-    } catch (error) {
-      res.status(400).json({ success: false, message: 'Error updating booking', error: error.message });
-    }
-  },
-
-  deleteBooking: async (req, res) => {
-    const { id } = req.params;
-    try {
-      const booking = await Booking.findByIdAndDelete(id);
-      if (!booking) return res.status(404).json({ success: false, message: 'Booking not found' });
-      res.json({ success: true, message: 'Booking deleted', data: booking });
-    } catch (error) {
-      res.status(500).json({ success: false, message: 'Error deleting booking', error: error.message });
-    }
-  }
-};
-
-module.exports = { accommodationController, bookingController, emailService };
+module.exports = { accommodationController };
