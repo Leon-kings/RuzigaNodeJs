@@ -85,6 +85,56 @@
 
 
 
+// const express = require('express');
+// const router = express.Router();
+
+// const {
+//   trackView,
+//   getAllViews,
+//   getViewStats,
+//   getRealtimeStats,
+//   deleteView,
+//   deleteViewsByIp,
+//   deleteAllViews
+// } = require('../controllers/pageViewController');
+
+// /* =======================
+//    PUBLIC
+// ======================= */
+// router.post('/track', trackView);
+
+// /* =======================
+//    ADMIN / STATS
+// ======================= */
+// router.get('/', getAllViews);
+// router.get('/stats', getViewStats);
+// router.get('/realtime', getRealtimeStats);
+
+// /* =======================
+//    DELETE
+// ======================= */
+// router.delete('/:id', deleteView);
+// router.delete('/ip/:ip', deleteViewsByIp);
+// router.delete('/', deleteAllViews);
+
+// module.exports = router;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 const express = require('express');
 const router = express.Router();
 
@@ -99,22 +149,33 @@ const {
 } = require('../controllers/pageViewController');
 
 /* =======================
-   PUBLIC
+   PUBLIC ROUTES
 ======================= */
+// Track a page view (only records if IP not already recorded)
 router.post('/track', trackView);
 
 /* =======================
-   ADMIN / STATS
+   ADMIN / STATS ROUTES
 ======================= */
+// Get all views (with optional filters & pagination)
 router.get('/', getAllViews);
+
+// Get overall statistics
 router.get('/stats', getViewStats);
+
+// Get realtime statistics
 router.get('/realtime', getRealtimeStats);
 
 /* =======================
-   DELETE
+   DELETE ROUTES
 ======================= */
+// Delete a single view by ID
 router.delete('/:id', deleteView);
+
+// Delete all views by IP
 router.delete('/ip/:ip', deleteViewsByIp);
+
+// Delete all views
 router.delete('/', deleteAllViews);
 
 module.exports = router;
