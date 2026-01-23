@@ -1447,31 +1447,68 @@ const emailService = {
 // -------------------- ACCOMMODATION CONTROLLER --------------------
 const accommodationController = {
  
-createAccommodation: async (req, res) => {
+// createAccommodation: async (req, res) => {
+//   try {
+//     const images = [];
+//     if (req.files && req.files.length > 0) {
+//       for (const file of req.files) {
+//         images.push({
+//           public_id: file.filename || file.originalname,
+//           url: file.path, // Cloudinary URL
+//           thumbnailUrl: generateThumbnailUrl(file.path)
+//         });
+//       }
+//     }
+
+//     if (typeof req.body.amenities === 'string') req.body.amenities = JSON.parse(req.body.amenities);
+//     if (typeof req.body.features === 'string') req.body.features = JSON.parse(req.body.features);
+
+//     const accommodation = new Accommodation({ ...req.body, images });
+//     await accommodation.save();
+
+//     res.status(201).json({ success: true, message: 'Accommodation created', data: accommodation });
+//   } catch (error) {
+//     res.status(400).json({ success: false, message: 'Error creating accommodation', error: error.message });
+//   }
+// }
+createAccommodation: async (req, res, next) => {
   try {
     const images = [];
+
     if (req.files && req.files.length > 0) {
       for (const file of req.files) {
         images.push({
           public_id: file.filename || file.originalname,
-          url: file.path, // Cloudinary URL
-          thumbnailUrl: generateThumbnailUrl(file.path)
+          url: file.path,
+          thumbnailUrl: generateThumbnailUrl(file.path),
         });
       }
     }
 
-    if (typeof req.body.amenities === 'string') req.body.amenities = JSON.parse(req.body.amenities);
-    if (typeof req.body.features === 'string') req.body.features = JSON.parse(req.body.features);
+    if (typeof req.body.amenities === "string") {
+      req.body.amenities = JSON.parse(req.body.amenities);
+    }
+
+    if (typeof req.body.features === "string") {
+      req.body.features = JSON.parse(req.body.features);
+    }
 
     const accommodation = new Accommodation({ ...req.body, images });
     await accommodation.save();
 
-    res.status(201).json({ success: true, message: 'Accommodation created', data: accommodation });
+    res.status(201).json({
+      success: true,
+      message: "Accommodation created",
+      data: accommodation,
+    });
   } catch (error) {
-    res.status(400).json({ success: false, message: 'Error creating accommodation', error: error.message });
+    res.status(400).json({
+      success: false,
+      message: "Error creating accommodation",
+      error: error.message,
+    });
   }
-}
-,
+},
 
   getAllAccommodations: async (req, res) => {
     try {
