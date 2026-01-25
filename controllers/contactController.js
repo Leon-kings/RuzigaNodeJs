@@ -418,7 +418,9 @@ async createContact(req, res) {
   async replyToContact(req, res) {
     try {
       const { id } = req.params;
-      const { replyMessage } = req.body;
+      // const { replyMessage } = req.body;
+      const replyMessage = req.body.replyMessage || req.body.message;
+
 
       // Validate ObjectId
       if (!mongoose.Types.ObjectId.isValid(id)) {
