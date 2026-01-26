@@ -808,61 +808,29 @@
 
 
 
-const models = require('../models/Services');
+const Booking = require('../models/Booking');
 const nodemailer = require('nodemailer');
 const validator = require('validator');
 
-/* ================= EMAIL SERVICE ================= */
+/* ================= EMAIL ================= */
 
-const createTransporter = () => {
-  return nodemailer.createTransport({
-    host: process.env.SMTP_HOST || 'smtp.gmail.com',
-    port: process.env.SMTP_PORT || 587,
-    secure: process.env.EMAIL_SECURE === 'true',
-    auth: {
-      user: process.env.SMTP_USER,
-      pass: process.env.SMTP_PASS
-    }
+const transporter = nodemailer.createTransport({
+  host: process.env.SMTP_HOST || 'smtp.gmail.com',
+  port: process.env.SMTP_PORT || 587,
+  secure: process.env.EMAIL_SECURE === 'true',
+  auth: {
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASS,
+  },
+});
+
+const sendEmail = (to, subject, html) => {
+  return transporter.sendMail({
+    from: process.env.EMAIL_FROM || 'RECAPPLY <noreply@recapply.com>',
+    to,
+    subject,
+    html,
   });
-};
-
-const sendEmail = async (to, subject, html) => {
-  try {
-    const transporter = createTransporter();
-    const info = await transporter.sendMail({
-      from: process.env.EMAIL_FROM || 'RECAPPLY <noreply@recapply.com>',
-      to,
-      subject,
-      html
-    });
-    return info;
-  } catch (error) {
-    console.error('Email error:', error);
-    throw error;
-  }
-};
-
-/* ================= TRACK EVENT ================= */
-
-const trackEvent = async (type, data = {}, req = null) => {
-  try {
-    if (!models.Statistics) return;
-
-    const statData = {
-      type,
-      ...data,
-      timestamp: new Date()
-    };
-
-    if (req) {
-      statData.ip = req.ip;
-      statData.userAgent = req.get('user-agent');
-    }
-
-    await new models.Statistics(statData).save();
-  } catch (error) {
-    console.error('Track event error:', error);
-  }
 };
 
 /* ================= CREATE BOOKING ================= */
@@ -881,397 +849,101 @@ exports.createBooking = async (req, res) => {
       program,
       budget,
       startDate,
-      message
+      message,
     } = req.body;
 
-    /* ---------- VALIDATION ---------- */
-
     if (!name || !email || !phone || !country || !service || !date || !startDate) {
-      return res.status(400).json({
-        success: false,
-        message: 'Missing required fields'
-      });
+      return res.status(400).json({ success: false, message: 'Missing required fields' });
     }
 
     if (!validator.isEmail(email)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid email address'
-      });
+      return res.status(400).json({ success: false, message: 'Invalid email' });
     }
 
-    const bookingDate = new Date(date);
-    const start = new Date(startDate);
-
-    if (isNaN(bookingDate.getTime()) || isNaN(start.getTime())) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid date'
-      });
-    }
-
-    /* ---------- CREATE ---------- */
-
-    const booking = new models.Booking({
-      name: name.trim(),
-      email: email.toLowerCase().trim(),
-      phone: phone.trim(),
-      country: country.trim(),
-      service: service.trim(),
+    const booking = await Booking.create({
+      name,
+      email,
+      phone,
+      country,
+      service,
       serviceCategory,
-      date: bookingDate,
+      date,
       educationLevel,
       program,
       budget,
-      startDate: start,
-      message: message || '',
-      status: 'pending',
+      startDate,
+      message,
       ipAddress: req.ip,
-      userAgent: req.get('user-agent')
+      userAgent: req.get('user-agent'),
     });
-
-    await booking.save();
-
-    /* ---------- TRACK ---------- */
-
-    await trackEvent(
-      'booking',
-      { service, country, name: booking.name },
-      req
-    );
-
-    /* ---------- USER EMAIL ---------- */
-
-    const userEmailHtml = `
-      <div style="font-family: Arial; max-width:600px">
-        <h2>Booking Confirmation</h2>
-        <p>Hello ${booking.name},</p>
-        <p>Your booking request has been received successfully.</p>
-
-        <h3>Booking Details</h3>
-        <p><strong>Service:</strong> ${booking.service}</p>
-        <p><strong>Category:</strong> ${booking.serviceCategory}</p>
-        <p><strong>Date:</strong> ${booking.date.toDateString()}</p>
-        <p><strong>Start Date:</strong> ${booking.startDate.toDateString()}</p>
-        <p><strong>Status:</strong> ${booking.status}</p>
-
-        <p>We will contact you shortly.</p>
-        <p>RECAPPLY Team</p>
-      </div>
-    `;
 
     await sendEmail(
       booking.email,
-      'Booking Received – RECAPPLY',
-      userEmailHtml
+      'Booking Confirmation',
+      `<p>Hello ${booking.name}, your booking has been received.</p>`
     );
 
-    /* ---------- ADMIN EMAIL ---------- */
-
     if (process.env.ADMIN_EMAIL) {
-      const adminEmailHtml = `
-        <div style="font-family: Arial; max-width:600px">
-          <h2>New Booking</h2>
-
-          <p><strong>Name:</strong> ${booking.name}</p>
-          <p><strong>Email:</strong> ${booking.email}</p>
-          <p><strong>Phone:</strong> ${booking.phone}</p>
-          <p><strong>Country:</strong> ${booking.country}</p>
-
-          <h3>Service Info</h3>
-          <p><strong>Service:</strong> ${booking.service}</p>
-          <p><strong>Category:</strong> ${booking.serviceCategory}</p>
-          <p><strong>Education Level:</strong> ${booking.educationLevel}</p>
-          <p><strong>Program:</strong> ${booking.program}</p>
-          <p><strong>Budget:</strong> ${booking.budget}</p>
-
-          <p><strong>Status:</strong> ${booking.status}</p>
-          <p><strong>IP:</strong> ${booking.ipAddress}</p>
-        </div>
-      `;
-
       await sendEmail(
         process.env.ADMIN_EMAIL,
-        `New Booking – ${booking.name}`,
-        adminEmailHtml
+        'New Booking',
+        `<p>New booking from ${booking.name} (${booking.email})</p>`
       );
     }
 
-    res.status(201).json({
-      success: true,
-      message: 'Booking submitted successfully',
-      data: booking
-    });
-
-  } catch (error) {
-    console.error('Create booking error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error submitting booking'
-    });
+    res.status(201).json({ success: true, data: booking });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: 'Server error' });
   }
 };
 
-/* ================= GET ALL BOOKINGS ================= */
+/* ================= ADMIN ================= */
 
 exports.getAllBookings = async (req, res) => {
-  try {
-    const { page = 1, limit = 20, status, service, country, search } = req.query;
-    const query = {};
-
-    if (status && status !== 'all') query.status = status;
-    if (service && service !== 'all') query.service = service;
-    if (country && country !== 'all') query.country = country;
-
-    if (search) {
-      query.$text = { $search: search };
-    }
-
-    const bookings = await models.Booking.find(query)
-      .sort('-createdAt')
-      .skip((page - 1) * limit)
-      .limit(Number(limit));
-
-    const total = await models.Booking.countDocuments(query);
-
-    res.json({
-      success: true,
-      data: bookings,
-      total,
-      totalPages: Math.ceil(total / limit),
-      currentPage: Number(page)
-    });
-  } catch (error) {
-    console.error('Get bookings error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error fetching bookings'
-    });
-  }
+  const bookings = await Booking.find().sort('-createdAt');
+  res.json({ success: true, data: bookings });
 };
-
-/* ================= GET BY EMAIL ================= */
-
-exports.getBookingsByEmail = async (req, res) => {
-  try {
-    const bookings = await models.Booking.find({
-      email: req.params.email.toLowerCase()
-    }).sort('-createdAt');
-
-    res.json({ success: true, data: bookings });
-  } catch (error) {
-    res.status(500).json({ success: false });
-  }
-};
-
-/* ================= GET BY ID ================= */
 
 exports.getBookingById = async (req, res) => {
-  try {
-    const booking = await models.Booking.findById(req.params.id);
-    if (!booking) {
-      return res.status(404).json({ success: false, message: 'Not found' });
-    }
-    res.json({ success: true, data: booking });
-  } catch (error) {
-    res.status(500).json({ success: false });
-  }
+  const booking = await Booking.findById(req.params.id);
+  if (!booking) return res.status(404).json({ success: false });
+  res.json({ success: true, data: booking });
 };
 
-/* ================= UPDATE STATUS ================= */
+exports.getBookingsByEmail = async (req, res) => {
+  const bookings = await Booking.find({ email: req.params.email.toLowerCase() });
+  res.json({ success: true, data: bookings });
+};
 
 exports.updateBookingStatus = async (req, res) => {
-  try {
-    const { status, notes } = req.body;
-
-    const booking = await models.Booking.findByIdAndUpdate(
-      req.params.id,
-      { status, notes },
-      { new: true }
-    );
-
-    if (!booking) {
-      return res.status(404).json({ success: false });
-    }
-
-    res.json({
-      success: true,
-      message: 'Booking updated',
-      data: booking
-    });
-  } catch (error) {
-    res.status(500).json({ success: false });
-  }
+  const booking = await Booking.findByIdAndUpdate(
+    req.params.id,
+    req.body,
+    { new: true }
+  );
+  res.json({ success: true, data: booking });
 };
-
-/* ================= DELETE ================= */
 
 exports.deleteBooking = async (req, res) => {
-  try {
-    const booking = await models.Booking.findByIdAndDelete(req.params.id);
-    if (!booking) {
-      return res.status(404).json({ success: false });
-    }
-    res.json({ success: true, message: 'Booking deleted' });
-  } catch (error) {
-    res.status(500).json({ success: false });
-  }
+  await Booking.findByIdAndDelete(req.params.id);
+  res.json({ success: true });
 };
 
+/* ================= STATISTICS ================= */
+
 exports.getBookingStats = async (req, res) => {
-  try {
-    const { period = '30d' } = req.query;
+  const total = await Booking.countDocuments();
+  const completed = await Booking.countDocuments({ status: 'completed' });
+  const cancelled = await Booking.countDocuments({ status: 'cancelled' });
 
-    /* ================= DATE RANGE ================= */
-
-    let startDate = new Date();
-
-    switch (period) {
-      case '7d':
-        startDate.setDate(startDate.getDate() - 7);
-        break;
-      case '30d':
-        startDate.setDate(startDate.getDate() - 30);
-        break;
-      case '90d':
-        startDate.setDate(startDate.getDate() - 90);
-        break;
-      case '1y':
-        startDate.setFullYear(startDate.getFullYear() - 1);
-        break;
-      default:
-        startDate.setDate(startDate.getDate() - 30);
-    }
-
-    /* ================= TOTAL COUNTS ================= */
-
-    const [
-      totalBookings,
-      pending,
-      contacted,
-      inProgress,
+  res.json({
+    success: true,
+    data: {
+      total,
       completed,
-      cancelled
-    ] = await Promise.all([
-      models.Booking.countDocuments(),
-      models.Booking.countDocuments({ status: 'pending' }),
-      models.Booking.countDocuments({ status: 'contacted' }),
-      models.Booking.countDocuments({ status: 'in_progress' }),
-      models.Booking.countDocuments({ status: 'completed' }),
-      models.Booking.countDocuments({ status: 'cancelled' })
-    ]);
-
-    /* ================= BY SERVICE ================= */
-
-    const bookingsByService = await models.Booking.aggregate([
-      {
-        $group: {
-          _id: '$service',
-          count: { $sum: 1 }
-        }
-      },
-      { $sort: { count: -1 } }
-    ]);
-
-    /* ================= BY CATEGORY ================= */
-
-    const bookingsByCategory = await models.Booking.aggregate([
-      {
-        $group: {
-          _id: '$serviceCategory',
-          count: { $sum: 1 }
-        }
-      },
-      { $sort: { count: -1 } }
-    ]);
-
-    /* ================= BY COUNTRY ================= */
-
-    const bookingsByCountry = await models.Booking.aggregate([
-      {
-        $group: {
-          _id: '$country',
-          count: { $sum: 1 }
-        }
-      },
-      { $sort: { count: -1 } },
-      { $limit: 10 }
-    ]);
-
-    /* ================= TIMELINE (CHART) ================= */
-
-    const bookingsTimeline = await models.Booking.aggregate([
-      {
-        $match: {
-          createdAt: { $gte: startDate }
-        }
-      },
-      {
-        $group: {
-          _id: {
-            $dateToString: {
-              format: '%Y-%m-%d',
-              date: '$createdAt'
-            }
-          },
-          count: { $sum: 1 }
-        }
-      },
-      { $sort: { _id: 1 } }
-    ]);
-
-    /* ================= RECENT BOOKINGS ================= */
-
-    const recentBookings = await models.Booking.find()
-      .sort('-createdAt')
-      .limit(10)
-      .select('name email service serviceCategory status createdAt');
-
-    /* ================= CONVERSION RATES ================= */
-
-    const conversionRate =
-      totalBookings > 0
-        ? (((completed + inProgress) / totalBookings) * 100).toFixed(1)
-        : 0;
-
-    const cancellationRate =
-      totalBookings > 0
-        ? ((cancelled / totalBookings) * 100).toFixed(1)
-        : 0;
-
-    /* ================= RESPONSE ================= */
-
-    res.json({
-      success: true,
-      data: {
-        totals: {
-          total: totalBookings,
-          pending,
-          contacted,
-          inProgress,
-          completed,
-          cancelled
-        },
-        rates: {
-          conversionRate,
-          cancellationRate
-        },
-        charts: {
-          byService: bookingsByService,
-          byCategory: bookingsByCategory,
-          byCountry: bookingsByCountry,
-          timeline: bookingsTimeline
-        },
-        recentBookings,
-        period
-      }
-    });
-
-  } catch (error) {
-    console.error('Admin stats error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error fetching booking statistics'
-    });
-  }
+      cancelled,
+      conversionRate: total ? ((completed / total) * 100).toFixed(1) : 0,
+    },
+  });
 };
