@@ -808,12 +808,182 @@
 
 
 
+// const Booking = require('../models/Services');
+// const nodemailer = require('nodemailer');
+// const validator = require('validator');
+
+// /* ================= EMAIL ================= */
+
+// const transporter = nodemailer.createTransport({
+//   host: process.env.SMTP_HOST || 'smtp.gmail.com',
+//   port: process.env.SMTP_PORT || 587,
+//   secure: process.env.EMAIL_SECURE === 'true',
+//   auth: {
+//     user: process.env.SMTP_USER,
+//     pass: process.env.SMTP_PASS,
+//   },
+// });
+
+// const sendEmail = (to, subject, html) => {
+//   return transporter.sendMail({
+//     from: process.env.EMAIL_FROM || 'RECAPPLY <noreply@recapply.com>',
+//     to,
+//     subject,
+//     html,
+//   });
+// };
+
+// /* ================= CREATE BOOKING ================= */
+
+// exports.createBooking = async (req, res) => {
+//   try {
+//     const {
+//       name,
+//       email,
+//       phone,
+//       country,
+//       service,
+//       serviceCategory,
+//       date,
+//       educationLevel,
+//       program,
+//       budget,
+//       startDate,
+//       message,
+//     } = req.body;
+
+//     if (!name || !email || !phone || !country || !service || !date || !startDate) {
+//       return res.status(400).json({ success: false, message: 'Missing required fields' });
+//     }
+
+//     if (!validator.isEmail(email)) {
+//       return res.status(400).json({ success: false, message: 'Invalid email' });
+//     }
+
+//     const booking = await Booking.create({
+//       name,
+//       email,
+//       phone,
+//       country,
+//       service,
+//       serviceCategory,
+//       date,
+//       educationLevel,
+//       program,
+//       budget,
+//       startDate,
+//       message,
+//       ipAddress: req.ip,
+//       userAgent: req.get('user-agent'),
+//     });
+
+//     await sendEmail(
+//       booking.email,
+//       'Booking Confirmation',
+//       `<p>Hello ${booking.name}, your booking has been received.</p>`
+//     );
+
+//     if (process.env.ADMIN_EMAIL) {
+//       await sendEmail(
+//         process.env.ADMIN_EMAIL,
+//         'New Booking',
+//         `<p>New booking from ${booking.name} (${booking.email})</p>`
+//       );
+//     }
+
+//     res.status(201).json({ success: true, data: booking });
+//   } catch (err) {
+//     console.error(err);
+//     res.status(500).json({ success: false, message: 'Server error' });
+//   }
+// };
+
+// /* ================= ADMIN ================= */
+
+// exports.getAllBookings = async (req, res) => {
+//   const bookings = await Booking.find().sort('-createdAt');
+//   res.json({ success: true, data: bookings });
+// };
+
+// exports.getBookingById = async (req, res) => {
+//   const booking = await Booking.findById(req.params.id);
+//   if (!booking) return res.status(404).json({ success: false });
+//   res.json({ success: true, data: booking });
+// };
+
+// exports.getBookingsByEmail = async (req, res) => {
+//   const bookings = await Booking.find({ email: req.params.email.toLowerCase() });
+//   res.json({ success: true, data: bookings });
+// };
+
+// exports.updateBookingStatus = async (req, res) => {
+//   const booking = await Booking.findByIdAndUpdate(
+//     req.params.id,
+//     req.body,
+//     { new: true }
+//   );
+//   res.json({ success: true, data: booking });
+// };
+
+// exports.deleteBooking = async (req, res) => {
+//   await Booking.findByIdAndDelete(req.params.id);
+//   res.json({ success: true });
+// };
+
+// /* ================= STATISTICS ================= */
+
+// exports.getBookingStats = async (req, res) => {
+//   const total = await Booking.countDocuments();
+//   const completed = await Booking.countDocuments({ status: 'completed' });
+//   const cancelled = await Booking.countDocuments({ status: 'cancelled' });
+
+//   res.json({
+//     success: true,
+//     data: {
+//       total,
+//       completed,
+//       cancelled,
+//       conversionRate: total ? ((completed / total) * 100).toFixed(1) : 0,
+//     },
+//   });
+// };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 const Booking = require('../models/Services');
 const nodemailer = require('nodemailer');
-const validator = require('validator');
 
-/* ================= EMAIL ================= */
-
+/* ===== EMAIL SETUP ===== */
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST || 'smtp.gmail.com',
   port: process.env.SMTP_PORT || 587,
@@ -824,70 +994,60 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-const sendEmail = (to, subject, html) => {
-  return transporter.sendMail({
+const sendEmail = (to, subject, html) =>
+  transporter.sendMail({
     from: process.env.EMAIL_FROM || 'RECAPPLY <noreply@recapply.com>',
     to,
     subject,
     html,
   });
-};
 
-/* ================= CREATE BOOKING ================= */
-
+/* ===== CREATE BOOKING ===== */
 exports.createBooking = async (req, res) => {
   try {
-    const {
-      name,
-      email,
-      phone,
-      country,
-      service,
-      serviceCategory,
-      date,
-      educationLevel,
-      program,
-      budget,
-      startDate,
-      message,
-    } = req.body;
+    const { customer, service, bookingDate, status, notes } = req.body;
 
-    if (!name || !email || !phone || !country || !service || !date || !startDate) {
-      return res.status(400).json({ success: false, message: 'Missing required fields' });
-    }
-
-    if (!validator.isEmail(email)) {
-      return res.status(400).json({ success: false, message: 'Invalid email' });
+    // Validate required fields
+    if (
+      !customer?.fullName ||
+      !customer?.email ||
+      !customer?.phone ||
+      !customer?.targetCountry ||
+      !service?.name ||
+      !bookingDate
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: 'Missing required fields',
+      });
     }
 
     const booking = await Booking.create({
-      name,
-      email,
-      phone,
-      country,
+      customer: {
+        ...customer,
+        email: customer.email.toLowerCase(),
+      },
       service,
-      serviceCategory,
-      date,
-      educationLevel,
-      program,
-      budget,
-      startDate,
-      message,
+      bookingDate,
+      status: status || 'pending',
+      notes: notes || [],
       ipAddress: req.ip,
       userAgent: req.get('user-agent'),
     });
 
+    // Send email to customer
     await sendEmail(
-      booking.email,
+      booking.customer.email,
       'Booking Confirmation',
-      `<p>Hello ${booking.name}, your booking has been received.</p>`
+      `<p>Hello ${booking.customer.fullName}, your booking has been received.</p>`
     );
 
+    // Notify admin
     if (process.env.ADMIN_EMAIL) {
       await sendEmail(
         process.env.ADMIN_EMAIL,
         'New Booking',
-        `<p>New booking from ${booking.name} (${booking.email})</p>`
+        `<p>New booking from ${booking.customer.fullName} (${booking.customer.email})</p>`
       );
     }
 
@@ -898,8 +1058,7 @@ exports.createBooking = async (req, res) => {
   }
 };
 
-/* ================= ADMIN ================= */
-
+/* ===== ADMIN CONTROLLERS ===== */
 exports.getAllBookings = async (req, res) => {
   const bookings = await Booking.find().sort('-createdAt');
   res.json({ success: true, data: bookings });
@@ -912,16 +1071,16 @@ exports.getBookingById = async (req, res) => {
 };
 
 exports.getBookingsByEmail = async (req, res) => {
-  const bookings = await Booking.find({ email: req.params.email.toLowerCase() });
+  const bookings = await Booking.find({
+    'customer.email': req.params.email.toLowerCase(),
+  });
   res.json({ success: true, data: bookings });
 };
 
 exports.updateBookingStatus = async (req, res) => {
-  const booking = await Booking.findByIdAndUpdate(
-    req.params.id,
-    req.body,
-    { new: true }
-  );
+  const booking = await Booking.findByIdAndUpdate(req.params.id, req.body, {
+    new: true,
+  });
   res.json({ success: true, data: booking });
 };
 
@@ -930,8 +1089,7 @@ exports.deleteBooking = async (req, res) => {
   res.json({ success: true });
 };
 
-/* ================= STATISTICS ================= */
-
+/* ===== STATISTICS ===== */
 exports.getBookingStats = async (req, res) => {
   const total = await Booking.countDocuments();
   const completed = await Booking.countDocuments({ status: 'completed' });
@@ -946,4 +1104,4 @@ exports.getBookingStats = async (req, res) => {
       conversionRate: total ? ((completed / total) * 100).toFixed(1) : 0,
     },
   });
-};
+}
