@@ -64,28 +64,214 @@ const trackEvent = async (type, data = {}, req = null) => {
 // =========== BOOKING CONTROLLERS ===========
 
 // Create booking (public)
+// exports.createBooking = async (req, res) => {
+//   try {
+//     const { 
+//       name, 
+//       email, 
+//       phone, 
+//       country, 
+//       service, 
+//       date, 
+//       message, 
+//       postTitle, 
+//       postId,
+//       scheduledTime,
+//       duration,
+//       meetingType
+//     } = req.body;
+
+//     // Validate required fields
+//     if (!name || !email || !phone || !country || !service || !date) {
+//       return res.status(400).json({
+//         success: false,
+//         message: 'Name, email, phone, country, service, and date are required'
+//       });
+//     }
+
+//     // Validate email
+//     if (!validator.isEmail(email)) {
+//       return res.status(400).json({
+//         success: false,
+//         message: 'Please provide a valid email address'
+//       });
+//     }
+
+//     // Validate date
+//     const bookingDate = new Date(date);
+//     if (isNaN(bookingDate.getTime())) {
+//       return res.status(400).json({
+//         success: false,
+//         message: 'Please provide a valid date'
+//       });
+//     }
+
+//     // Check if date is in the future
+//     if (bookingDate < new Date()) {
+//       return res.status(400).json({
+//         success: false,
+//         message: 'Booking date must be in the future'
+//       });
+//     }
+
+//     // Validate service
+//     const validServices = ['consultation', 'workshop', 'training', 'speaking', 'other'];
+//     if (!validServices.includes(service)) {
+//       return res.status(400).json({
+//         success: false,
+//         message: 'Invalid service type'
+//       });
+//     }
+
+//     // Create booking
+//     const booking = new models.Booking({
+//       name: name.trim(),
+//       email: email.toLowerCase().trim(),
+//       phone: phone.trim(),
+//       country: country.trim(),
+//       service,
+//       date: bookingDate,
+//       message: message ? message.trim() : '',
+//       postTitle,
+//       postId,
+//       scheduledTime: scheduledTime || '10:00 AM',
+//       duration: duration || '1 hour',
+//       meetingType: meetingType || 'online',
+//       status: 'pending'
+//     });
+
+//     await booking.save();
+
+//     // Track event
+//     await trackEvent('booking', {
+      
+//       service,
+//       country,
+//       name: booking.name
+//     }, req);
+
+//     // Send confirmation email to user
+//     const userEmailHtml = `
+//       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+//         <h2 style="color: #333;">Booking Confirmation #${booking._id.toString().substring(0, 8)}</h2>
+//         <p>Dear ${name},</p>
+//         <p>Thank you for booking with RECAPPLY. Your booking request has been received.</p>
+        
+//         <div style="background: #f5f5f5; padding: 20px; border-radius: 5px; margin: 20px 0;">
+//           <h3 style="margin-top: 0;">Booking Details</h3>
+//           <p><strong>Booking ID:</strong> ${booking._id}</p>
+//           <p><strong>Service:</strong> ${service.charAt(0).toUpperCase() + service.slice(1)}</p>
+//           <p><strong>Date:</strong> ${bookingDate.toLocaleDateString()}</p>
+//           <p><strong>Time:</strong> ${scheduledTime || 'To be confirmed'}</p>
+//           <p><strong>Duration:</strong> ${duration || '1 hour'}</p>
+//           <p><strong>Type:</strong> ${meetingType || 'online'}</p>
+//           <p><strong>Country:</strong> ${country}</p>
+//           <p><strong>Phone:</strong> ${phone}</p>
+//           ${message ? `<p><strong>Your Message:</strong> ${message}</p>` : ''}
+//         </div>
+        
+//         <p><strong>Next Steps:</strong></p>
+//         <ol>
+//           <li>Our team will review your booking request</li>
+//           <li>You will receive a confirmation email within 24 hours</li>
+//           <li>Meeting details will be sent to you upon confirmation</li>
+//         </ol>
+        
+//         <p>If you have any questions, please reply to this email.</p>
+        
+//         <p>Best regards,<br>RECAPPLY Team</p>
+//       </div>
+//     `;
+
+//     await sendEmail(email, `Booking Confirmation - ${service}`, userEmailHtml);
+
+//     // Send notification to admin
+//     if (process.env.ADMIN_EMAIL) {
+//       const adminEmailHtml = `
+//         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+//           <h2 style="color: #333;">New Booking Request</h2>
+//           <div style="background: #f5f5f5; padding: 20px; border-radius: 5px; margin: 20px 0;">
+//             <h3 style="margin-top: 0;">Client Details</h3>
+//             <p><strong>Name:</strong> ${name}</p>
+//             <p><strong>Email:</strong> ${email}</p>
+//             <p><strong>Phone:</strong> ${phone}</p>
+//             <p><strong>Country:</strong> ${country}</p>
+            
+//             <h3>Booking Details</h3>
+//             <p><strong>Booking ID:</strong> ${booking._id}</p>
+//             <p><strong>Service:</strong> ${service}</p>
+//             <p><strong>Date:</strong> ${bookingDate.toLocaleDateString()}</p>
+//             <p><strong>Time:</strong> ${scheduledTime || 'Not specified'}</p>
+//             <p><strong>Duration:</strong> ${duration || '1 hour'}</p>
+//             <p><strong>Type:</strong> ${meetingType || 'online'}</p>
+//             ${postTitle ? `<p><strong>Related Post:</strong> ${postTitle}</p>` : ''}
+//             ${message ? `<p><strong>Message:</strong> ${message}</p>` : ''}
+            
+//             <h3>Client IP & Device</h3>
+//             <p><strong>IP Address:</strong> ${req.ip}</p>
+//             <p><strong>User Agent:</strong> ${req.get('user-agent')}</p>
+//           </div>
+          
+//           <p><a href="${process.env.ADMIN_URL || 'https://admin.recapply.com'}/bookings/${booking._id}" 
+//                 style="background-color: #4CAF50; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">
+//             View Booking in Admin Panel
+//           </a></p>
+//         </div>
+//       `;
+
+//       await sendEmail(
+//         process.env.ADMIN_EMAIL,
+//         `New Booking: ${name} - ${service}`,
+//         adminEmailHtml
+//       );
+//     }
+
+//     res.status(201).json({
+//       success: true,
+//       message: 'Booking submitted successfully',
+//       data: {
+//         _id: booking._id,
+//         name: booking.name,
+//         service: booking.service,
+//         date: booking.date,
+//         status: booking.status,
+//         bookingId: booking._id.toString()
+//       }
+//     });
+//   } catch (error) {
+//     console.error('Create booking error:', error);
+//     res.status(500).json({
+//       success: false,
+//       message: 'Error submitting booking'
+//     });
+//   }
+// };
+
+// Create booking (public)
 exports.createBooking = async (req, res) => {
   try {
-    const { 
-      name, 
-      email, 
-      phone, 
-      country, 
-      service, 
-      date, 
-      message, 
-      postTitle, 
-      postId,
-      scheduledTime,
-      duration,
-      meetingType
+    const {
+      name,
+      email,
+      phone,
+      country,
+      service,
+      serviceCategory,
+      date,
+      educationLevel,
+      program,
+      budget,
+      startDate,
+      message,
+      notes,
+      status
     } = req.body;
 
     // Validate required fields
-    if (!name || !email || !phone || !country || !service || !date) {
+    if (!name || !email || !phone || !country || !service || !date || !startDate) {
       return res.status(400).json({
         success: false,
-        message: 'Name, email, phone, country, service, and date are required'
+        message: 'Missing required fields'
       });
     }
 
@@ -93,150 +279,51 @@ exports.createBooking = async (req, res) => {
     if (!validator.isEmail(email)) {
       return res.status(400).json({
         success: false,
-        message: 'Please provide a valid email address'
+        message: 'Invalid email address'
       });
     }
 
-    // Validate date
     const bookingDate = new Date(date);
-    if (isNaN(bookingDate.getTime())) {
+    const start = new Date(startDate);
+
+    if (isNaN(bookingDate) || isNaN(start)) {
       return res.status(400).json({
         success: false,
-        message: 'Please provide a valid date'
+        message: 'Invalid date'
       });
     }
 
-    // Check if date is in the future
-    if (bookingDate < new Date()) {
-      return res.status(400).json({
-        success: false,
-        message: 'Booking date must be in the future'
-      });
-    }
-
-    // Validate service
-    const validServices = ['consultation', 'workshop', 'training', 'speaking', 'other'];
-    if (!validServices.includes(service)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid service type'
-      });
-    }
-
-    // Create booking
     const booking = new models.Booking({
       name: name.trim(),
       email: email.toLowerCase().trim(),
       phone: phone.trim(),
       country: country.trim(),
-      service,
+      service: service.trim(),
+      serviceCategory,
       date: bookingDate,
-      message: message ? message.trim() : '',
-      postTitle,
-      postId,
-      scheduledTime: scheduledTime || '10:00 AM',
-      duration: duration || '1 hour',
-      meetingType: meetingType || 'online',
-      status: 'pending'
+      educationLevel,
+      program,
+      budget,
+      startDate: start,
+      message: message || '',
+      notes: notes || [],
+      status: status || 'pending',
+      ipAddress: req.ip,
+      userAgent: req.get('user-agent')
     });
 
     await booking.save();
 
-    // Track event
-    await trackEvent('booking', {
-      bookingId: booking._id,
-      service,
-      country,
-      name: booking.name
-    }, req);
-
-    // Send confirmation email to user
-    const userEmailHtml = `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <h2 style="color: #333;">Booking Confirmation #${booking._id.toString().substring(0, 8)}</h2>
-        <p>Dear ${name},</p>
-        <p>Thank you for booking with RECAPPLY. Your booking request has been received.</p>
-        
-        <div style="background: #f5f5f5; padding: 20px; border-radius: 5px; margin: 20px 0;">
-          <h3 style="margin-top: 0;">Booking Details</h3>
-          <p><strong>Booking ID:</strong> ${booking._id}</p>
-          <p><strong>Service:</strong> ${service.charAt(0).toUpperCase() + service.slice(1)}</p>
-          <p><strong>Date:</strong> ${bookingDate.toLocaleDateString()}</p>
-          <p><strong>Time:</strong> ${scheduledTime || 'To be confirmed'}</p>
-          <p><strong>Duration:</strong> ${duration || '1 hour'}</p>
-          <p><strong>Type:</strong> ${meetingType || 'online'}</p>
-          <p><strong>Country:</strong> ${country}</p>
-          <p><strong>Phone:</strong> ${phone}</p>
-          ${message ? `<p><strong>Your Message:</strong> ${message}</p>` : ''}
-        </div>
-        
-        <p><strong>Next Steps:</strong></p>
-        <ol>
-          <li>Our team will review your booking request</li>
-          <li>You will receive a confirmation email within 24 hours</li>
-          <li>Meeting details will be sent to you upon confirmation</li>
-        </ol>
-        
-        <p>If you have any questions, please reply to this email.</p>
-        
-        <p>Best regards,<br>RECAPPLY Team</p>
-      </div>
-    `;
-
-    await sendEmail(email, `Booking Confirmation - ${service}`, userEmailHtml);
-
-    // Send notification to admin
-    if (process.env.ADMIN_EMAIL) {
-      const adminEmailHtml = `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #333;">New Booking Request</h2>
-          <div style="background: #f5f5f5; padding: 20px; border-radius: 5px; margin: 20px 0;">
-            <h3 style="margin-top: 0;">Client Details</h3>
-            <p><strong>Name:</strong> ${name}</p>
-            <p><strong>Email:</strong> ${email}</p>
-            <p><strong>Phone:</strong> ${phone}</p>
-            <p><strong>Country:</strong> ${country}</p>
-            
-            <h3>Booking Details</h3>
-            <p><strong>Booking ID:</strong> ${booking._id}</p>
-            <p><strong>Service:</strong> ${service}</p>
-            <p><strong>Date:</strong> ${bookingDate.toLocaleDateString()}</p>
-            <p><strong>Time:</strong> ${scheduledTime || 'Not specified'}</p>
-            <p><strong>Duration:</strong> ${duration || '1 hour'}</p>
-            <p><strong>Type:</strong> ${meetingType || 'online'}</p>
-            ${postTitle ? `<p><strong>Related Post:</strong> ${postTitle}</p>` : ''}
-            ${message ? `<p><strong>Message:</strong> ${message}</p>` : ''}
-            
-            <h3>Client IP & Device</h3>
-            <p><strong>IP Address:</strong> ${req.ip}</p>
-            <p><strong>User Agent:</strong> ${req.get('user-agent')}</p>
-          </div>
-          
-          <p><a href="${process.env.ADMIN_URL || 'https://admin.recapply.com'}/bookings/${booking._id}" 
-                style="background-color: #4CAF50; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">
-            View Booking in Admin Panel
-          </a></p>
-        </div>
-      `;
-
-      await sendEmail(
-        process.env.ADMIN_EMAIL,
-        `New Booking: ${name} - ${service}`,
-        adminEmailHtml
-      );
-    }
+    await trackEvent(
+      'booking',
+      { service, country, name: booking.name },
+      req
+    );
 
     res.status(201).json({
       success: true,
       message: 'Booking submitted successfully',
-      data: {
-        _id: booking._id,
-        name: booking.name,
-        service: booking.service,
-        date: booking.date,
-        status: booking.status,
-        bookingId: booking._id.toString()
-      }
+      data: booking
     });
   } catch (error) {
     console.error('Create booking error:', error);
@@ -247,108 +334,108 @@ exports.createBooking = async (req, res) => {
   }
 };
 
+
 // Admin: Get all bookings
+// exports.getAllBookings = async (req, res) => {
+//   try {
+//     const { 
+//       page = 1, 
+//       limit = 20, 
+//       status, 
+//       service, 
+//       country,
+//       startDate, 
+//       endDate,
+//       search 
+//     } = req.query;
+    
+//     const query = {};
+
+//     // Filter by status
+//     if (status && status !== 'all') {
+//       query.status = status;
+//     }
+
+//     // Filter by service
+//     if (service && service !== 'all') {
+//       query.service = service;
+//     }
+
+//     // Filter by country
+//     if (country && country !== 'all') {
+//       query.country = country;
+//     }
+
+//     // Filter by date range
+//     if (startDate || endDate) {
+//       query.date = {};
+//       if (startDate) {
+//         query.date.$gte = new Date(startDate);
+//       }
+//       if (endDate) {
+//         query.date.$lte = new Date(endDate);
+//       }
+//     }
+
+//     // Search by name, email, or phone
+//     if (search) {
+//       query.$or = [
+//         { name: new RegExp(search, 'i') },
+//         { email: new RegExp(search, 'i') },
+//         { phone: new RegExp(search, 'i') }
+//       ];
+//     }
+
+//     const bookings = await models.Booking.find(query)
+//       .sort('-createdAt')
+//       .skip((page - 1) * limit)
+//       .limit(parseInt(limit))
+//       .populate('postId', 'title slug');
+
+//     const total = await models.Booking.countDocuments(query);
+
+//     // Get available filters data
+//     const services = await models.Booking.distinct('service');
+//     const countries = await models.Booking.distinct('country');
+//     const statuses = ['pending', 'confirmed', 'cancelled', 'completed'];
+
+//     res.json({
+//       success: true,
+//       data: bookings,
+//       total,
+//       totalPages: Math.ceil(total / limit),
+//       currentPage: parseInt(page),
+//       filters: {
+//         services,
+//         countries,
+//         statuses
+//       }
+//     });
+//   } catch (error) {
+//     console.error('Get bookings error:', error);
+//     res.status(500).json({
+//       success: false,
+//       message: 'Error fetching bookings'
+//     });
+//   }
+// };
+
+
 exports.getAllBookings = async (req, res) => {
   try {
-    const { 
-      page = 1, 
-      limit = 20, 
-      status, 
-      service, 
+    const {
+      page = 1,
+      limit = 20,
+      status,
+      service,
       country,
-      startDate, 
+      startDate,
       endDate,
-      search 
+      search
     } = req.query;
-    
+
     const query = {};
 
-    // Filter by status
-    if (status && status !== 'all') {
-      query.status = status;
-    }
-
-    // Filter by service
-    if (service && service !== 'all') {
-      query.service = service;
-    }
-
-    // Filter by country
-    if (country && country !== 'all') {
-      query.country = country;
-    }
-
-    // Filter by date range
-    if (startDate || endDate) {
-      query.date = {};
-      if (startDate) {
-        query.date.$gte = new Date(startDate);
-      }
-      if (endDate) {
-        query.date.$lte = new Date(endDate);
-      }
-    }
-
-    // Search by name, email, or phone
-    if (search) {
-      query.$or = [
-        { name: new RegExp(search, 'i') },
-        { email: new RegExp(search, 'i') },
-        { phone: new RegExp(search, 'i') }
-      ];
-    }
-
-    const bookings = await models.Booking.find(query)
-      .sort('-createdAt')
-      .skip((page - 1) * limit)
-      .limit(parseInt(limit))
-      .populate('postId', 'title slug');
-
-    const total = await models.Booking.countDocuments(query);
-
-    // Get available filters data
-    const services = await models.Booking.distinct('service');
-    const countries = await models.Booking.distinct('country');
-    const statuses = ['pending', 'confirmed', 'cancelled', 'completed'];
-
-    res.json({
-      success: true,
-      data: bookings,
-      total,
-      totalPages: Math.ceil(total / limit),
-      currentPage: parseInt(page),
-      filters: {
-        services,
-        countries,
-        statuses
-      }
-    });
-  } catch (error) {
-    console.error('Get bookings error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error fetching bookings'
-    });
-  }
-};
-
-exports.getBookingsByEmail = async (req, res) => {
-  try {
-    const { email } = req.params;
-    const { 
-      page = 1, 
-      limit = 20, 
-      status, 
-      service, 
-      country,
-      startDate, 
-      endDate,
-      search 
-    } = req.query;
-
-    const query = { email: email.toLowerCase() };
-
-    // Apply same filters as getAllBookings
     if (status && status !== 'all') query.status = status;
     if (service && service !== 'all') query.service = service;
     if (country && country !== 'all') query.country = country;
@@ -370,8 +457,7 @@ exports.getBookingsByEmail = async (req, res) => {
     const bookings = await models.Booking.find(query)
       .sort('-createdAt')
       .skip((page - 1) * limit)
-      .limit(parseInt(limit))
-      .populate('postId', 'title slug');
+      .limit(Number(limit));
 
     const total = await models.Booking.countDocuments(query);
 
@@ -380,25 +466,43 @@ exports.getBookingsByEmail = async (req, res) => {
       data: bookings,
       total,
       totalPages: Math.ceil(total / limit),
-      currentPage: parseInt(page)
+      currentPage: Number(page)
     });
   } catch (error) {
-    console.error('Get bookings by email error:', error);
+    console.error('Get bookings error:', error);
     res.status(500).json({
       success: false,
-      message: 'Error fetching bookings by email'
+      message: 'Error fetching bookings'
     });
   }
 };
 
 
-// Admin: Get booking by ID
+exports.getBookingsByEmail = async (req, res) => {
+  try {
+    const { email } = req.params;
+
+    const bookings = await models.Booking.find({
+      email: email.toLowerCase()
+    }).sort('-createdAt');
+
+    res.json({
+      success: true,
+      data: bookings
+    });
+  } catch (error) {
+    console.error('Get bookings by email error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching bookings'
+    });
+  }
+};
+
+
 exports.getBookingById = async (req, res) => {
   try {
-    const { id } = req.params;
-    
-    const booking = await models.Booking.findById(id)
-      .populate('postId', 'title slug category');
+    const booking = await models.Booking.findById(req.params.id);
 
     if (!booking) {
       return res.status(404).json({
@@ -420,22 +524,34 @@ exports.getBookingById = async (req, res) => {
   }
 };
 
+
+
 // Admin: Update booking status
 exports.updateBookingStatus = async (req, res) => {
   try {
-    const { id } = req.params;
-    const { status, notes, meetingLink } = req.body;
+    const { status, notes } = req.body;
 
-    // Validate status
-    const validStatuses = ['pending', 'confirmed', 'cancelled', 'completed'];
+    const validStatuses = [
+      'pending',
+      'contacted',
+      'in_progress',
+      'completed',
+      'cancelled'
+    ];
+
     if (status && !validStatuses.includes(status)) {
       return res.status(400).json({
         success: false,
-        message: 'Invalid status. Must be: pending, confirmed, cancelled, or completed'
+        message: 'Invalid status'
       });
     }
 
-    const booking = await models.Booking.findById(id);
+    const booking = await models.Booking.findByIdAndUpdate(
+      req.params.id,
+      { status, notes },
+      { new: true, runValidators: true }
+    );
+
     if (!booking) {
       return res.status(404).json({
         success: false,
@@ -443,67 +559,10 @@ exports.updateBookingStatus = async (req, res) => {
       });
     }
 
-    // Update fields
-    const updates = {};
-    if (status) updates.status = status;
-    if (notes !== undefined) updates.notes = notes;
-    if (meetingLink !== undefined) updates.meetingLink = meetingLink;
-
-    const updatedBooking = await models.Booking.findByIdAndUpdate(
-      id,
-      updates,
-      { new: true, runValidators: true }
-    ).populate('postId', 'title');
-
-    // Send status update email to client
-    const statusEmailHtml = `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <h2 style="color: #333;">Booking Status Update</h2>
-        <p>Dear ${booking.name},</p>
-        
-        <div style="background: #f5f5f5; padding: 20px; border-radius: 5px; margin: 20px 0;">
-          <h3 style="margin-top: 0;">Booking Details</h3>
-          <p><strong>Booking ID:</strong> ${booking._id.toString().substring(0, 8)}</p>
-          <p><strong>Service:</strong> ${booking.service.charAt(0).toUpperCase() + booking.service.slice(1)}</p>
-          <p><strong>Date:</strong> ${new Date(booking.date).toLocaleDateString()}</p>
-          <p><strong>New Status:</strong> <span style="color: ${
-            status === 'confirmed' ? 'green' : 
-            status === 'cancelled' ? 'red' : 
-            'orange'
-          }; font-weight: bold;">${status.toUpperCase()}</span></p>
-          
-          ${notes ? `<p><strong>Notes from our team:</strong> ${notes}</p>` : ''}
-          ${meetingLink ? `<p><strong>Meeting Link:</strong> <a href="${meetingLink}">${meetingLink}</a></p>` : ''}
-        </div>
-        
-        ${status === 'confirmed' ? `
-          <p><strong>Next Steps:</strong></p>
-          <ol>
-            <li>Please save the date: ${new Date(booking.date).toLocaleDateString()}</li>
-            <li>Add the meeting to your calendar</li>
-            ${meetingLink ? `<li>Join using this link: <a href="${meetingLink}">${meetingLink}</a></li>` : '<li>Meeting details will be sent separately</li>'}
-            <li>If you need to reschedule, please contact us at least 24 hours in advance</li>
-          </ol>
-        ` : ''}
-        
-        ${status === 'cancelled' ? `
-          <p>We're sorry to see you go. If you'd like to reschedule or have any questions, please reply to this email.</p>
-        ` : ''}
-        
-        <p>Best regards,<br>RECAPPLY Team</p>
-      </div>
-    `;
-
-    await sendEmail(
-      booking.email,
-      `Booking Status Update: ${status} - ${booking.service}`,
-      statusEmailHtml
-    );
-
     res.json({
       success: true,
-      message: `Booking status updated to ${status}`,
-      data: updatedBooking
+      message: 'Booking updated',
+      data: booking
     });
   } catch (error) {
     console.error('Update booking error:', error);
