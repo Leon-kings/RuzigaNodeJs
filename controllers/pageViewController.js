@@ -729,17 +729,79 @@ exports.trackView = async (req, res) => {
    GET ALL VIEWS
 ===================================================== */
 // @route   GET /api/views
+// exports.getAllViews = async (req, res) => {
+//   try {
+//     const { page = 1, limit = 20, ip, startDate, endDate } = req.query;
+
+//     const query = {};
+
+//     if (ip) query.ip = ip;
+//     if (startDate || endDate) {
+//       query.timestamp = {};
+//       if (startDate) query.timestamp.$gte = new Date(startDate);
+//       if (endDate) query.timestamp.$lte = new Date(endDate);
+//     }
+
+//     const views = await ViewTracking.find(query)
+//       .sort({ timestamp: -1 })
+//       .skip((page - 1) * limit)
+//       .limit(Number(limit));
+
+//     const total = await ViewTracking.countDocuments(query);
+
+//     res.status(200).json({
+//       success: true,
+//       data: views,
+//       pagination: {
+//         total,
+//         page: Number(page),
+//         pages: Math.ceil(total / limit)
+//       }
+//     });
+//   } catch (error) {
+//     console.error('Get all views error:', error);
+//     res.status(500).json({
+//       success: false,
+//       message: 'Error fetching views'
+//     });
+//   }
+// };
 exports.getAllViews = async (req, res) => {
   try {
-    const { page = 1, limit = 20, ip, startDate, endDate } = req.query;
+    const { 
+      page = 1, 
+      limit = 20, 
+      ip, 
+      startDate, 
+      endDate,
+      showOnlyLastWeek = false // New parameter
+    } = req.query;
 
     const query = {};
 
+    // IP filter
     if (ip) query.ip = ip;
+    
+    // Date range filter
     if (startDate || endDate) {
       query.timestamp = {};
       if (startDate) query.timestamp.$gte = new Date(startDate);
       if (endDate) query.timestamp.$lte = new Date(endDate);
+    }
+    
+    // Show only last 7 days filter
+    if (showOnlyLastWeek === 'true' || showOnlyLastWeek === true) {
+      const oneWeekAgo = new Date();
+      oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+      
+      if (query.timestamp) {
+        query.timestamp.$gte = new Date(Math.max(
+          query.timestamp.$gte ? query.timestamp.$gte.getTime() : 0,
+          oneWeekAgo.getTime()
+        ));
+      } else {
+        query.timestamp = { $gte: oneWeekAgo };
+      }
     }
 
     const views = await ViewTracking.find(query)
@@ -766,6 +828,72 @@ exports.getAllViews = async (req, res) => {
     });
   }
 };
+
+
+// Auto-delete IPs older than 7 days
+exports.autoDeleteOldIPs = async (req, res) => {
+  try {
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    
+    const result = await ViewTracking.deleteMany({
+      timestamp: { $lt: sevenDaysAgo }
+    });
+    
+    res.status(200).json({
+      success: true,
+      message: `Successfully deleted ${result.deletedCount} IPs older than 7 days`,
+      deletedCount: result.deletedCount
+    });
+  } catch (error) {
+    console.error('Auto delete old IPs error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error auto-deleting old IPs'
+    });
+  }
+};
+
+// Bulk delete with filters
+exports.bulkDeleteIPs = async (req, res) => {
+  try {
+    const { ip, startDate, endDate, olderThan7Days } = req.query;
+    
+    const query = {};
+    
+    // IP filter
+    if (ip) query.ip = ip;
+    
+    // Date range filter
+    if (startDate || endDate) {
+      query.timestamp = {};
+      if (startDate) query.timestamp.$gte = new Date(startDate);
+      if (endDate) query.timestamp.$lte = new Date(endDate);
+    }
+    
+    // Delete IPs older than 7 days if specified
+    if (olderThan7Days === 'true' || olderThan7Days === true) {
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+      query.timestamp = { ...query.timestamp, $lt: sevenDaysAgo };
+    }
+    
+    const result = await ViewTracking.deleteMany(query);
+    
+    res.status(200).json({
+      success: true,
+      message: `Successfully deleted ${result.deletedCount} IP addresses`,
+      deletedCount: result.deletedCount
+    });
+  } catch (error) {
+    console.error('Bulk delete IPs error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error deleting IPs in bulk'
+    });
+  }
+};
+
 
 /* =====================================================
    VIEW STATISTICS

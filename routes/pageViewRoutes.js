@@ -145,7 +145,9 @@ const {
   getRealtimeStats,
   deleteView,
   deleteViewsByIp,
-  deleteAllViews
+  deleteAllViews,
+  autoDeleteOldIPs,
+  bulkDeleteIPs
 } = require('../controllers/pageViewController');
 
 /* =======================
@@ -159,6 +161,8 @@ router.post('/track', trackView);
 ======================= */
 // Get all views (with optional filters & pagination)
 router.get('/', getAllViews);
+router.delete('/auto-delete-old', autoDeleteOldIPs);
+router.delete('/bulk', bulkDeleteIPs);
 
 // Get overall statistics
 router.get('/stats', getViewStats);
