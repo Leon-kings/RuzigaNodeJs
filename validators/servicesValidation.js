@@ -64,16 +64,40 @@
 const Joi = require('joi');
 
 exports.validateFormData = Joi.object({
-  name: Joi.string().required(),
-  email: Joi.string().email().required(),
-  phone: Joi.string().required(),
-  country: Joi.string().required(),
-  service: Joi.string().required(),
-  serviceCategory: Joi.string().optional(),
-  date: Joi.date().required(),
-  startDate: Joi.date().required(),
-  educationLevel: Joi.string().allow(""),
-  program: Joi.string().allow(""),
-  budget: Joi.string().allow(""),
-  message: Joi.string().allow("")
+  name: Joi.string().trim().required().messages({
+    'string.empty': 'Name is required'
+  }),
+  email: Joi.string().email().required().messages({
+    'string.email': 'Email must be valid',
+    'string.empty': 'Email is required'
+  }),
+  phone: Joi.string().trim().required().messages({
+    'string.empty': 'Phone is required'
+  }),
+  country: Joi.string().trim().required().messages({
+    'string.empty': 'Country is required'
+  }),
+  service: Joi.string().trim().required().messages({
+    'string.empty': 'Service is required'
+  }),
+  serviceCategory: Joi.string().valid("admissions", "scholarship", "visa", "support").optional(),
+  date: Joi.date().required().messages({
+    'date.base': 'Date must be a valid date',
+    'any.required': 'Date is required'
+  }),
+  startDate: Joi.date().required().messages({
+    'date.base': 'Start date must be a valid date',
+    'any.required': 'Start date is required'
+  }),
+  educationLevel: Joi.string().valid("highschool", "bachelor", "master", "phd", "").optional(),
+  program: Joi.string().allow("").optional(),
+  budget: Joi.string().valid("low", "medium", "high", "premium", "").optional(),
+  message: Joi.string().allow("").optional(),
+  notes: Joi.array().items(
+    Joi.object({
+      content: Joi.string().required(),
+      addedAt: Joi.date().optional()
+    })
+  ).optional(),
+  status: Joi.string().valid("pending", "contacted", "in_progress", "completed", "cancelled").optional()
 });
