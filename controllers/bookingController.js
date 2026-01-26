@@ -808,7 +808,7 @@
 
 
 
-const Booking = require('../models/Booking');
+const Booking = require('../models/Services');
 const nodemailer = require('nodemailer');
 const validator = require('validator');
 
