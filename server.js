@@ -139,7 +139,7 @@ app.use("/newsletter", newsletterRoutes);
 app.use("/csce", CSCEBookingRoutes);
 app.use("/blogs", blogRoutes);
 app.use("/comments", commentRoutes);
-app.use("/bookings", bookingRoutes);
+// app.use("/bookings", bookingRoutes);
 app.use("/notifications", notificationRoutes);
 app.use("/visas/bookings", visaRoutes);
 app.use("/accomodations", accommodationRoutes);

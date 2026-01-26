@@ -549,39 +549,65 @@ const calculateStatistics = async () => {
 // 1. Create Booking
 exports.createBooking = async (req, res) => {
   try {
-    // Validate request
-    const { error, value } = bookingSchema.validate(req.body);
-    if (error) {
+    const body = req.body;
+
+    // OPTIONAL: basic required checks (lighter than Joi)
+    if (
+      !body.customer?.fullName ||
+      !body.customer?.email ||
+      !body.customer?.phone ||
+      !body.customer?.targetCountry ||
+      !body.service?.name
+    ) {
       return res.status(400).json({
         success: false,
-        message: 'Validation error',
-        errors: error.details.map(detail => detail.message)
+        message: 'Missing required booking fields'
       });
     }
 
-    // Add client info
+    // Client info
     const clientInfo = {
-      ipAddress: req.ip || req.connection.remoteAddress,
+      ipAddress: req.ip || req.connection?.remoteAddress,
       userAgent: req.headers['user-agent']
     };
 
-    // Create booking
+    // Normalize booking data (safe defaults)
     const bookingData = {
-      ...value,
+      service: {
+        id: body.service.id || '1',
+        name: body.service.name,
+        category: body.service.category || 'general'
+      },
+
+      customer: {
+        fullName: body.customer.fullName,
+        email: body.customer.email,
+        phone: body.customer.phone,
+        targetCountry: body.customer.targetCountry,
+        program: body.customer.program || '',
+        educationLevel: body.customer.educationLevel || '',
+        budget: body.customer.budget || '',
+        priceUSD: body.customer.priceUSD || '500',
+        startDate: body.customer.startDate
+          ? new Date(body.customer.startDate)
+          : new Date(),
+        requirements: body.customer.requirements || ''
+      },
+
       ipAddress: clientInfo.ipAddress,
       userAgent: clientInfo.userAgent
     };
 
-    const booking = new Booking(bookingData);
-    await booking.save();
+    // Save booking
+    const booking = await Booking.create(bookingData);
 
-    // Send emails (async - don't block response)
+    // Send emails (non-blocking)
     try {
       await Promise.all([
         sendBookingConfirmation(booking),
         sendAdminNotification(booking)
       ]);
-      
+
       booking.notes.push({
         content: 'Confirmation emails sent successfully',
         addedBy: 'system'
@@ -589,6 +615,7 @@ exports.createBooking = async (req, res) => {
       await booking.save();
     } catch (emailError) {
       console.error('Email sending failed:', emailError);
+
       booking.notes.push({
         content: 'Email sending failed but booking was saved',
         addedBy: 'system'
@@ -596,21 +623,25 @@ exports.createBooking = async (req, res) => {
       await booking.save();
     }
 
-    res.status(201).json({
+    return res.status(201).json({
       success: true,
       message: 'Booking created successfully',
       data: {
-        booking: booking.toJSON(),
+        booking,
         reference: booking._id.toString().slice(-8).toUpperCase()
       }
     });
 
   } catch (error) {
     console.error('Create booking error:', error);
-    res.status(500).json({
+
+    return res.status(500).json({
       success: false,
       message: 'Failed to create booking',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      error:
+        process.env.NODE_ENV === 'development'
+          ? error.message
+          : undefined
     });
   }
 };
@@ -782,19 +813,31 @@ exports.getBookingById = async (req, res) => {
 // 4. Update Booking Status
 exports.updateBookingStatus = async (req, res) => {
   try {
-    const { status, note } = req.body;
-    
+    const { status } = req.body;
+
+    const validStatuses = [
+      'pending',
+      'contacted',
+      'in_progress',
+      'completed',
+      'cancelled'
+    ];
+
     // Validate status
-    const validStatuses = ['pending', 'contacted', 'in_progress', 'completed', 'cancelled'];
-    if (!validStatuses.includes(status)) {
+    if (!status || !validStatuses.includes(status)) {
       return res.status(400).json({
         success: false,
-        message: 'Invalid status value'
+        message: 'Invalid or missing status value'
       });
     }
 
-    const booking = await Booking.findById(req.params.id);
-    
+    // Update ONLY status
+    const booking = await Booking.findByIdAndUpdate(
+      req.params.id,
+      { status },
+      { new: true }
+    );
+
     if (!booking) {
       return res.status(404).json({
         success: false,
@@ -802,43 +845,21 @@ exports.updateBookingStatus = async (req, res) => {
       });
     }
 
-    // Update status
-    const oldStatus = booking.status;
-    booking.status = status;
-    booking.updatedAt = Date.now();
-    
-    // Add note
-    if (note) {
-      booking.notes.push({
-        content: `Status changed from ${oldStatus} to ${status}: ${note}`,
-        addedBy: 'admin'
-      });
-    }
-
-    await booking.save();
-
-    // Send status update email
-    try {
-      await sendStatusUpdate(booking, status);
-    } catch (emailError) {
-      console.error('Status update email failed:', emailError);
-    }
-
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       message: 'Booking status updated successfully',
       data: booking
     });
 
   } catch (error) {
-    console.error('Update booking error:', error);
-    res.status(500).json({
+    console.error('Update booking status error:', error);
+
+    return res.status(500).json({
       success: false,
-      message: 'Failed to update booking'
+      message: 'Failed to update booking status'
     });
   }
 };
-
 // 5. Add Note to Booking
 exports.addNoteToBooking = async (req, res) => {
   try {
