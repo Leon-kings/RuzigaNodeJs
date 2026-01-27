@@ -6596,45 +6596,319 @@
 
 
 
+// const VisaService = require('../models/Visa');
+// const cloudinary = require('cloudinary').v2;
+// const fs = require('fs');
+
+// /* =========================
+//    HELPER: UPLOAD TO CLOUDINARY
+// ========================= */
+// const uploadToCloudinary = async (file, folder) => {
+//   if (!file) return null;
+//   if (file.size > 5 * 1024 * 1024) throw new Error('File exceeds 5MB limit');
+
+//   const result = await cloudinary.uploader.upload(file.path, {
+//     folder,
+//     resource_type: 'auto'
+//   });
+
+//   try { fs.unlinkSync(file.path); } catch (err) { console.warn('Temp file cleanup failed', err.message); }
+
+//   return {
+//     cloudinaryUrl: result.secure_url,
+//     publicId: result.public_id,
+//     size: file.size
+//   };
+// };
+
+// /* =========================
+//    CATALOG CRUD
+// ========================= */
+
+// // CREATE CATALOG
+// exports.createVisaCatalog = async (req, res) => {
+//   try {
+//     const { country, visaType, description, processingTime, price, isActive } = req.body;
+
+//     if (!country || !visaType)
+//       return res.status(400).json({ success: false, message: 'country and visaType are required' });
+
+//     let coverImage = null;
+//     if (req.file) coverImage = await uploadToCloudinary(req.file, 'visa_catalog');
+
+//     const visa = await VisaService.create({
+//       recordType: 'visa-catalog',
+//       visaCatalog: { country, visaType, description, processingTime, price, isActive, coverImage }
+//     });
+
+//     res.status(201).json({ success: true, data: visa });
+//   } catch (e) {
+//     res.status(400).json({ success: false, message: e.message });
+//   }
+// };
+
+// // GET ALL CATALOGS
+// exports.getVisaCatalogs = async (req, res) => {
+//   try {
+//     const visas = await VisaService.find({ recordType: 'visa-catalog', 'visaCatalog.isActive': true });
+//     const formatted = visas.map(v => ({
+//       id: v._id,
+//       country: v.visaCatalog.country,
+//       visaType: v.visaCatalog.visaType,
+//       description: v.visaCatalog.description,
+//       processingTime: v.visaCatalog.processingTime,
+//       price: v.visaCatalog.price,
+//       imageUrl: v.visaCatalog.coverImage?.cloudinaryUrl || null,
+//       createdAt: v.createdAt
+//     }));
+//     res.json({ success: true, count: formatted.length, data: formatted });
+//   } catch (e) {
+//     res.status(500).json({ success: false, message: e.message });
+//   }
+// };
+
+// // GET CATALOG BY ID
+// exports.getVisaCatalogById = async (req, res) => {
+//   try {
+//     const visa = await VisaService.findById(req.params.id);
+//     if (!visa || visa.recordType !== 'visa-catalog')
+//       return res.status(404).json({ success: false, message: 'Catalog not found' });
+//     res.json({ success: true, data: visa });
+//   } catch (e) {
+//     res.status(500).json({ success: false, message: e.message });
+//   }
+// };
+
+// // UPDATE CATALOG
+// exports.updateVisaCatalog = async (req, res) => {
+//   try {
+//     const visa = await VisaService.findById(req.params.id);
+//     if (!visa || visa.recordType !== 'visa-catalog')
+//       return res.status(404).json({ success: false, message: 'Catalog not found' });
+
+//     if (req.file) {
+//       if (visa.visaCatalog.coverImage?.publicId) await cloudinary.uploader.destroy(visa.visaCatalog.coverImage.publicId);
+//       visa.visaCatalog.coverImage = await uploadToCloudinary(req.file, 'visa_catalog');
+//     }
+
+//     const allowedFields = ['country','visaType','description','processingTime','price','isActive'];
+//     allowedFields.forEach(f => { if (req.body[f] !== undefined) visa.visaCatalog[f] = req.body[f]; });
+
+//     await visa.save();
+//     res.json({ success: true, data: visa });
+//   } catch (e) {
+//     res.status(400).json({ success: false, message: e.message });
+//   }
+// };
+
+// // SOFT DELETE
+// exports.deleteVisaCatalog = async (req, res) => {
+//   try {
+//     const visa = await VisaService.findById(req.params.id);
+//     if (!visa || visa.recordType !== 'visa-catalog')
+//       return res.status(404).json({ success: false, message: 'Catalog not found' });
+
+//     visa.visaCatalog.isActive = false;
+//     await visa.save();
+//     res.json({ success: true, message: 'Visa catalog deactivated' });
+//   } catch (e) {
+//     res.status(500).json({ success: false, message: e.message });
+//   }
+// };
+
+// /* =========================
+//    BOOKING CRUD
+// ========================= */
+
+// // CREATE BOOKING
+// exports.createBooking = async (req, res) => {
+//   try {
+//     // ✅ Validate serviceRef
+//     const catalog = await VisaService.findOne({ _id: req.body.booking.serviceRef, recordType: 'visa-catalog' });
+//     if (!catalog) return res.status(400).json({ success: false, message: 'Invalid visa catalog reference' });
+
+//     const booking = await VisaService.create({ recordType: 'visa-booking', booking: req.body.booking });
+//     res.status(201).json({ success: true, data: booking });
+//   } catch (e) {
+//     res.status(400).json({ success: false, message: e.message });
+//   }
+// };
+
+// // READ ALL BOOKINGS
+// exports.getAllBookings = async (req, res) => {
+//   try {
+//     const bookings = await VisaService.find({ recordType: 'visa-booking' });
+//     res.json({ success: true, count: bookings.length, data: bookings });
+//   } catch (e) {
+//     res.status(500).json({ success: false, message: e.message });
+//   }
+// };
+
+// // GET BOOKING BY ID
+// exports.getBookingById = async (req, res) => {
+//   try {
+//     const booking = await VisaService.findById(req.params.id);
+//     if (!booking || booking.recordType !== 'visa-booking')
+//       return res.status(404).json({ success: false, message: 'Booking not found' });
+//     res.json({ success: true, data: booking });
+//   } catch (e) {
+//     res.status(500).json({ success: false, message: e.message });
+//   }
+// };
+
+// // UPDATE BOOKING
+// exports.updateBooking = async (req, res) => {
+//   try {
+//     const booking = await VisaService.findById(req.params.id);
+//     if (!booking || booking.recordType !== 'visa-booking')
+//       return res.status(404).json({ success: false, message: 'Booking not found' });
+
+//     Object.assign(booking.booking, req.body.booking || {});
+//     await booking.save();
+//     res.json({ success: true, data: booking });
+//   } catch (e) {
+//     res.status(400).json({ success: false, message: e.message });
+//   }
+// };
+
+// // DELETE BOOKING
+// exports.deleteBooking = async (req, res) => {
+//   try {
+//     const booking = await VisaService.findById(req.params.id);
+//     if (!booking || booking.recordType !== 'visa-booking')
+//       return res.status(404).json({ success: false, message: 'Booking not found' });
+
+//     await booking.remove();
+//     res.json({ success: true, message: 'Booking deleted' });
+//   } catch (e) {
+//     res.status(500).json({ success: false, message: e.message });
+//   }
+// };
+
+// /* =========================
+//    DOCUMENT CRUD
+// ========================= */
+// const allowedCategories = ['photograph','passportCopy','financialDocuments','travelDocuments','supportingDocuments'];
+
+// exports.uploadDocument = async (req, res) => {
+//   try {
+//     const { id, category } = req.params;
+//     if (!allowedCategories.includes(category))
+//       return res.status(400).json({ success: false, message: 'Invalid document category' });
+
+//     const booking = await VisaService.findById(id);
+//     if (!booking || booking.recordType !== 'visa-booking')
+//       return res.status(404).json({ success: false, message: 'Booking not found' });
+
+//     const doc = await uploadToCloudinary(req.file, 'visa_documents');
+
+//     if (!booking.booking.documents) booking.booking.documents = {};
+//     if (Array.isArray(booking.booking.documents[category])) booking.booking.documents[category].push(doc);
+//     else booking.booking.documents[category] = doc;
+
+//     await booking.save();
+//     res.json({ success: true, data: doc });
+//   } catch (e) {
+//     res.status(400).json({ success: false, message: e.message });
+//   }
+// };
+
+// exports.deleteDocument = async (req, res) => {
+//   try {
+//     const { id, category, publicId } = req.params;
+//     if (!allowedCategories.includes(category))
+//       return res.status(400).json({ success: false, message: 'Invalid document category' });
+
+//     const booking = await VisaService.findById(id);
+//     if (!booking || booking.recordType !== 'visa-booking')
+//       return res.status(404).json({ success: false, message: 'Booking not found' });
+
+//     await cloudinary.uploader.destroy(publicId);
+
+//     if (Array.isArray(booking.booking.documents[category])) {
+//       booking.booking.documents[category] = booking.booking.documents[category].filter(d => d.publicId !== publicId);
+//     }
+
+//     await booking.save();
+//     res.json({ success: true, message: 'Document removed' });
+//   } catch (e) {
+//     res.status(400).json({ success: false, message: e.message });
+//   }
+// };
+
+// /* =========================
+//    DASHBOARD STATS
+// ========================= */
+// exports.getDashboardStats = async (req, res) => {
+//   try {
+//     const totalVisas = await VisaService.countDocuments({ recordType: 'visa-catalog' });
+//     const totalBookings = await VisaService.countDocuments({ recordType: 'visa-booking' });
+
+//     const bookingStatus = await VisaService.aggregate([
+//       { $match: { recordType: 'visa-booking' } },
+//       { $group: { _id: '$booking.status', count: { $sum: 1 } } }
+//     ]);
+
+//     res.json({ success: true, data: { totalVisas, totalBookings, bookingStatus } });
+//   } catch (e) {
+//     res.status(500).json({ success: false, message: e.message });
+//   }
+// };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 const VisaService = require('../models/Visa');
 const cloudinary = require('cloudinary').v2;
 const fs = require('fs');
 
 /* =========================
-   HELPER: UPLOAD TO CLOUDINARY
+   HELPER: CLOUDINARY UPLOAD
 ========================= */
 const uploadToCloudinary = async (file, folder) => {
   if (!file) return null;
-  if (file.size > 5 * 1024 * 1024) throw new Error('File exceeds 5MB limit');
+  if (file.size > 5*1024*1024) throw new Error('File exceeds 5MB limit');
 
-  const result = await cloudinary.uploader.upload(file.path, {
-    folder,
-    resource_type: 'auto'
-  });
+  const result = await cloudinary.uploader.upload(file.path, { folder, resource_type: 'auto' });
 
-  try { fs.unlinkSync(file.path); } catch (err) { console.warn('Temp file cleanup failed', err.message); }
+  try { fs.unlinkSync(file.path); } catch(err) { console.warn('File cleanup failed', err.message); }
 
-  return {
-    cloudinaryUrl: result.secure_url,
-    publicId: result.public_id,
-    size: file.size
-  };
+  return { cloudinaryUrl: result.secure_url, publicId: result.public_id, size: file.size };
 };
 
 /* =========================
-   CATALOG CRUD
+   VISA CATALOG CRUD
 ========================= */
-
-// CREATE CATALOG
-exports.createVisaCatalog = async (req, res) => {
+exports.createVisaCatalog = async (req, res, next) => {
   try {
     const { country, visaType, description, processingTime, price, isActive } = req.body;
+    if (!country || !visaType) return res.status(400).json({ success: false, message: 'country and visaType are required' });
 
-    if (!country || !visaType)
-      return res.status(400).json({ success: false, message: 'country and visaType are required' });
-
-    let coverImage = null;
-    if (req.file) coverImage = await uploadToCloudinary(req.file, 'visa_catalog');
+    const coverImage = req.file ? await uploadToCloudinary(req.file, 'visa_catalog') : null;
 
     const visa = await VisaService.create({
       recordType: 'visa-catalog',
@@ -6642,215 +6916,146 @@ exports.createVisaCatalog = async (req, res) => {
     });
 
     res.status(201).json({ success: true, data: visa });
-  } catch (e) {
-    res.status(400).json({ success: false, message: e.message });
-  }
+  } catch(e) { next(e); }
 };
 
-// GET ALL CATALOGS
-exports.getVisaCatalogs = async (req, res) => {
+exports.getVisaCatalogs = async (req, res, next) => {
   try {
-    const visas = await VisaService.find({ recordType: 'visa-catalog', 'visaCatalog.isActive': true });
-    const formatted = visas.map(v => ({
-      id: v._id,
-      country: v.visaCatalog.country,
-      visaType: v.visaCatalog.visaType,
-      description: v.visaCatalog.description,
-      processingTime: v.visaCatalog.processingTime,
-      price: v.visaCatalog.price,
-      imageUrl: v.visaCatalog.coverImage?.cloudinaryUrl || null,
-      createdAt: v.createdAt
-    }));
-    res.json({ success: true, count: formatted.length, data: formatted });
-  } catch (e) {
-    res.status(500).json({ success: false, message: e.message });
-  }
+    const visas = await VisaService.find({ recordType:'visa-catalog', 'visaCatalog.isActive':true });
+    res.json({ success:true, count: visas.length, data: visas });
+  } catch(e) { next(e); }
 };
 
-// GET CATALOG BY ID
-exports.getVisaCatalogById = async (req, res) => {
+exports.getVisaCatalogById = async (req, res, next) => {
   try {
     const visa = await VisaService.findById(req.params.id);
-    if (!visa || visa.recordType !== 'visa-catalog')
-      return res.status(404).json({ success: false, message: 'Catalog not found' });
-    res.json({ success: true, data: visa });
-  } catch (e) {
-    res.status(500).json({ success: false, message: e.message });
-  }
+    if (!visa) return res.status(404).json({ success:false, message:'Catalog not found' });
+    res.json({ success:true, data: visa });
+  } catch(e) { next(e); }
 };
 
-// UPDATE CATALOG
-exports.updateVisaCatalog = async (req, res) => {
+exports.updateVisaCatalog = async (req, res, next) => {
   try {
     const visa = await VisaService.findById(req.params.id);
-    if (!visa || visa.recordType !== 'visa-catalog')
-      return res.status(404).json({ success: false, message: 'Catalog not found' });
+    if (!visa) return res.status(404).json({ success:false, message:'Catalog not found' });
 
-    if (req.file) {
-      if (visa.visaCatalog.coverImage?.publicId) await cloudinary.uploader.destroy(visa.visaCatalog.coverImage.publicId);
+    if (req.file && visa.visaCatalog.coverImage?.publicId) {
+      await cloudinary.uploader.destroy(visa.visaCatalog.coverImage.publicId);
       visa.visaCatalog.coverImage = await uploadToCloudinary(req.file, 'visa_catalog');
     }
 
-    const allowedFields = ['country','visaType','description','processingTime','price','isActive'];
-    allowedFields.forEach(f => { if (req.body[f] !== undefined) visa.visaCatalog[f] = req.body[f]; });
-
+    Object.assign(visa.visaCatalog, req.body);
     await visa.save();
-    res.json({ success: true, data: visa });
-  } catch (e) {
-    res.status(400).json({ success: false, message: e.message });
-  }
+
+    res.json({ success:true, data: visa });
+  } catch(e) { next(e); }
 };
 
-// SOFT DELETE
-exports.deleteVisaCatalog = async (req, res) => {
+exports.deleteVisaCatalog = async (req, res, next) => {
   try {
     const visa = await VisaService.findById(req.params.id);
-    if (!visa || visa.recordType !== 'visa-catalog')
-      return res.status(404).json({ success: false, message: 'Catalog not found' });
+    if (!visa) return res.status(404).json({ success:false, message:'Catalog not found' });
 
     visa.visaCatalog.isActive = false;
     await visa.save();
-    res.json({ success: true, message: 'Visa catalog deactivated' });
-  } catch (e) {
-    res.status(500).json({ success: false, message: e.message });
-  }
+
+    res.json({ success:true, message:'Visa catalog deactivated' });
+  } catch(e) { next(e); }
 };
 
 /* =========================
-   BOOKING CRUD
+   VISA BOOKING CRUD
 ========================= */
-
-// CREATE BOOKING
-exports.createBooking = async (req, res) => {
+exports.createBooking = async (req, res, next) => {
   try {
-    // ✅ Validate serviceRef
-    const catalog = await VisaService.findOne({ _id: req.body.booking.serviceRef, recordType: 'visa-catalog' });
-    if (!catalog) return res.status(400).json({ success: false, message: 'Invalid visa catalog reference' });
+    const { serviceRef, bookingType, customer } = req.body;
+    if (!serviceRef || !customer?.fullName || !customer?.email)
+      return res.status(400).json({ success:false, message:'serviceRef and customer info required' });
 
-    const booking = await VisaService.create({ recordType: 'visa-booking', booking: req.body.booking });
-    res.status(201).json({ success: true, data: booking });
-  } catch (e) {
-    res.status(400).json({ success: false, message: e.message });
-  }
+    const booking = await VisaService.create({ recordType:'visa-booking', booking:{serviceRef, bookingType}, customer });
+    res.status(201).json({ success:true, data: booking });
+  } catch(e) { next(e); }
 };
 
-// READ ALL BOOKINGS
-exports.getAllBookings = async (req, res) => {
+exports.getAllBookings = async (req, res, next) => {
   try {
-    const bookings = await VisaService.find({ recordType: 'visa-booking' });
-    res.json({ success: true, count: bookings.length, data: bookings });
-  } catch (e) {
-    res.status(500).json({ success: false, message: e.message });
-  }
+    const bookings = await VisaService.find({ recordType:'visa-booking' }).populate('booking.serviceRef', 'visaCatalog');
+    res.json({ success:true, count: bookings.length, data: bookings });
+  } catch(e) { next(e); }
 };
 
-// GET BOOKING BY ID
-exports.getBookingById = async (req, res) => {
+exports.getBookingById = async (req, res, next) => {
+  try {
+    const booking = await VisaService.findById(req.params.id).populate('booking.serviceRef', 'visaCatalog');
+    if (!booking) return res.status(404).json({ success:false, message:'Booking not found' });
+    res.json({ success:true, data: booking });
+  } catch(e) { next(e); }
+};
+
+exports.updateBooking = async (req, res, next) => {
   try {
     const booking = await VisaService.findById(req.params.id);
-    if (!booking || booking.recordType !== 'visa-booking')
-      return res.status(404).json({ success: false, message: 'Booking not found' });
-    res.json({ success: true, data: booking });
-  } catch (e) {
-    res.status(500).json({ success: false, message: e.message });
-  }
-};
-
-// UPDATE BOOKING
-exports.updateBooking = async (req, res) => {
-  try {
-    const booking = await VisaService.findById(req.params.id);
-    if (!booking || booking.recordType !== 'visa-booking')
-      return res.status(404).json({ success: false, message: 'Booking not found' });
+    if (!booking) return res.status(404).json({ success:false, message:'Booking not found' });
 
     Object.assign(booking.booking, req.body.booking || {});
+    Object.assign(booking.customer, req.body.customer || {});
+
     await booking.save();
-    res.json({ success: true, data: booking });
-  } catch (e) {
-    res.status(400).json({ success: false, message: e.message });
-  }
+    res.json({ success:true, data: booking });
+  } catch(e) { next(e); }
 };
 
-// DELETE BOOKING
-exports.deleteBooking = async (req, res) => {
+exports.deleteBooking = async (req, res, next) => {
   try {
-    const booking = await VisaService.findById(req.params.id);
-    if (!booking || booking.recordType !== 'visa-booking')
-      return res.status(404).json({ success: false, message: 'Booking not found' });
-
-    await booking.remove();
-    res.json({ success: true, message: 'Booking deleted' });
-  } catch (e) {
-    res.status(500).json({ success: false, message: e.message });
-  }
+    await VisaService.findByIdAndDelete(req.params.id);
+    res.json({ success:true, message:'Booking deleted' });
+  } catch(e) { next(e); }
 };
 
 /* =========================
    DOCUMENT CRUD
 ========================= */
-const allowedCategories = ['photograph','passportCopy','financialDocuments','travelDocuments','supportingDocuments'];
-
-exports.uploadDocument = async (req, res) => {
+exports.uploadDocument = async (req, res, next) => {
   try {
     const { id, category } = req.params;
-    if (!allowedCategories.includes(category))
-      return res.status(400).json({ success: false, message: 'Invalid document category' });
-
     const booking = await VisaService.findById(id);
-    if (!booking || booking.recordType !== 'visa-booking')
-      return res.status(404).json({ success: false, message: 'Booking not found' });
+    if (!booking) return res.status(404).json({ success:false, message:'Booking not found' });
 
-    const doc = await uploadToCloudinary(req.file, 'visa_documents');
-
-    if (!booking.booking.documents) booking.booking.documents = {};
-    if (Array.isArray(booking.booking.documents[category])) booking.booking.documents[category].push(doc);
-    else booking.booking.documents[category] = doc;
-
+    const doc = await booking.uploadDocument(category, req.file);
     await booking.save();
-    res.json({ success: true, data: doc });
-  } catch (e) {
-    res.status(400).json({ success: false, message: e.message });
-  }
+
+    res.json({ success:true, data: doc });
+  } catch(e) { next(e); }
 };
 
-exports.deleteDocument = async (req, res) => {
+exports.deleteDocument = async (req, res, next) => {
   try {
-    const { id, category, publicId } = req.params;
-    if (!allowedCategories.includes(category))
-      return res.status(400).json({ success: false, message: 'Invalid document category' });
-
+    const { id, publicId, category } = req.params;
     const booking = await VisaService.findById(id);
-    if (!booking || booking.recordType !== 'visa-booking')
-      return res.status(404).json({ success: false, message: 'Booking not found' });
+    if (!booking) return res.status(404).json({ success:false, message:'Booking not found' });
 
     await cloudinary.uploader.destroy(publicId);
-
     if (Array.isArray(booking.booking.documents[category])) {
       booking.booking.documents[category] = booking.booking.documents[category].filter(d => d.publicId !== publicId);
     }
 
     await booking.save();
-    res.json({ success: true, message: 'Document removed' });
-  } catch (e) {
-    res.status(400).json({ success: false, message: e.message });
-  }
+    res.json({ success:true, message:'Document removed' });
+  } catch(e) { next(e); }
 };
 
 /* =========================
    DASHBOARD STATS
 ========================= */
-exports.getDashboardStats = async (req, res) => {
+exports.getDashboardStats = async (req, res, next) => {
   try {
-    const totalVisas = await VisaService.countDocuments({ recordType: 'visa-catalog' });
-    const totalBookings = await VisaService.countDocuments({ recordType: 'visa-booking' });
-
+    const totalVisas = await VisaService.countDocuments({ recordType:'visa-catalog' });
+    const totalBookings = await VisaService.countDocuments({ recordType:'visa-booking' });
     const bookingStatus = await VisaService.aggregate([
-      { $match: { recordType: 'visa-booking' } },
-      { $group: { _id: '$booking.status', count: { $sum: 1 } } }
+      { $match: { recordType:'visa-booking' } },
+      { $group: { _id:'$booking.status', count:{ $sum:1 } } }
     ]);
 
-    res.json({ success: true, data: { totalVisas, totalBookings, bookingStatus } });
-  } catch (e) {
-    res.status(500).json({ success: false, message: e.message });
-  }
+    res.json({ success:true, data:{ totalVisas, totalBookings, bookingStatus } });
+  } catch(e) { next(e); }
 };
