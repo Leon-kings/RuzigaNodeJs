@@ -3431,2581 +3431,2799 @@
 
 
 
-const VisaService = require('../models/Visa');
-const mongoose = require('mongoose');
-const nodemailer = require('nodemailer');
-const cloudinary = require('cloudinary').v2;
-const { v4: uuidv4 } = require('uuid');
+// const VisaService = require('../models/Visa');
+// const mongoose = require('mongoose');
+// const nodemailer = require('nodemailer');
+// const cloudinary = require('cloudinary').v2;
+// const { v4: uuidv4 } = require('uuid');
 
-// Configure Cloudinary
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET
-});
+// // Configure Cloudinary
+// cloudinary.config({
+//   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+//   api_key: process.env.CLOUDINARY_API_KEY,
+//   api_secret: process.env.CLOUDINARY_API_SECRET
+// });
 
-// Email Service Configuration
-const emailTransporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST || 'smtp.gmail.com',
-  port: process.env.SMTP_PORT || 587,
-  secure: process.env.SMTP_SECURE === 'true',
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS
-  }
-});
+// // Email Service Configuration
+// const emailTransporter = nodemailer.createTransport({
+//   host: process.env.SMTP_HOST || 'smtp.gmail.com',
+//   port: process.env.SMTP_PORT || 587,
+//   secure: process.env.SMTP_SECURE === 'true',
+//   auth: {
+//     user: process.env.SMTP_USER,
+//     pass: process.env.SMTP_PASS
+//   }
+// });
 
-// Email Templates
-const emailTemplates = {
-  bookingConfirmation: (bookingData) => ({
-    subject: `Booking Confirmation - ${bookingData.serviceId}`,
-    html: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <h2 style="color: #2c3e50;">Visa Consultation Booking Confirmed</h2>
-        <p>Dear ${bookingData.customer.personalInfo.fullName},</p>
-        <p>Your visa consultation booking has been confirmed with the following details:</p>
+// // Email Templates
+// const emailTemplates = {
+//   bookingConfirmation: (bookingData) => ({
+//     subject: `Booking Confirmation - ${bookingData.serviceId}`,
+//     html: `
+//       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+//         <h2 style="color: #2c3e50;">Visa Consultation Booking Confirmed</h2>
+//         <p>Dear ${bookingData.customer.personalInfo.fullName},</p>
+//         <p>Your visa consultation booking has been confirmed with the following details:</p>
         
-        <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0;">
-          <h3 style="color: #3498db;">Booking Details</h3>
-          <p><strong>Booking ID:</strong> ${bookingData.serviceId}</p>
-          <p><strong>Appointment Date:</strong> ${new Date(bookingData.bookingDetails.appointment.date).toLocaleDateString()}</p>
-          <p><strong>Time Slot:</strong> ${bookingData.bookingDetails.appointment.timeSlot}</p>
-          <p><strong>Mode:</strong> ${bookingData.bookingDetails.appointment.mode}</p>
-          ${bookingData.bookingDetails.appointment.location ? `<p><strong>Location:</strong> ${bookingData.bookingDetails.appointment.location}</p>` : ''}
-        </div>
+//         <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0;">
+//           <h3 style="color: #3498db;">Booking Details</h3>
+//           <p><strong>Booking ID:</strong> ${bookingData.serviceId}</p>
+//           <p><strong>Appointment Date:</strong> ${new Date(bookingData.bookingDetails.appointment.date).toLocaleDateString()}</p>
+//           <p><strong>Time Slot:</strong> ${bookingData.bookingDetails.appointment.timeSlot}</p>
+//           <p><strong>Mode:</strong> ${bookingData.bookingDetails.appointment.mode}</p>
+//           ${bookingData.bookingDetails.appointment.location ? `<p><strong>Location:</strong> ${bookingData.bookingDetails.appointment.location}</p>` : ''}
+//         </div>
         
-        <p>Please make sure to prepare the following for your appointment:</p>
-        <ul>
-          <li>Original Passport</li>
-          <li>Passport-sized photographs</li>
-          <li>Previous visa documents (if any)</li>
-        </ul>
+//         <p>Please make sure to prepare the following for your appointment:</p>
+//         <ul>
+//           <li>Original Passport</li>
+//           <li>Passport-sized photographs</li>
+//           <li>Previous visa documents (if any)</li>
+//         </ul>
         
-        <p>If you need to reschedule or cancel, please contact us at least 24 hours in advance.</p>
+//         <p>If you need to reschedule or cancel, please contact us at least 24 hours in advance.</p>
         
-        <hr style="margin: 30px 0;">
-        <p style="color: #7f8c8d; font-size: 12px;">
-          This is an automated email. Please do not reply to this address.
-        </p>
-      </div>
-    `
-  }),
+//         <hr style="margin: 30px 0;">
+//         <p style="color: #7f8c8d; font-size: 12px;">
+//           This is an automated email. Please do not reply to this address.
+//         </p>
+//       </div>
+//     `
+//   }),
 
-  applicationSubmitted: (applicationData) => ({
-    subject: `Visa Application Submitted - ${applicationData.trackingNumber}`,
-    html: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <h2 style="color: #2c3e50;">Visa Application Submitted</h2>
-        <p>Dear ${applicationData.customer.personalInfo.fullName},</p>
-        <p>Your visa application has been successfully submitted with the following details:</p>
+//   applicationSubmitted: (applicationData) => ({
+//     subject: `Visa Application Submitted - ${applicationData.trackingNumber}`,
+//     html: `
+//       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+//         <h2 style="color: #2c3e50;">Visa Application Submitted</h2>
+//         <p>Dear ${applicationData.customer.personalInfo.fullName},</p>
+//         <p>Your visa application has been successfully submitted with the following details:</p>
         
-        <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0;">
-          <h3 style="color: #3498db;">Application Details</h3>
-          <p><strong>Tracking Number:</strong> ${applicationData.trackingNumber}</p>
-          <p><strong>Destination:</strong> ${applicationData.applicationDetails.visaInfo.destinationCountry}</p>
-          <p><strong>Visa Type:</strong> ${applicationData.applicationDetails.visaInfo.visaType}</p>
-          <p><strong>Current Status:</strong> ${applicationData.applicationDetails.applicationStatus.current}</p>
-          <p><strong>Estimated Processing Time:</strong> ${applicationData.applicationDetails.servicePackage.processingTime}</p>
-        </div>
+//         <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0;">
+//           <h3 style="color: #3498db;">Application Details</h3>
+//           <p><strong>Tracking Number:</strong> ${applicationData.trackingNumber}</p>
+//           <p><strong>Destination:</strong> ${applicationData.applicationDetails.visaInfo.destinationCountry}</p>
+//           <p><strong>Visa Type:</strong> ${applicationData.applicationDetails.visaInfo.visaType}</p>
+//           <p><strong>Current Status:</strong> ${applicationData.applicationDetails.applicationStatus.current}</p>
+//           <p><strong>Estimated Processing Time:</strong> ${applicationData.applicationDetails.servicePackage.processingTime}</p>
+//         </div>
         
-        <p>You can track your application status using your tracking number on our website.</p>
-        <p>We will notify you via email when there are any updates to your application.</p>
+//         <p>You can track your application status using your tracking number on our website.</p>
+//         <p>We will notify you via email when there are any updates to your application.</p>
         
-        <hr style="margin: 30px 0;">
-        <p style="color: #7f8c8d; font-size: 12px;">
-          This is an automated email. Please do not reply to this address.
-        </p>
-      </div>
-    `
-  }),
+//         <hr style="margin: 30px 0;">
+//         <p style="color: #7f8c8d; font-size: 12px;">
+//           This is an automated email. Please do not reply to this address.
+//         </p>
+//       </div>
+//     `
+//   }),
 
-  statusUpdate: (applicationData, newStatus) => ({
-    subject: `Status Update - ${applicationData.trackingNumber}`,
-    html: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <h2 style="color: #2c3e50;">Application Status Update</h2>
-        <p>Dear ${applicationData.customer.personalInfo.fullName},</p>
-        <p>The status of your visa application has been updated:</p>
+//   statusUpdate: (applicationData, newStatus) => ({
+//     subject: `Status Update - ${applicationData.trackingNumber}`,
+//     html: `
+//       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+//         <h2 style="color: #2c3e50;">Application Status Update</h2>
+//         <p>Dear ${applicationData.customer.personalInfo.fullName},</p>
+//         <p>The status of your visa application has been updated:</p>
         
-        <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0;">
-          <h3 style="color: #3498db;">Updated Status</h3>
-          <p><strong>Tracking Number:</strong> ${applicationData.trackingNumber}</p>
-          <p><strong>New Status:</strong> ${newStatus}</p>
-          <p><strong>Updated Date:</strong> ${new Date().toLocaleDateString()}</p>
-        </div>
+//         <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0;">
+//           <h3 style="color: #3498db;">Updated Status</h3>
+//           <p><strong>Tracking Number:</strong> ${applicationData.trackingNumber}</p>
+//           <p><strong>New Status:</strong> ${newStatus}</p>
+//           <p><strong>Updated Date:</strong> ${new Date().toLocaleDateString()}</p>
+//         </div>
         
-        <p>Next Steps: No action required at this time</p>
+//         <p>Next Steps: No action required at this time</p>
         
-        <p>If you have any questions, please contact our support team.</p>
+//         <p>If you have any questions, please contact our support team.</p>
         
-        <hr style="margin: 30px 0;">
-        <p style="color: #7f8c8d; font-size: 12px;">
-          This is an automated email. Please do not reply to this address.
-        </p>
-      </div>
-    `
-  }),
+//         <hr style="margin: 30px 0;">
+//         <p style="color: #7f8c8d; font-size: 12px;">
+//           This is an automated email. Please do not reply to this address.
+//         </p>
+//       </div>
+//     `
+//   }),
 
-  paymentConfirmation: (applicationData, paymentDetails) => ({
-    subject: `Payment Received - ${applicationData.trackingNumber}`,
-    html: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <h2 style="color: #2c3e50;">Payment Confirmation</h2>
-        <p>Dear ${applicationData.customer.personalInfo.fullName},</p>
-        <p>We have received your payment for visa application services:</p>
+//   paymentConfirmation: (applicationData, paymentDetails) => ({
+//     subject: `Payment Received - ${applicationData.trackingNumber}`,
+//     html: `
+//       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+//         <h2 style="color: #2c3e50;">Payment Confirmation</h2>
+//         <p>Dear ${applicationData.customer.personalInfo.fullName},</p>
+//         <p>We have received your payment for visa application services:</p>
         
-        <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0;">
-          <h3 style="color: #3498db;">Payment Details</h3>
-          <p><strong>Transaction ID:</strong> ${paymentDetails.transactionId}</p>
-          <p><strong>Amount Paid:</strong> ${paymentDetails.amount} ${applicationData.applicationDetails.fees.currency}</p>
-          <p><strong>Payment Method:</strong> ${paymentDetails.method}</p>
-          <p><strong>Payment Date:</strong> ${new Date(paymentDetails.date).toLocaleDateString()}</p>
-          <p><strong>Balance Due:</strong> ${applicationData.balanceDue || 0} ${applicationData.applicationDetails.fees.currency}</p>
-        </div>
+//         <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0;">
+//           <h3 style="color: #3498db;">Payment Details</h3>
+//           <p><strong>Transaction ID:</strong> ${paymentDetails.transactionId}</p>
+//           <p><strong>Amount Paid:</strong> ${paymentDetails.amount} ${applicationData.applicationDetails.fees.currency}</p>
+//           <p><strong>Payment Method:</strong> ${paymentDetails.method}</p>
+//           <p><strong>Payment Date:</strong> ${new Date(paymentDetails.date).toLocaleDateString()}</p>
+//           <p><strong>Balance Due:</strong> ${applicationData.balanceDue || 0} ${applicationData.applicationDetails.fees.currency}</p>
+//         </div>
         
-        <p>Your application will now proceed to the next stage.</p>
+//         <p>Your application will now proceed to the next stage.</p>
         
-        <hr style="margin: 30px 0;">
-        <p style="color: #7f8c8d; font-size: 12px;">
-          This is an automated email. Please do not reply to this address.
-        </p>
-      </div>
-    `
-  }),
+//         <hr style="margin: 30px 0;">
+//         <p style="color: #7f8c8d; font-size: 12px;">
+//           This is an automated email. Please do not reply to this address.
+//         </p>
+//       </div>
+//     `
+//   }),
 
-  documentUploadConfirmation: (applicationData, documentType) => ({
-    subject: `Document Received - ${applicationData.trackingNumber}`,
-    html: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <h2 style="color: #2c3e50;">Document Upload Confirmation</h2>
-        <p>Dear ${applicationData.customer.personalInfo.fullName},</p>
-        <p>We have successfully received your ${documentType} for visa application:</p>
+//   documentUploadConfirmation: (applicationData, documentType) => ({
+//     subject: `Document Received - ${applicationData.trackingNumber}`,
+//     html: `
+//       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+//         <h2 style="color: #2c3e50;">Document Upload Confirmation</h2>
+//         <p>Dear ${applicationData.customer.personalInfo.fullName},</p>
+//         <p>We have successfully received your ${documentType} for visa application:</p>
         
-        <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0;">
-          <h3 style="color: #3498db;">Upload Details</h3>
-          <p><strong>Tracking Number:</strong> ${applicationData.trackingNumber}</p>
-          <p><strong>Document Type:</strong> ${documentType}</p>
-          <p><strong>Upload Date:</strong> ${new Date().toLocaleDateString()}</p>
-          <p><strong>Documents Uploaded:</strong> ${applicationData.totalDocuments || 0}</p>
-          <p><strong>Documents Verified:</strong> ${applicationData.verifiedDocuments || 0}</p>
-        </div>
+//         <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0;">
+//           <h3 style="color: #3498db;">Upload Details</h3>
+//           <p><strong>Tracking Number:</strong> ${applicationData.trackingNumber}</p>
+//           <p><strong>Document Type:</strong> ${documentType}</p>
+//           <p><strong>Upload Date:</strong> ${new Date().toLocaleDateString()}</p>
+//           <p><strong>Documents Uploaded:</strong> ${applicationData.totalDocuments || 0}</p>
+//           <p><strong>Documents Verified:</strong> ${applicationData.verifiedDocuments || 0}</p>
+//         </div>
         
-        <p>Our team will review your document and update the verification status.</p>
+//         <p>Our team will review your document and update the verification status.</p>
         
-        <hr style="margin: 30px 0;">
-        <p style="color: #7f8c8d; font-size: 12px;">
-          This is an automated email. Please do not reply to this address.
-        </p>
-      </div>
-    `
-  })
-};
+//         <hr style="margin: 30px 0;">
+//         <p style="color: #7f8c8d; font-size: 12px;">
+//           This is an automated email. Please do not reply to this address.
+//         </p>
+//       </div>
+//     `
+//   })
+// };
 
-// Helper function to send emails
-const sendEmail = async (to, template, data) => {
-  try {
-    const emailTemplate = emailTemplates[template](data);
-    const mailOptions = {
-      from: process.env.EMAIL_FROM || 'visa-services@example.com',
-      to,
-      subject: emailTemplate.subject,
-      html: emailTemplate.html
-    };
+// // Helper function to send emails
+// const sendEmail = async (to, template, data) => {
+//   try {
+//     const emailTemplate = emailTemplates[template](data);
+//     const mailOptions = {
+//       from: process.env.EMAIL_FROM || 'visa-services@example.com',
+//       to,
+//       subject: emailTemplate.subject,
+//       html: emailTemplate.html
+//     };
 
-    await emailTransporter.sendMail(mailOptions);
-    return { success: true, message: 'Email sent successfully' };
-  } catch (error) {
-    console.error('Email sending error:', error);
-    return { success: false, message: 'Failed to send email', error: error.message };
-  }
-};
+//     await emailTransporter.sendMail(mailOptions);
+//     return { success: true, message: 'Email sent successfully' };
+//   } catch (error) {
+//     console.error('Email sending error:', error);
+//     return { success: false, message: 'Failed to send email', error: error.message };
+//   }
+// };
 
-// Helper function to upload to Cloudinary
-const uploadToCloudinary = async (file, folder = 'visa_documents') => {
-  try {
-    const result = await cloudinary.uploader.upload(file.path || file.buffer.toString('base64'), {
-      folder: folder,
-      resource_type: 'auto',
-      transformation: [
-        { quality: 'auto:good' },
-        { fetch_format: 'auto' }
-      ]
-    });
+// // Helper function to upload to Cloudinary
+// const uploadToCloudinary = async (file, folder = 'visa_documents') => {
+//   try {
+//     const result = await cloudinary.uploader.upload(file.path || file.buffer.toString('base64'), {
+//       folder: folder,
+//       resource_type: 'auto',
+//       transformation: [
+//         { quality: 'auto:good' },
+//         { fetch_format: 'auto' }
+//       ]
+//     });
 
-    return {
-      success: true,
-      cloudinaryUrl: result.secure_url,
-      publicId: result.public_id,
-      originalName: file.originalname
-    };
-  } catch (error) {
-    console.error('Cloudinary upload error:', error);
-    return { success: false, message: 'Failed to upload to Cloudinary', error: error.message };
-  }
-};
+//     return {
+//       success: true,
+//       cloudinaryUrl: result.secure_url,
+//       publicId: result.public_id,
+//       originalName: file.originalname
+//     };
+//   } catch (error) {
+//     console.error('Cloudinary upload error:', error);
+//     return { success: false, message: 'Failed to upload to Cloudinary', error: error.message };
+//   }
+// };
 
-// Helper function to delete from Cloudinary
-const deleteFromCloudinary = async (publicId) => {
-  try {
-    await cloudinary.uploader.destroy(publicId);
-    return { success: true, message: 'File deleted from Cloudinary' };
-  } catch (error) {
-    console.error('Cloudinary delete error:', error);
-    return { success: false, message: 'Failed to delete from Cloudinary', error: error.message };
-  }
-};
+// // Helper function to delete from Cloudinary
+// const deleteFromCloudinary = async (publicId) => {
+//   try {
+//     await cloudinary.uploader.destroy(publicId);
+//     return { success: true, message: 'File deleted from Cloudinary' };
+//   } catch (error) {
+//     console.error('Cloudinary delete error:', error);
+//     return { success: false, message: 'Failed to delete from Cloudinary', error: error.message };
+//   }
+// };
 
-// Helper function to calculate verified documents
-const calculateVerifiedDocuments = function(documents) {
-  let count = 0;
-  if (documents?.photograph?.verified) count++;
-  if (documents?.passportCopy?.verified) count++;
-  count += documents?.financialDocuments?.filter(doc => doc.verified)?.length || 0;
-  count += documents?.travelDocuments?.filter(doc => doc.verified)?.length || 0;
-  count += documents?.supportingDocuments?.filter(doc => doc.verified)?.length || 0;
-  count += documents?.otherDocuments?.filter(doc => doc.verified)?.length || 0;
-  return count;
-};
+// // Helper function to calculate verified documents
+// const calculateVerifiedDocuments = function(documents) {
+//   let count = 0;
+//   if (documents?.photograph?.verified) count++;
+//   if (documents?.passportCopy?.verified) count++;
+//   count += documents?.financialDocuments?.filter(doc => doc.verified)?.length || 0;
+//   count += documents?.travelDocuments?.filter(doc => doc.verified)?.length || 0;
+//   count += documents?.supportingDocuments?.filter(doc => doc.verified)?.length || 0;
+//   count += documents?.otherDocuments?.filter(doc => doc.verified)?.length || 0;
+//   return count;
+// };
 
-// ========== BOOKING CONTROLLERS ==========
+// // ========== BOOKING CONTROLLERS ==========
 
-const BookingController = {
-  // Create a new booking
-  createBooking: async (req, res) => {
-    try {
-      const {
-        customer,
-        bookingDetails,
-        internal
-      } = req.body;
+// const BookingController = {
+//   // Create a new booking
+//   createBooking: async (req, res) => {
+//     try {
+//       const {
+//         customer,
+//         bookingDetails,
+//         internal
+//       } = req.body;
 
-      // Validate required fields based on model
-      const requiredFields = [
-        { field: customer?.personalInfo?.fullName, message: 'Customer full name is required' },
-        { field: customer?.personalInfo?.dateOfBirth, message: 'Customer date of birth is required' },
-        { field: customer?.personalInfo?.nationality, message: 'Customer nationality is required' },
-        { field: customer?.personalInfo?.countryOfResidence, message: 'Customer country of residence is required' },
-        { field: customer?.contactInfo?.email, message: 'Customer email is required' },
-        { field: customer?.contactInfo?.primaryPhone, message: 'Customer primary phone is required' }
-      ];
+//       // Validate required fields based on model
+//       const requiredFields = [
+//         { field: customer?.personalInfo?.fullName, message: 'Customer full name is required' },
+//         { field: customer?.personalInfo?.dateOfBirth, message: 'Customer date of birth is required' },
+//         { field: customer?.personalInfo?.nationality, message: 'Customer nationality is required' },
+//         { field: customer?.personalInfo?.countryOfResidence, message: 'Customer country of residence is required' },
+//         { field: customer?.contactInfo?.email, message: 'Customer email is required' },
+//         { field: customer?.contactInfo?.primaryPhone, message: 'Customer primary phone is required' }
+//       ];
 
-      for (const { field, message } of requiredFields) {
-        if (!field) {
-          return res.status(400).json({
-            success: false,
-            message
-          });
-        }
-      }
+//       for (const { field, message } of requiredFields) {
+//         if (!field) {
+//           return res.status(400).json({
+//             success: false,
+//             message
+//           });
+//         }
+//       }
 
-      // Validate email format
-      const emailRegex = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/;
-      if (!emailRegex.test(customer.contactInfo.email)) {
-        return res.status(400).json({
-          success: false,
-          message: 'Please provide a valid email address'
-        });
-      }
+//       // Validate email format
+//       const emailRegex = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/;
+//       if (!emailRegex.test(customer.contactInfo.email)) {
+//         return res.status(400).json({
+//           success: false,
+//           message: 'Please provide a valid email address'
+//         });
+//       }
 
-      // Prepare booking data according to model schema
-      const bookingData = {
-        serviceType: 'booking',
-        serviceStage: 'booking-pending',
-        customer: {
-          personalInfo: {
-            fullName: customer.personalInfo.fullName.trim(),
-            dateOfBirth: new Date(customer.personalInfo.dateOfBirth),
-            gender: customer.personalInfo.gender || 'prefer-not-to-say',
-            nationality: customer.personalInfo.nationality,
-            countryOfResidence: customer.personalInfo.countryOfResidence,
-            maritalStatus: customer.personalInfo.maritalStatus || 'single',
-            occupation: customer.personalInfo.occupation,
-            employer: customer.personalInfo.employer
-          },
-          contactInfo: {
-            email: customer.contactInfo.email.toLowerCase().trim(),
-            primaryPhone: customer.contactInfo.primaryPhone,
-            secondaryPhone: customer.contactInfo.secondaryPhone,
-            whatsappNumber: customer.contactInfo.whatsappNumber,
-            address: customer.contactInfo.address || {},
-            emergencyContact: customer.contactInfo.emergencyContact || {}
-          },
-          passportInfo: {
-            passportNumber: customer.passportInfo?.passportNumber,
-            issuingCountry: customer.passportInfo?.issuingCountry,
-            issueDate: customer.passportInfo?.issueDate ? new Date(customer.passportInfo.issueDate) : undefined,
-            expiryDate: customer.passportInfo?.expiryDate ? new Date(customer.passportInfo.expiryDate) : undefined,
-            placeOfIssue: customer.passportInfo?.placeOfIssue,
-            hasPreviousVisas: customer.passportInfo?.hasPreviousVisas || false,
-            previousVisaDetails: customer.passportInfo?.previousVisaDetails || []
-          }
-        },
-        bookingDetails: {
-          type: bookingDetails?.type || 'consultation',
-          serviceRequested: bookingDetails?.serviceRequested,
-          appointment: bookingDetails?.appointment ? {
-            date: bookingDetails.appointment.date ? new Date(bookingDetails.appointment.date) : undefined,
-            timeSlot: bookingDetails.appointment.timeSlot,
-            duration: bookingDetails.appointment.duration || 60,
-            mode: bookingDetails.appointment.mode || 'in-person',
-            location: bookingDetails.appointment.location,
-            address: bookingDetails.appointment.address,
-            confirmed: bookingDetails.appointment.confirmed || false,
-            attended: bookingDetails.appointment.attended || false,
-            notes: bookingDetails.appointment.notes
-          } : undefined,
-          bookingStatus: bookingDetails?.bookingStatus || 'pending',
-          bookingAmount: bookingDetails?.bookingAmount || 0,
-          bookingPayment: bookingDetails?.bookingPayment ? {
-            status: bookingDetails.bookingPayment.status || 'pending',
-            method: bookingDetails.bookingPayment.method,
-            transactionId: bookingDetails.bookingPayment.transactionId,
-            paidAt: bookingDetails.bookingPayment.paidAt ? new Date(bookingDetails.bookingPayment.paidAt) : undefined
-          } : undefined
-        },
-        applicationDetails: {
-          visaInfo: {
-            destinationCountry: '',
-            appliedCountries: [],
-            visaType: 'Tourist',
-            category: 'short-term',
-            purposeOfTravel: '',
-            travelDates: {},
-            entriesRequested: 'Single',
-            travelCompanions: []
-          },
-          servicePackage: {
-            name: 'standard',
-            description: '',
-            processingTime: '15-20 business days',
-            inclusions: [],
-            exclusions: []
-          },
-          fees: {
-            consultationFee: 0,
-            serviceFee: 0,
-            embassyFee: 0,
-            additionalFees: 0,
-            discount: 0,
-            totalAmount: 0,
-            currency: 'USD'
-          },
-          payment: {
-            status: 'pending',
-            amountPaid: 0,
-            paymentMethod: undefined,
-            dueDate: undefined,
-            paymentHistory: []
-          },
-          applicationStatus: {
-            current: 'not-started',
-            submittedAt: undefined,
-            processingStartedAt: undefined,
-            expectedCompletionDate: undefined,
-            actualCompletionDate: undefined,
-            embassySubmissionDate: undefined,
-            decisionDate: undefined,
-            collectionDate: undefined
-          },
-          embassyInfo: {},
-          visaIssuance: {}
-        },
-        internal: {
-          assignedTo: internal?.assignedTo ? {
-            agentId: internal.assignedTo.agentId ? new mongoose.Types.ObjectId(internal.assignedTo.agentId) : undefined,
-            agentName: internal.assignedTo.agentName,
-            agentEmail: internal.assignedTo.agentEmail,
-            department: internal.assignedTo.department,
-            assignedAt: internal.assignedTo.assignedAt ? new Date(internal.assignedTo.assignedAt) : new Date(),
-            lastContacted: internal.assignedTo.lastContacted ? new Date(internal.assignedTo.lastContacted) : undefined
-          } : undefined,
-          priority: internal?.priority || 'normal',
-          source: internal?.source || 'website',
-          notes: internal?.notes || []
-        }
-      };
+//       // Prepare booking data according to model schema
+//       const bookingData = {
+//         serviceType: 'booking',
+//         serviceStage: 'booking-pending',
+//         customer: {
+//           personalInfo: {
+//             fullName: customer.personalInfo.fullName.trim(),
+//             dateOfBirth: new Date(customer.personalInfo.dateOfBirth),
+//             gender: customer.personalInfo.gender || 'prefer-not-to-say',
+//             nationality: customer.personalInfo.nationality,
+//             countryOfResidence: customer.personalInfo.countryOfResidence,
+//             maritalStatus: customer.personalInfo.maritalStatus || 'single',
+//             occupation: customer.personalInfo.occupation,
+//             employer: customer.personalInfo.employer
+//           },
+//           contactInfo: {
+//             email: customer.contactInfo.email.toLowerCase().trim(),
+//             primaryPhone: customer.contactInfo.primaryPhone,
+//             secondaryPhone: customer.contactInfo.secondaryPhone,
+//             whatsappNumber: customer.contactInfo.whatsappNumber,
+//             address: customer.contactInfo.address || {},
+//             emergencyContact: customer.contactInfo.emergencyContact || {}
+//           },
+//           passportInfo: {
+//             passportNumber: customer.passportInfo?.passportNumber,
+//             issuingCountry: customer.passportInfo?.issuingCountry,
+//             issueDate: customer.passportInfo?.issueDate ? new Date(customer.passportInfo.issueDate) : undefined,
+//             expiryDate: customer.passportInfo?.expiryDate ? new Date(customer.passportInfo.expiryDate) : undefined,
+//             placeOfIssue: customer.passportInfo?.placeOfIssue,
+//             hasPreviousVisas: customer.passportInfo?.hasPreviousVisas || false,
+//             previousVisaDetails: customer.passportInfo?.previousVisaDetails || []
+//           }
+//         },
+//         bookingDetails: {
+//           type: bookingDetails?.type || 'consultation',
+//           serviceRequested: bookingDetails?.serviceRequested,
+//           appointment: bookingDetails?.appointment ? {
+//             date: bookingDetails.appointment.date ? new Date(bookingDetails.appointment.date) : undefined,
+//             timeSlot: bookingDetails.appointment.timeSlot,
+//             duration: bookingDetails.appointment.duration || 60,
+//             mode: bookingDetails.appointment.mode || 'in-person',
+//             location: bookingDetails.appointment.location,
+//             address: bookingDetails.appointment.address,
+//             confirmed: bookingDetails.appointment.confirmed || false,
+//             attended: bookingDetails.appointment.attended || false,
+//             notes: bookingDetails.appointment.notes
+//           } : undefined,
+//           bookingStatus: bookingDetails?.bookingStatus || 'pending',
+//           bookingAmount: bookingDetails?.bookingAmount || 0,
+//           bookingPayment: bookingDetails?.bookingPayment ? {
+//             status: bookingDetails.bookingPayment.status || 'pending',
+//             method: bookingDetails.bookingPayment.method,
+//             transactionId: bookingDetails.bookingPayment.transactionId,
+//             paidAt: bookingDetails.bookingPayment.paidAt ? new Date(bookingDetails.bookingPayment.paidAt) : undefined
+//           } : undefined
+//         },
+//         applicationDetails: {
+//           visaInfo: {
+//             destinationCountry: '',
+//             appliedCountries: [],
+//             visaType: 'Tourist',
+//             category: 'short-term',
+//             purposeOfTravel: '',
+//             travelDates: {},
+//             entriesRequested: 'Single',
+//             travelCompanions: []
+//           },
+//           servicePackage: {
+//             name: 'standard',
+//             description: '',
+//             processingTime: '15-20 business days',
+//             inclusions: [],
+//             exclusions: []
+//           },
+//           fees: {
+//             consultationFee: 0,
+//             serviceFee: 0,
+//             embassyFee: 0,
+//             additionalFees: 0,
+//             discount: 0,
+//             totalAmount: 0,
+//             currency: 'USD'
+//           },
+//           payment: {
+//             status: 'pending',
+//             amountPaid: 0,
+//             paymentMethod: undefined,
+//             dueDate: undefined,
+//             paymentHistory: []
+//           },
+//           applicationStatus: {
+//             current: 'not-started',
+//             submittedAt: undefined,
+//             processingStartedAt: undefined,
+//             expectedCompletionDate: undefined,
+//             actualCompletionDate: undefined,
+//             embassySubmissionDate: undefined,
+//             decisionDate: undefined,
+//             collectionDate: undefined
+//           },
+//           embassyInfo: {},
+//           visaIssuance: {}
+//         },
+//         internal: {
+//           assignedTo: internal?.assignedTo ? {
+//             agentId: internal.assignedTo.agentId ? new mongoose.Types.ObjectId(internal.assignedTo.agentId) : undefined,
+//             agentName: internal.assignedTo.agentName,
+//             agentEmail: internal.assignedTo.agentEmail,
+//             department: internal.assignedTo.department,
+//             assignedAt: internal.assignedTo.assignedAt ? new Date(internal.assignedTo.assignedAt) : new Date(),
+//             lastContacted: internal.assignedTo.lastContacted ? new Date(internal.assignedTo.lastContacted) : undefined
+//           } : undefined,
+//           priority: internal?.priority || 'normal',
+//           source: internal?.source || 'website',
+//           notes: internal?.notes || []
+//         }
+//       };
 
-      // Create the booking
-      const newBooking = new VisaService(bookingData);
-      await newBooking.save();
+//       // Create the booking
+//       const newBooking = new VisaService(bookingData);
+//       await newBooking.save();
 
-      // Send confirmation email
-      try {
-        await sendEmail(
-          newBooking.customer.contactInfo.email,
-          'bookingConfirmation',
-          newBooking.toObject()
-        );
-      } catch (emailError) {
-        console.warn('Email sending failed, but booking was created:', emailError.message);
-      }
+//       // Send confirmation email
+//       try {
+//         await sendEmail(
+//           newBooking.customer.contactInfo.email,
+//           'bookingConfirmation',
+//           newBooking.toObject()
+//         );
+//       } catch (emailError) {
+//         console.warn('Email sending failed, but booking was created:', emailError.message);
+//       }
 
-      res.status(201).json({
-        success: true,
-        message: 'Booking created successfully',
-        data: {
-          serviceId: newBooking.serviceId,
-          serviceType: newBooking.serviceType,
-          serviceStage: newBooking.serviceStage,
-          customer: {
-            fullName: newBooking.customer.personalInfo.fullName,
-            email: newBooking.customer.contactInfo.email
-          },
-          bookingDetails: {
-            type: newBooking.bookingDetails.type,
-            status: newBooking.bookingDetails.bookingStatus,
-            amount: newBooking.bookingDetails.bookingAmount
-          },
-          createdAt: newBooking.createdAt
-        }
-      });
+//       res.status(201).json({
+//         success: true,
+//         message: 'Booking created successfully',
+//         data: {
+//           serviceId: newBooking.serviceId,
+//           serviceType: newBooking.serviceType,
+//           serviceStage: newBooking.serviceStage,
+//           customer: {
+//             fullName: newBooking.customer.personalInfo.fullName,
+//             email: newBooking.customer.contactInfo.email
+//           },
+//           bookingDetails: {
+//             type: newBooking.bookingDetails.type,
+//             status: newBooking.bookingDetails.bookingStatus,
+//             amount: newBooking.bookingDetails.bookingAmount
+//           },
+//           createdAt: newBooking.createdAt
+//         }
+//       });
 
-    } catch (error) {
-      console.error('Create booking error:', error);
+//     } catch (error) {
+//       console.error('Create booking error:', error);
       
-      if (error.name === 'ValidationError') {
-        const errors = {};
-        Object.keys(error.errors).forEach(key => {
-          errors[key] = error.errors[key].message;
-        });
+//       if (error.name === 'ValidationError') {
+//         const errors = {};
+//         Object.keys(error.errors).forEach(key => {
+//           errors[key] = error.errors[key].message;
+//         });
         
-        return res.status(400).json({
-          success: false,
-          message: 'Validation failed',
-          errors: errors
-        });
-      }
+//         return res.status(400).json({
+//           success: false,
+//           message: 'Validation failed',
+//           errors: errors
+//         });
+//       }
       
-      if (error.code === 11000) {
-        const field = Object.keys(error.keyPattern)[0];
-        return res.status(400).json({
-          success: false,
-          message: `Duplicate value for ${field}`,
-          field: field,
-          value: error.keyValue[field]
-        });
-      }
+//       if (error.code === 11000) {
+//         const field = Object.keys(error.keyPattern)[0];
+//         return res.status(400).json({
+//           success: false,
+//           message: `Duplicate value for ${field}`,
+//           field: field,
+//           value: error.keyValue[field]
+//         });
+//       }
       
-      res.status(500).json({
-        success: false,
-        message: 'Failed to create booking',
-        error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
-      });
-    }
-  },
+//       res.status(500).json({
+//         success: false,
+//         message: 'Failed to create booking',
+//         error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+//       });
+//     }
+//   },
 
-  // Get booking by ID
-  getBookingById: async (req, res) => {
-    try {
-      const { bookingId } = req.params;
+//   // Get booking by ID
+//   getBookingById: async (req, res) => {
+//     try {
+//       const { bookingId } = req.params;
       
-      const booking = await VisaService.findOne({ 
-        serviceId: bookingId,
-        serviceType: { $in: ['booking', 'combined'] }
-      });
+//       const booking = await VisaService.findOne({ 
+//         serviceId: bookingId,
+//         serviceType: { $in: ['booking', 'combined'] }
+//       });
 
-      if (!booking) {
-        return res.status(404).json({
-          success: false,
-          message: 'Booking not found'
-        });
-      }
+//       if (!booking) {
+//         return res.status(404).json({
+//           success: false,
+//           message: 'Booking not found'
+//         });
+//       }
 
-      res.json({
-        success: true,
-        data: booking
-      });
-    } catch (error) {
-      console.error('Get booking by ID error:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Failed to retrieve booking',
-        error: error.message
-      });
-    }
-  },
+//       res.json({
+//         success: true,
+//         data: booking
+//       });
+//     } catch (error) {
+//       console.error('Get booking by ID error:', error);
+//       res.status(500).json({
+//         success: false,
+//         message: 'Failed to retrieve booking',
+//         error: error.message
+//       });
+//     }
+//   },
 
-  // Update booking
-  updateBooking: async (req, res) => {
-    try {
-      const { bookingId } = req.params;
-      const updateData = req.body;
+//   // Update booking
+//   updateBooking: async (req, res) => {
+//     try {
+//       const { bookingId } = req.params;
+//       const updateData = req.body;
 
-      const booking = await VisaService.findOne({ 
-        serviceId: bookingId, 
-        serviceType: { $in: ['booking', 'combined'] } 
-      });
+//       const booking = await VisaService.findOne({ 
+//         serviceId: bookingId, 
+//         serviceType: { $in: ['booking', 'combined'] } 
+//       });
 
-      if (!booking) {
-        return res.status(404).json({
-          success: false,
-          message: 'Booking not found'
-        });
-      }
+//       if (!booking) {
+//         return res.status(404).json({
+//           success: false,
+//           message: 'Booking not found'
+//         });
+//       }
 
-      // Prevent updating serviceId and trackingNumber
-      delete updateData.serviceId;
-      delete updateData.trackingNumber;
+//       // Prevent updating serviceId and trackingNumber
+//       delete updateData.serviceId;
+//       delete updateData.trackingNumber;
 
-      // Update fields
-      Object.keys(updateData).forEach(key => {
-        if (key === 'customer' || key === 'bookingDetails' || key === 'internal') {
-          // Deep merge for nested objects
-          booking[key] = { ...booking[key], ...updateData[key] };
-        } else {
-          booking[key] = updateData[key];
-        }
-      });
+//       // Update fields
+//       Object.keys(updateData).forEach(key => {
+//         if (key === 'customer' || key === 'bookingDetails' || key === 'internal') {
+//           // Deep merge for nested objects
+//           booking[key] = { ...booking[key], ...updateData[key] };
+//         } else {
+//           booking[key] = updateData[key];
+//         }
+//       });
 
-      await booking.save();
+//       await booking.save();
 
-      res.json({
-        success: true,
-        message: 'Booking updated successfully',
-        data: booking
-      });
-    } catch (error) {
-      console.error('Update booking error:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Failed to update booking',
-        error: error.message
-      });
-    }
-  },
+//       res.json({
+//         success: true,
+//         message: 'Booking updated successfully',
+//         data: booking
+//       });
+//     } catch (error) {
+//       console.error('Update booking error:', error);
+//       res.status(500).json({
+//         success: false,
+//         message: 'Failed to update booking',
+//         error: error.message
+//       });
+//     }
+//   },
 
-  // Confirm appointment
-  confirmAppointment: async (req, res) => {
-    try {
-      const { bookingId } = req.params;
-      const { confirmedBy } = req.body;
+//   // Confirm appointment
+//   confirmAppointment: async (req, res) => {
+//     try {
+//       const { bookingId } = req.params;
+//       const { confirmedBy } = req.body;
 
-      const booking = await VisaService.findOne({ 
-        serviceId: bookingId,
-        serviceType: { $in: ['booking', 'combined'] }
-      });
+//       const booking = await VisaService.findOne({ 
+//         serviceId: bookingId,
+//         serviceType: { $in: ['booking', 'combined'] }
+//       });
 
-      if (!booking) {
-        return res.status(404).json({
-          success: false,
-          message: 'Booking not found'
-        });
-      }
+//       if (!booking) {
+//         return res.status(404).json({
+//           success: false,
+//           message: 'Booking not found'
+//         });
+//       }
 
-      if (!booking.bookingDetails.appointment || !booking.bookingDetails.appointment.date) {
-        return res.status(400).json({
-          success: false,
-          message: 'No appointment scheduled for this booking'
-        });
-      }
+//       if (!booking.bookingDetails.appointment || !booking.bookingDetails.appointment.date) {
+//         return res.status(400).json({
+//           success: false,
+//           message: 'No appointment scheduled for this booking'
+//         });
+//       }
 
-      // Confirm appointment
-      booking.bookingDetails.appointment.confirmed = true;
-      booking.bookingDetails.bookingStatus = 'confirmed';
-      booking.serviceStage = 'booking-confirmed';
+//       // Confirm appointment
+//       booking.bookingDetails.appointment.confirmed = true;
+//       booking.bookingDetails.bookingStatus = 'confirmed';
+//       booking.serviceStage = 'booking-confirmed';
 
-      // Add note
-      booking.internal.notes.push({
-        note: `Appointment confirmed by ${confirmedBy || 'system'}`,
-        addedBy: confirmedBy || 'system',
-        addedAt: new Date(),
-        category: 'appointment',
-        priority: 'normal'
-      });
+//       // Add note
+//       booking.internal.notes.push({
+//         note: `Appointment confirmed by ${confirmedBy || 'system'}`,
+//         addedBy: confirmedBy || 'system',
+//         addedAt: new Date(),
+//         category: 'appointment',
+//         priority: 'normal'
+//       });
 
-      await booking.save();
+//       await booking.save();
 
-      // Send confirmation email
-      await sendEmail(
-        booking.customer.contactInfo.email,
-        'bookingConfirmation',
-        booking.toObject()
-      );
+//       // Send confirmation email
+//       await sendEmail(
+//         booking.customer.contactInfo.email,
+//         'bookingConfirmation',
+//         booking.toObject()
+//       );
 
-      res.json({
-        success: true,
-        message: 'Appointment confirmed successfully',
-        data: {
-          serviceId: booking.serviceId,
-          appointmentDate: booking.bookingDetails.appointment.date,
-          timeSlot: booking.bookingDetails.appointment.timeSlot,
-          status: booking.bookingDetails.bookingStatus,
-          serviceStage: booking.serviceStage
-        }
-      });
-    } catch (error) {
-      console.error('Confirm appointment error:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Failed to confirm appointment',
-        error: error.message
-      });
-    }
-  },
+//       res.json({
+//         success: true,
+//         message: 'Appointment confirmed successfully',
+//         data: {
+//           serviceId: booking.serviceId,
+//           appointmentDate: booking.bookingDetails.appointment.date,
+//           timeSlot: booking.bookingDetails.appointment.timeSlot,
+//           status: booking.bookingDetails.bookingStatus,
+//           serviceStage: booking.serviceStage
+//         }
+//       });
+//     } catch (error) {
+//       console.error('Confirm appointment error:', error);
+//       res.status(500).json({
+//         success: false,
+//         message: 'Failed to confirm appointment',
+//         error: error.message
+//       });
+//     }
+//   },
 
-  // Mark consultation as completed
-  markConsultationCompleted: async (req, res) => {
-    try {
-      const { bookingId } = req.params;
-      const { attendedBy, notes } = req.body;
+//   // Mark consultation as completed
+//   markConsultationCompleted: async (req, res) => {
+//     try {
+//       const { bookingId } = req.params;
+//       const { attendedBy, notes } = req.body;
 
-      const booking = await VisaService.findOne({ 
-        serviceId: bookingId,
-        serviceType: { $in: ['booking', 'combined'] }
-      });
+//       const booking = await VisaService.findOne({ 
+//         serviceId: bookingId,
+//         serviceType: { $in: ['booking', 'combined'] }
+//       });
 
-      if (!booking) {
-        return res.status(404).json({
-          success: false,
-          message: 'Booking not found'
-        });
-      }
+//       if (!booking) {
+//         return res.status(404).json({
+//           success: false,
+//           message: 'Booking not found'
+//         });
+//       }
 
-      if (!booking.bookingDetails.appointment) {
-        return res.status(400).json({
-          success: false,
-          message: 'No appointment scheduled for this booking'
-        });
-      }
+//       if (!booking.bookingDetails.appointment) {
+//         return res.status(400).json({
+//           success: false,
+//           message: 'No appointment scheduled for this booking'
+//         });
+//       }
 
-      // Mark as attended and completed
-      booking.bookingDetails.appointment.attended = true;
-      booking.bookingDetails.appointment.notes = notes || booking.bookingDetails.appointment.notes;
-      booking.bookingDetails.bookingStatus = 'completed';
-      booking.serviceStage = 'consultation-completed';
+//       // Mark as attended and completed
+//       booking.bookingDetails.appointment.attended = true;
+//       booking.bookingDetails.appointment.notes = notes || booking.bookingDetails.appointment.notes;
+//       booking.bookingDetails.bookingStatus = 'completed';
+//       booking.serviceStage = 'consultation-completed';
 
-      // Add note
-      booking.internal.notes.push({
-        note: `Consultation marked as completed by ${attendedBy || 'system'}. ${notes || ''}`,
-        addedBy: attendedBy || 'system',
-        addedAt: new Date(),
-        category: 'consultation',
-        priority: 'normal'
-      });
+//       // Add note
+//       booking.internal.notes.push({
+//         note: `Consultation marked as completed by ${attendedBy || 'system'}. ${notes || ''}`,
+//         addedBy: attendedBy || 'system',
+//         addedAt: new Date(),
+//         category: 'consultation',
+//         priority: 'normal'
+//       });
 
-      await booking.save();
+//       await booking.save();
 
-      res.json({
-        success: true,
-        message: 'Consultation marked as completed',
-        data: {
-          serviceId: booking.serviceId,
-          attended: booking.bookingDetails.appointment.attended,
-          status: booking.bookingDetails.bookingStatus,
-          serviceStage: booking.serviceStage
-        }
-      });
-    } catch (error) {
-      console.error('Mark consultation completed error:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Failed to mark consultation as completed',
-        error: error.message
-      });
-    }
-  },
+//       res.json({
+//         success: true,
+//         message: 'Consultation marked as completed',
+//         data: {
+//           serviceId: booking.serviceId,
+//           attended: booking.bookingDetails.appointment.attended,
+//           status: booking.bookingDetails.bookingStatus,
+//           serviceStage: booking.serviceStage
+//         }
+//       });
+//     } catch (error) {
+//       console.error('Mark consultation completed error:', error);
+//       res.status(500).json({
+//         success: false,
+//         message: 'Failed to mark consultation as completed',
+//         error: error.message
+//       });
+//     }
+//   },
 
-  // Convert booking to application
-  convertToApplication: async (req, res) => {
-    try {
-      const { bookingId } = req.params;
-      const { applicationDetails } = req.body;
+//   // Convert booking to application
+//   convertToApplication: async (req, res) => {
+//     try {
+//       const { bookingId } = req.params;
+//       const { applicationDetails } = req.body;
 
-      const booking = await VisaService.findOne({ 
-        serviceId: bookingId,
-        serviceType: { $in: ['booking', 'combined'] }
-      });
+//       const booking = await VisaService.findOne({ 
+//         serviceId: bookingId,
+//         serviceType: { $in: ['booking', 'combined'] }
+//       });
 
-      if (!booking) {
-        return res.status(404).json({
-          success: false,
-          message: 'Booking not found'
-        });
-      }
+//       if (!booking) {
+//         return res.status(404).json({
+//           success: false,
+//           message: 'Booking not found'
+//         });
+//       }
 
-      // Validate application details
-      if (!applicationDetails?.visaInfo?.destinationCountry) {
-        return res.status(400).json({
-          success: false,
-          message: 'Destination country is required for application'
-        });
-      }
+//       // Validate application details
+//       if (!applicationDetails?.visaInfo?.destinationCountry) {
+//         return res.status(400).json({
+//           success: false,
+//           message: 'Destination country is required for application'
+//         });
+//       }
 
-      if (!applicationDetails?.visaInfo?.visaType) {
-        return res.status(400).json({
-          success: false,
-          message: 'Visa type is required for application'
-        });
-      }
+//       if (!applicationDetails?.visaInfo?.visaType) {
+//         return res.status(400).json({
+//           success: false,
+//           message: 'Visa type is required for application'
+//         });
+//       }
 
-      // Convert to combined service
-      booking.serviceType = 'combined';
-      booking.serviceStage = 'application-initiated';
+//       // Convert to combined service
+//       booking.serviceType = 'combined';
+//       booking.serviceStage = 'application-initiated';
       
-      // Update application details
-      booking.applicationDetails = {
-        ...booking.applicationDetails,
-        visaInfo: {
-          ...booking.applicationDetails.visaInfo,
-          destinationCountry: applicationDetails.visaInfo.destinationCountry,
-          visaType: applicationDetails.visaInfo.visaType,
-          category: applicationDetails.visaInfo.category || 'short-term',
-          purposeOfTravel: applicationDetails.visaInfo.purposeOfTravel || '',
-          travelDates: applicationDetails.visaInfo.travelDates || {},
-          entriesRequested: applicationDetails.visaInfo.entriesRequested || 'Single',
-          travelCompanions: applicationDetails.visaInfo.travelCompanions || []
-        },
-        servicePackage: {
-          ...booking.applicationDetails.servicePackage,
-          ...applicationDetails.servicePackage
-        },
-        fees: {
-          ...booking.applicationDetails.fees,
-          ...applicationDetails.fees
-        },
-        payment: {
-          ...booking.applicationDetails.payment,
-          ...applicationDetails.payment
-        },
-        applicationStatus: {
-          ...booking.applicationDetails.applicationStatus,
-          current: 'draft'
-        }
-      };
+//       // Update application details
+//       booking.applicationDetails = {
+//         ...booking.applicationDetails,
+//         visaInfo: {
+//           ...booking.applicationDetails.visaInfo,
+//           destinationCountry: applicationDetails.visaInfo.destinationCountry,
+//           visaType: applicationDetails.visaInfo.visaType,
+//           category: applicationDetails.visaInfo.category || 'short-term',
+//           purposeOfTravel: applicationDetails.visaInfo.purposeOfTravel || '',
+//           travelDates: applicationDetails.visaInfo.travelDates || {},
+//           entriesRequested: applicationDetails.visaInfo.entriesRequested || 'Single',
+//           travelCompanions: applicationDetails.visaInfo.travelCompanions || []
+//         },
+//         servicePackage: {
+//           ...booking.applicationDetails.servicePackage,
+//           ...applicationDetails.servicePackage
+//         },
+//         fees: {
+//           ...booking.applicationDetails.fees,
+//           ...applicationDetails.fees
+//         },
+//         payment: {
+//           ...booking.applicationDetails.payment,
+//           ...applicationDetails.payment
+//         },
+//         applicationStatus: {
+//           ...booking.applicationDetails.applicationStatus,
+//           current: 'draft'
+//         }
+//       };
 
-      // Generate tracking number
-      const timestamp = Date.now();
-      const random = Math.floor(Math.random() * 1000);
-      booking.trackingNumber = `VISA-${timestamp}-${random}`;
+//       // Generate tracking number
+//       const timestamp = Date.now();
+//       const random = Math.floor(Math.random() * 1000);
+//       booking.trackingNumber = `VISA-${timestamp}-${random}`;
 
-      // Add note
-      booking.internal.notes.push({
-        note: 'Booking converted to visa application',
-        addedBy: 'system',
-        addedAt: new Date(),
-        category: 'conversion',
-        priority: 'normal'
-      });
+//       // Add note
+//       booking.internal.notes.push({
+//         note: 'Booking converted to visa application',
+//         addedBy: 'system',
+//         addedAt: new Date(),
+//         category: 'conversion',
+//         priority: 'normal'
+//       });
 
-      await booking.save();
+//       await booking.save();
 
-      // Send application submitted email
-      await sendEmail(
-        booking.customer.contactInfo.email,
-        'applicationSubmitted',
-        booking.toObject()
-      );
+//       // Send application submitted email
+//       await sendEmail(
+//         booking.customer.contactInfo.email,
+//         'applicationSubmitted',
+//         booking.toObject()
+//       );
 
-      res.json({
-        success: true,
-        message: 'Booking converted to application successfully',
-        data: {
-          serviceId: booking.serviceId,
-          trackingNumber: booking.trackingNumber,
-          serviceType: booking.serviceType,
-          serviceStage: booking.serviceStage,
-          applicationStatus: booking.applicationDetails.applicationStatus.current
-        }
-      });
-    } catch (error) {
-      console.error('Convert to application error:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Failed to convert booking to application',
-        error: error.message
-      });
-    }
-  },
+//       res.json({
+//         success: true,
+//         message: 'Booking converted to application successfully',
+//         data: {
+//           serviceId: booking.serviceId,
+//           trackingNumber: booking.trackingNumber,
+//           serviceType: booking.serviceType,
+//           serviceStage: booking.serviceStage,
+//           applicationStatus: booking.applicationDetails.applicationStatus.current
+//         }
+//       });
+//     } catch (error) {
+//       console.error('Convert to application error:', error);
+//       res.status(500).json({
+//         success: false,
+//         message: 'Failed to convert booking to application',
+//         error: error.message
+//       });
+//     }
+//   },
 
-  // Get all bookings
-  getAllBookings: async (req, res) => {
-    try {
-      const {
-        page = 1,
-        limit = 20,
-        sortBy = 'createdAt',
-        sortOrder = 'desc',
-        status,
-        type,
-        dateFrom,
-        dateTo,
-        customerName,
-        email,
-        agentId
-      } = req.query;
+//   // Get all bookings
+//   getAllBookings: async (req, res) => {
+//     try {
+//       const {
+//         page = 1,
+//         limit = 20,
+//         sortBy = 'createdAt',
+//         sortOrder = 'desc',
+//         status,
+//         type,
+//         dateFrom,
+//         dateTo,
+//         customerName,
+//         email,
+//         agentId
+//       } = req.query;
 
-      const skip = (parseInt(page) - 1) * parseInt(limit);
+//       const skip = (parseInt(page) - 1) * parseInt(limit);
       
-      // Build query for bookings
-      const query = { serviceType: { $in: ['booking', 'combined'] } };
+//       // Build query for bookings
+//       const query = { serviceType: { $in: ['booking', 'combined'] } };
       
-      // Apply filters
-      if (status) {
-        query['bookingDetails.bookingStatus'] = status;
-      }
+//       // Apply filters
+//       if (status) {
+//         query['bookingDetails.bookingStatus'] = status;
+//       }
       
-      if (type) {
-        query['bookingDetails.type'] = type;
-      }
+//       if (type) {
+//         query['bookingDetails.type'] = type;
+//       }
       
-      if (dateFrom || dateTo) {
-        query.createdAt = {};
-        if (dateFrom) query.createdAt.$gte = new Date(dateFrom);
-        if (dateTo) query.createdAt.$lte = new Date(dateTo);
-      }
+//       if (dateFrom || dateTo) {
+//         query.createdAt = {};
+//         if (dateFrom) query.createdAt.$gte = new Date(dateFrom);
+//         if (dateTo) query.createdAt.$lte = new Date(dateTo);
+//       }
       
-      if (customerName) {
-        query['customer.personalInfo.fullName'] = { 
-          $regex: customerName, 
-          $options: 'i' 
-        };
-      }
+//       if (customerName) {
+//         query['customer.personalInfo.fullName'] = { 
+//           $regex: customerName, 
+//           $options: 'i' 
+//         };
+//       }
       
-      if (email) {
-        query['customer.contactInfo.email'] = { 
-          $regex: email, 
-          $options: 'i' 
-        };
-      }
+//       if (email) {
+//         query['customer.contactInfo.email'] = { 
+//           $regex: email, 
+//           $options: 'i' 
+//         };
+//       }
       
-      if (agentId && mongoose.Types.ObjectId.isValid(agentId)) {
-        query['internal.assignedTo.agentId'] = new mongoose.Types.ObjectId(agentId);
-      }
+//       if (agentId && mongoose.Types.ObjectId.isValid(agentId)) {
+//         query['internal.assignedTo.agentId'] = new mongoose.Types.ObjectId(agentId);
+//       }
 
-      // Determine sort order
-      const sort = {};
-      sort[sortBy] = sortOrder === 'asc' ? 1 : -1;
+//       // Determine sort order
+//       const sort = {};
+//       sort[sortBy] = sortOrder === 'asc' ? 1 : -1;
 
-      // Get bookings with pagination
-      const [bookings, total] = await Promise.all([
-        VisaService.find(query)
-          .sort(sort)
-          .skip(skip)
-          .limit(parseInt(limit))
-          .select('-documents -communications -statusHistory -auditLog -__v')
-          .lean(),
-        VisaService.countDocuments(query)
-      ]);
+//       // Get bookings with pagination
+//       const [bookings, total] = await Promise.all([
+//         VisaService.find(query)
+//           .sort(sort)
+//           .skip(skip)
+//           .limit(parseInt(limit))
+//           .select('-documents -communications -statusHistory -auditLog -__v')
+//           .lean(),
+//         VisaService.countDocuments(query)
+//       ]);
 
-      // Calculate statistics
-      const stats = {
-        totalBookings: total,
-        byStatus: bookings.reduce((acc, booking) => {
-          const status = booking.bookingDetails?.bookingStatus || 'unknown';
-          acc[status] = (acc[status] || 0) + 1;
-          return acc;
-        }, {}),
-        byType: bookings.reduce((acc, booking) => {
-          const type = booking.bookingDetails?.type || 'unknown';
-          acc[type] = (acc[type] || 0) + 1;
-          return acc;
-        }, {}),
-        totalRevenue: bookings.reduce((sum, booking) => 
-          sum + (booking.bookingDetails?.bookingAmount || 0), 0
-        ),
-        upcomingAppointments: bookings.filter(booking => 
-          booking.bookingDetails?.appointment?.date && 
-          new Date(booking.bookingDetails.appointment.date) > new Date()
-        ).length,
-        confirmedAppointments: bookings.filter(booking => 
-          booking.bookingDetails?.appointment?.confirmed === true
-        ).length
-      };
+//       // Calculate statistics
+//       const stats = {
+//         totalBookings: total,
+//         byStatus: bookings.reduce((acc, booking) => {
+//           const status = booking.bookingDetails?.bookingStatus || 'unknown';
+//           acc[status] = (acc[status] || 0) + 1;
+//           return acc;
+//         }, {}),
+//         byType: bookings.reduce((acc, booking) => {
+//           const type = booking.bookingDetails?.type || 'unknown';
+//           acc[type] = (acc[type] || 0) + 1;
+//           return acc;
+//         }, {}),
+//         totalRevenue: bookings.reduce((sum, booking) => 
+//           sum + (booking.bookingDetails?.bookingAmount || 0), 0
+//         ),
+//         upcomingAppointments: bookings.filter(booking => 
+//           booking.bookingDetails?.appointment?.date && 
+//           new Date(booking.bookingDetails.appointment.date) > new Date()
+//         ).length,
+//         confirmedAppointments: bookings.filter(booking => 
+//           booking.bookingDetails?.appointment?.confirmed === true
+//         ).length
+//       };
 
-      res.json({
-        success: true,
-        data: {
-          bookings,
-          pagination: {
-            page: parseInt(page),
-            limit: parseInt(limit),
-            total,
-            totalPages: Math.ceil(total / parseInt(limit)),
-            hasNextPage: (parseInt(page) * parseInt(limit)) < total,
-            hasPrevPage: parseInt(page) > 1
-          },
-          statistics: stats
-        }
-      });
-    } catch (error) {
-      console.error('Get all bookings error:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Failed to retrieve bookings',
-        error: error.message
-      });
-    }
-  },
-getBookingsByEmail: async (req, res) => {
-    try {
-      const { email } = req.params;
-      const {
-        page = 1,
-        limit = 20,
-        sortBy = 'createdAt',
-        sortOrder = 'desc',
-        status,
-        type,
-        dateFrom,
-        dateTo,
-        customerName,
-        agentId
-      } = req.query;
+//       res.json({
+//         success: true,
+//         data: {
+//           bookings,
+//           pagination: {
+//             page: parseInt(page),
+//             limit: parseInt(limit),
+//             total,
+//             totalPages: Math.ceil(total / parseInt(limit)),
+//             hasNextPage: (parseInt(page) * parseInt(limit)) < total,
+//             hasPrevPage: parseInt(page) > 1
+//           },
+//           statistics: stats
+//         }
+//       });
+//     } catch (error) {
+//       console.error('Get all bookings error:', error);
+//       res.status(500).json({
+//         success: false,
+//         message: 'Failed to retrieve bookings',
+//         error: error.message
+//       });
+//     }
+//   },
+// getBookingsByEmail: async (req, res) => {
+//     try {
+//       const { email } = req.params;
+//       const {
+//         page = 1,
+//         limit = 20,
+//         sortBy = 'createdAt',
+//         sortOrder = 'desc',
+//         status,
+//         type,
+//         dateFrom,
+//         dateTo,
+//         customerName,
+//         agentId
+//       } = req.query;
 
-      const skip = (parseInt(page) - 1) * parseInt(limit);
+//       const skip = (parseInt(page) - 1) * parseInt(limit);
 
-      // Build query for bookings by email
-      const query = {
-        serviceType: { $in: ['booking', 'combined'] },
-        'customer.contactInfo.email': email.toLowerCase()
-      };
+//       // Build query for bookings by email
+//       const query = {
+//         serviceType: { $in: ['booking', 'combined'] },
+//         'customer.contactInfo.email': email.toLowerCase()
+//       };
 
-      // Apply other filters
-      if (status) query['bookingDetails.bookingStatus'] = status;
-      if (type) query['bookingDetails.type'] = type;
-      if (dateFrom || dateTo) {
-        query.createdAt = {};
-        if (dateFrom) query.createdAt.$gte = new Date(dateFrom);
-        if (dateTo) query.createdAt.$lte = new Date(dateTo);
-      }
-      if (customerName) {
-        query['customer.personalInfo.fullName'] = { $regex: customerName, $options: 'i' };
-      }
-      if (agentId && mongoose.Types.ObjectId.isValid(agentId)) {
-        query['internal.assignedTo.agentId'] = new mongoose.Types.ObjectId(agentId);
-      }
+//       // Apply other filters
+//       if (status) query['bookingDetails.bookingStatus'] = status;
+//       if (type) query['bookingDetails.type'] = type;
+//       if (dateFrom || dateTo) {
+//         query.createdAt = {};
+//         if (dateFrom) query.createdAt.$gte = new Date(dateFrom);
+//         if (dateTo) query.createdAt.$lte = new Date(dateTo);
+//       }
+//       if (customerName) {
+//         query['customer.personalInfo.fullName'] = { $regex: customerName, $options: 'i' };
+//       }
+//       if (agentId && mongoose.Types.ObjectId.isValid(agentId)) {
+//         query['internal.assignedTo.agentId'] = new mongoose.Types.ObjectId(agentId);
+//       }
 
-      // Sort
-      const sort = {};
-      sort[sortBy] = sortOrder === 'asc' ? 1 : -1;
+//       // Sort
+//       const sort = {};
+//       sort[sortBy] = sortOrder === 'asc' ? 1 : -1;
 
-      // Fetch bookings
-      const [bookings, total] = await Promise.all([
-        VisaService.find(query)
-          .sort(sort)
-          .skip(skip)
-          .limit(parseInt(limit))
-          .select('-documents -communications -statusHistory -auditLog -__v')
-          .lean(),
-        VisaService.countDocuments(query)
-      ]);
+//       // Fetch bookings
+//       const [bookings, total] = await Promise.all([
+//         VisaService.find(query)
+//           .sort(sort)
+//           .skip(skip)
+//           .limit(parseInt(limit))
+//           .select('-documents -communications -statusHistory -auditLog -__v')
+//           .lean(),
+//         VisaService.countDocuments(query)
+//       ]);
 
-      // Calculate statistics
-      const stats = {
-        totalBookings: total,
-        byStatus: bookings.reduce((acc, booking) => {
-          const status = booking.bookingDetails?.bookingStatus || 'unknown';
-          acc[status] = (acc[status] || 0) + 1;
-          return acc;
-        }, {}),
-        byType: bookings.reduce((acc, booking) => {
-          const type = booking.bookingDetails?.type || 'unknown';
-          acc[type] = (acc[type] || 0) + 1;
-          return acc;
-        }, {}),
-        totalRevenue: bookings.reduce((sum, booking) => 
-          sum + (booking.bookingDetails?.bookingAmount || 0), 0
-        ),
-        upcomingAppointments: bookings.filter(booking => 
-          booking.bookingDetails?.appointment?.date && 
-          new Date(booking.bookingDetails.appointment.date) > new Date()
-        ).length,
-        confirmedAppointments: bookings.filter(booking => 
-          booking.bookingDetails?.appointment?.confirmed === true
-        ).length
-      };
+//       // Calculate statistics
+//       const stats = {
+//         totalBookings: total,
+//         byStatus: bookings.reduce((acc, booking) => {
+//           const status = booking.bookingDetails?.bookingStatus || 'unknown';
+//           acc[status] = (acc[status] || 0) + 1;
+//           return acc;
+//         }, {}),
+//         byType: bookings.reduce((acc, booking) => {
+//           const type = booking.bookingDetails?.type || 'unknown';
+//           acc[type] = (acc[type] || 0) + 1;
+//           return acc;
+//         }, {}),
+//         totalRevenue: bookings.reduce((sum, booking) => 
+//           sum + (booking.bookingDetails?.bookingAmount || 0), 0
+//         ),
+//         upcomingAppointments: bookings.filter(booking => 
+//           booking.bookingDetails?.appointment?.date && 
+//           new Date(booking.bookingDetails.appointment.date) > new Date()
+//         ).length,
+//         confirmedAppointments: bookings.filter(booking => 
+//           booking.bookingDetails?.appointment?.confirmed === true
+//         ).length
+//       };
 
-      res.json({
-        success: true,
-        data: {
-          bookings,
-          pagination: {
-            page: parseInt(page),
-            limit: parseInt(limit),
-            total,
-            totalPages: Math.ceil(total / parseInt(limit)),
-            hasNextPage: (parseInt(page) * parseInt(limit)) < total,
-            hasPrevPage: parseInt(page) > 1
-          },
-          statistics: stats
-        }
-      });
-    } catch (error) {
-      console.error('Get bookings by email error:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Failed to retrieve bookings by email',
-        error: error.message
-      });
-    }
-  },
+//       res.json({
+//         success: true,
+//         data: {
+//           bookings,
+//           pagination: {
+//             page: parseInt(page),
+//             limit: parseInt(limit),
+//             total,
+//             totalPages: Math.ceil(total / parseInt(limit)),
+//             hasNextPage: (parseInt(page) * parseInt(limit)) < total,
+//             hasPrevPage: parseInt(page) > 1
+//           },
+//           statistics: stats
+//         }
+//       });
+//     } catch (error) {
+//       console.error('Get bookings by email error:', error);
+//       res.status(500).json({
+//         success: false,
+//         message: 'Failed to retrieve bookings by email',
+//         error: error.message
+//       });
+//     }
+//   },
 
 
-  // Cancel booking
-  cancelBooking: async (req, res) => {
-    try {
-      const { bookingId } = req.params;
-      const { reason, cancelledBy } = req.body;
+//   // Cancel booking
+//   cancelBooking: async (req, res) => {
+//     try {
+//       const { bookingId } = req.params;
+//       const { reason, cancelledBy } = req.body;
 
-      const booking = await VisaService.findOne({ 
-        serviceId: bookingId,
-        serviceType: { $in: ['booking', 'combined'] }
-      });
+//       const booking = await VisaService.findOne({ 
+//         serviceId: bookingId,
+//         serviceType: { $in: ['booking', 'combined'] }
+//       });
 
-      if (!booking) {
-        return res.status(404).json({
-          success: false,
-          message: 'Booking not found'
-        });
-      }
+//       if (!booking) {
+//         return res.status(404).json({
+//           success: false,
+//           message: 'Booking not found'
+//         });
+//       }
 
-      // Update booking status
-      booking.bookingDetails.bookingStatus = 'cancelled';
-      booking.serviceStage = 'cancelled';
+//       // Update booking status
+//       booking.bookingDetails.bookingStatus = 'cancelled';
+//       booking.serviceStage = 'cancelled';
       
-      // Add note
-      booking.internal.notes.push({
-        note: `Booking cancelled. Reason: ${reason}`,
-        addedBy: cancelledBy || 'system',
-        addedAt: new Date(),
-        category: 'cancellation',
-        priority: 'high'
-      });
+//       // Add note
+//       booking.internal.notes.push({
+//         note: `Booking cancelled. Reason: ${reason}`,
+//         addedBy: cancelledBy || 'system',
+//         addedAt: new Date(),
+//         category: 'cancellation',
+//         priority: 'high'
+//       });
 
-      await booking.save();
+//       await booking.save();
 
-      // Send cancellation email
-      await sendEmail(
-        booking.customer.contactInfo.email,
-        'statusUpdate',
-        { 
-          ...booking.toObject(), 
-          newStatus: 'Booking Cancelled' 
-        }
-      );
+//       // Send cancellation email
+//       await sendEmail(
+//         booking.customer.contactInfo.email,
+//         'statusUpdate',
+//         { 
+//           ...booking.toObject(), 
+//           newStatus: 'Booking Cancelled' 
+//         }
+//       );
 
-      res.json({
-        success: true,
-        message: 'Booking cancelled successfully',
-        data: {
-          serviceId: booking.serviceId,
-          status: booking.bookingDetails.bookingStatus,
-          serviceStage: booking.serviceStage
-        }
-      });
-    } catch (error) {
-      console.error('Cancel booking error:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Failed to cancel booking',
-        error: error.message
-      });
-    }
-  },
+//       res.json({
+//         success: true,
+//         message: 'Booking cancelled successfully',
+//         data: {
+//           serviceId: booking.serviceId,
+//           status: booking.bookingDetails.bookingStatus,
+//           serviceStage: booking.serviceStage
+//         }
+//       });
+//     } catch (error) {
+//       console.error('Cancel booking error:', error);
+//       res.status(500).json({
+//         success: false,
+//         message: 'Failed to cancel booking',
+//         error: error.message
+//       });
+//     }
+//   },
 
-  // Get upcoming appointments
-  getUpcomingAppointments: async (req, res) => {
-    try {
-      const { daysAhead = 7, includePast = false } = req.query;
+//   // Get upcoming appointments
+//   getUpcomingAppointments: async (req, res) => {
+//     try {
+//       const { daysAhead = 7, includePast = false } = req.query;
 
-      const now = new Date();
-      const futureDate = new Date();
-      futureDate.setDate(now.getDate() + parseInt(daysAhead));
+//       const now = new Date();
+//       const futureDate = new Date();
+//       futureDate.setDate(now.getDate() + parseInt(daysAhead));
 
-      const query = {
-        serviceType: { $in: ['booking', 'combined'] },
-        'bookingDetails.appointment.date': { 
-          $exists: true,
-          $ne: null
-        },
-        'bookingDetails.bookingStatus': { $in: ['pending', 'confirmed'] }
-      };
+//       const query = {
+//         serviceType: { $in: ['booking', 'combined'] },
+//         'bookingDetails.appointment.date': { 
+//           $exists: true,
+//           $ne: null
+//         },
+//         'bookingDetails.bookingStatus': { $in: ['pending', 'confirmed'] }
+//       };
 
-      if (!includePast) {
-        query['bookingDetails.appointment.date'].$gte = now;
-      }
-      query['bookingDetails.appointment.date'].$lte = futureDate;
+//       if (!includePast) {
+//         query['bookingDetails.appointment.date'].$gte = now;
+//       }
+//       query['bookingDetails.appointment.date'].$lte = futureDate;
 
-      const appointments = await VisaService.find(query)
-        .sort({ 'bookingDetails.appointment.date': 1 })
-        .select('serviceId customer.personalInfo.fullName customer.contactInfo.email customer.contactInfo.primaryPhone bookingDetails.appointment bookingDetails.bookingStatus internal.assignedTo')
-        .lean();
+//       const appointments = await VisaService.find(query)
+//         .sort({ 'bookingDetails.appointment.date': 1 })
+//         .select('serviceId customer.personalInfo.fullName customer.contactInfo.email customer.contactInfo.primaryPhone bookingDetails.appointment bookingDetails.bookingStatus internal.assignedTo')
+//         .lean();
 
-      // Group by date
-      const appointmentsByDate = {};
-      appointments.forEach(appointment => {
-        if (appointment.bookingDetails?.appointment?.date) {
-          const dateStr = new Date(appointment.bookingDetails.appointment.date).toDateString();
-          if (!appointmentsByDate[dateStr]) {
-            appointmentsByDate[dateStr] = [];
-          }
-          appointmentsByDate[dateStr].push(appointment);
-        }
-      });
+//       // Group by date
+//       const appointmentsByDate = {};
+//       appointments.forEach(appointment => {
+//         if (appointment.bookingDetails?.appointment?.date) {
+//           const dateStr = new Date(appointment.bookingDetails.appointment.date).toDateString();
+//           if (!appointmentsByDate[dateStr]) {
+//             appointmentsByDate[dateStr] = [];
+//           }
+//           appointmentsByDate[dateStr].push(appointment);
+//         }
+//       });
 
-      res.json({
-        success: true,
-        data: {
-          appointments,
-          appointmentsByDate,
-          statistics: {
-            total: appointments.length,
-            confirmed: appointments.filter(a => a.bookingDetails?.bookingStatus === 'confirmed').length,
-            pending: appointments.filter(a => a.bookingDetails?.bookingStatus === 'pending').length,
-            today: appointments.filter(a => {
-              if (!a.bookingDetails?.appointment?.date) return false;
-              const appointmentDate = new Date(a.bookingDetails.appointment.date);
-              return appointmentDate.toDateString() === now.toDateString();
-            }).length
-          },
-          timeframe: {
-            from: now.toISOString(),
-            to: futureDate.toISOString(),
-            days: parseInt(daysAhead)
-          }
-        }
-      });
-    } catch (error) {
-      console.error('Get upcoming appointments error:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Failed to retrieve upcoming appointments',
-        error: error.message
-      });
-    }
-  }
-};
+//       res.json({
+//         success: true,
+//         data: {
+//           appointments,
+//           appointmentsByDate,
+//           statistics: {
+//             total: appointments.length,
+//             confirmed: appointments.filter(a => a.bookingDetails?.bookingStatus === 'confirmed').length,
+//             pending: appointments.filter(a => a.bookingDetails?.bookingStatus === 'pending').length,
+//             today: appointments.filter(a => {
+//               if (!a.bookingDetails?.appointment?.date) return false;
+//               const appointmentDate = new Date(a.bookingDetails.appointment.date);
+//               return appointmentDate.toDateString() === now.toDateString();
+//             }).length
+//           },
+//           timeframe: {
+//             from: now.toISOString(),
+//             to: futureDate.toISOString(),
+//             days: parseInt(daysAhead)
+//           }
+//         }
+//       });
+//     } catch (error) {
+//       console.error('Get upcoming appointments error:', error);
+//       res.status(500).json({
+//         success: false,
+//         message: 'Failed to retrieve upcoming appointments',
+//         error: error.message
+//       });
+//     }
+//   }
+// };
 
-// ========== APPLICATION CONTROLLERS ==========
+// // ========== APPLICATION CONTROLLERS ==========
 
-const ApplicationController = {
-  // Create new visa application (without booking)
-  // createApplication: async (req, res) => {
-  //   try {
-  //     const {
-  //       customer,
-  //       applicationDetails,
-  //       internal
-  //     } = req.body;
+// const ApplicationController = {
+//   // Create new visa application (without booking)
+//   // createApplication: async (req, res) => {
+//   //   try {
+//   //     const {
+//   //       customer,
+//   //       applicationDetails,
+//   //       internal
+//   //     } = req.body;
 
-  //     // Validate required fields based on model
-  //     const requiredFields = [
-  //       { field: customer?.personalInfo?.fullName, message: 'Customer full name is required' },
-  //       { field: customer?.personalInfo?.dateOfBirth, message: 'Customer date of birth is required' },
-  //       { field: customer?.personalInfo?.nationality, message: 'Customer nationality is required' },
-  //       { field: customer?.personalInfo?.countryOfResidence, message: 'Customer country of residence is required' },
-  //       { field: customer?.contactInfo?.email, message: 'Customer email is required' },
-  //       { field: customer?.contactInfo?.primaryPhone, message: 'Customer primary phone is required' },
-  //       { field: applicationDetails?.visaInfo?.destinationCountry, message: 'Destination country is required' },
-  //       { field: applicationDetails?.visaInfo?.visaType, message: 'Visa type is required' }
-  //     ];
+//   //     // Validate required fields based on model
+//   //     const requiredFields = [
+//   //       { field: customer?.personalInfo?.fullName, message: 'Customer full name is required' },
+//   //       { field: customer?.personalInfo?.dateOfBirth, message: 'Customer date of birth is required' },
+//   //       { field: customer?.personalInfo?.nationality, message: 'Customer nationality is required' },
+//   //       { field: customer?.personalInfo?.countryOfResidence, message: 'Customer country of residence is required' },
+//   //       { field: customer?.contactInfo?.email, message: 'Customer email is required' },
+//   //       { field: customer?.contactInfo?.primaryPhone, message: 'Customer primary phone is required' },
+//   //       { field: applicationDetails?.visaInfo?.destinationCountry, message: 'Destination country is required' },
+//   //       { field: applicationDetails?.visaInfo?.visaType, message: 'Visa type is required' }
+//   //     ];
 
-  //     for (const { field, message } of requiredFields) {
-  //       if (!field) {
-  //         return res.status(400).json({
-  //           success: false,
-  //           message
-  //         });
-  //       }
-  //     }
+//   //     for (const { field, message } of requiredFields) {
+//   //       if (!field) {
+//   //         return res.status(400).json({
+//   //           success: false,
+//   //           message
+//   //         });
+//   //       }
+//   //     }
 
-  //     // Validate email format
-  //     const emailRegex = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/;
-  //     if (!emailRegex.test(customer.contactInfo.email)) {
-  //       return res.status(400).json({
-  //         success: false,
-  //         message: 'Please provide a valid email address'
-  //       });
-  //     }
+//   //     // Validate email format
+//   //     const emailRegex = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/;
+//   //     if (!emailRegex.test(customer.contactInfo.email)) {
+//   //       return res.status(400).json({
+//   //         success: false,
+//   //         message: 'Please provide a valid email address'
+//   //       });
+//   //     }
 
-  //     // Prepare application data according to model schema
-  //     const applicationData = {
-  //       serviceType: 'application',
-  //       serviceStage: 'application-initiated',
-  //       customer: {
-  //         personalInfo: {
-  //           fullName: customer.personalInfo.fullName.trim(),
-  //           dateOfBirth: new Date(customer.personalInfo.dateOfBirth),
-  //           gender: customer.personalInfo.gender || 'prefer-not-to-say',
-  //           nationality: customer.personalInfo.nationality,
-  //           countryOfResidence: customer.personalInfo.countryOfResidence,
-  //           maritalStatus: customer.personalInfo.maritalStatus || 'single',
-  //           occupation: customer.personalInfo.occupation,
-  //           employer: customer.personalInfo.employer
-  //         },
-  //         contactInfo: {
-  //           email: customer.contactInfo.email.toLowerCase().trim(),
-  //           primaryPhone: customer.contactInfo.primaryPhone,
-  //           secondaryPhone: customer.contactInfo.secondaryPhone,
-  //           whatsappNumber: customer.contactInfo.whatsappNumber,
-  //           address: customer.contactInfo.address || {},
-  //           emergencyContact: customer.contactInfo.emergencyContact || {}
-  //         },
-  //         passportInfo: {
-  //           passportNumber: customer.passportInfo?.passportNumber,
-  //           issuingCountry: customer.passportInfo?.issuingCountry,
-  //           issueDate: customer.passportInfo?.issueDate ? new Date(customer.passportInfo.issueDate) : undefined,
-  //           expiryDate: customer.passportInfo?.expiryDate ? new Date(customer.passportInfo.expiryDate) : undefined,
-  //           placeOfIssue: customer.passportInfo?.placeOfIssue,
-  //           hasPreviousVisas: customer.passportInfo?.hasPreviousVisas || false,
-  //           previousVisaDetails: customer.passportInfo?.previousVisaDetails || []
-  //         }
-  //       },
-  //       applicationDetails: {
-  //         visaInfo: {
-  //           destinationCountry: applicationDetails.visaInfo.destinationCountry,
-  //           appliedCountries: applicationDetails.visaInfo.appliedCountries || [],
-  //           visaType: applicationDetails.visaInfo.visaType,
-  //           category: applicationDetails.visaInfo.category || 'short-term',
-  //           purposeOfTravel: applicationDetails.visaInfo.purposeOfTravel || '',
-  //           travelDates: applicationDetails.visaInfo.travelDates || {},
-  //           entriesRequested: applicationDetails.visaInfo.entriesRequested || 'Single',
-  //           travelCompanions: applicationDetails.visaInfo.travelCompanions || []
-  //         },
-  //         servicePackage: {
-  //           name: applicationDetails.servicePackage?.name || 'standard',
-  //           description: applicationDetails.servicePackage?.description || '',
-  //           processingTime: applicationDetails.servicePackage?.processingTime || '15-20 business days',
-  //           inclusions: applicationDetails.servicePackage?.inclusions || [],
-  //           exclusions: applicationDetails.servicePackage?.exclusions || []
-  //         },
-  //         fees: {
-  //           consultationFee: applicationDetails.fees?.consultationFee || 0,
-  //           serviceFee: applicationDetails.fees?.serviceFee || 0,
-  //           embassyFee: applicationDetails.fees?.embassyFee || 0,
-  //           additionalFees: applicationDetails.fees?.additionalFees || 0,
-  //           discount: applicationDetails.fees?.discount || 0,
-  //           totalAmount: applicationDetails.fees?.totalAmount || 0,
-  //           currency: applicationDetails.fees?.currency || 'USD'
-  //         },
-  //         payment: {
-  //           status: applicationDetails.payment?.status || 'pending',
-  //           amountPaid: applicationDetails.payment?.amountPaid || 0,
-  //           paymentMethod: applicationDetails.payment?.paymentMethod,
-  //           dueDate: applicationDetails.payment?.dueDate ? new Date(applicationDetails.payment.dueDate) : undefined,
-  //           paymentHistory: applicationDetails.payment?.paymentHistory || []
-  //         },
-  //         applicationStatus: {
-  //           current: applicationDetails.applicationStatus?.current || 'draft',
-  //           submittedAt: applicationDetails.applicationStatus?.submittedAt ? new Date(applicationDetails.applicationStatus.submittedAt) : undefined,
-  //           processingStartedAt: applicationDetails.applicationStatus?.processingStartedAt ? new Date(applicationDetails.applicationStatus.processingStartedAt) : undefined,
-  //           expectedCompletionDate: applicationDetails.applicationStatus?.expectedCompletionDate ? new Date(applicationDetails.applicationStatus.expectedCompletionDate) : undefined,
-  //           actualCompletionDate: applicationDetails.applicationStatus?.actualCompletionDate ? new Date(applicationDetails.applicationStatus.actualCompletionDate) : undefined,
-  //           embassySubmissionDate: applicationDetails.applicationStatus?.embassySubmissionDate ? new Date(applicationDetails.applicationStatus.embassySubmissionDate) : undefined,
-  //           decisionDate: applicationDetails.applicationStatus?.decisionDate ? new Date(applicationDetails.applicationStatus.decisionDate) : undefined,
-  //           collectionDate: applicationDetails.applicationStatus?.collectionDate ? new Date(applicationDetails.applicationStatus.collectionDate) : undefined
-  //         },
-  //         embassyInfo: applicationDetails.embassyInfo || {},
-  //         visaIssuance: applicationDetails.visaIssuance || {}
-  //       },
-  //       internal: {
-  //         assignedTo: internal?.assignedTo ? {
-  //           agentId: internal.assignedTo.agentId ? new mongoose.Types.ObjectId(internal.assignedTo.agentId) : undefined,
-  //           agentName: internal.assignedTo.agentName,
-  //           agentEmail: internal.assignedTo.agentEmail,
-  //           department: internal.assignedTo.department,
-  //           assignedAt: internal.assignedTo.assignedAt ? new Date(internal.assignedTo.assignedAt) : new Date(),
-  //           lastContacted: internal.assignedTo.lastContacted ? new Date(internal.assignedTo.lastContacted) : undefined
-  //         } : undefined,
-  //         priority: internal?.priority || 'normal',
-  //         source: internal?.source || 'website',
-  //         notes: internal?.notes || []
-  //       }
-  //     };
+//   //     // Prepare application data according to model schema
+//   //     const applicationData = {
+//   //       serviceType: 'application',
+//   //       serviceStage: 'application-initiated',
+//   //       customer: {
+//   //         personalInfo: {
+//   //           fullName: customer.personalInfo.fullName.trim(),
+//   //           dateOfBirth: new Date(customer.personalInfo.dateOfBirth),
+//   //           gender: customer.personalInfo.gender || 'prefer-not-to-say',
+//   //           nationality: customer.personalInfo.nationality,
+//   //           countryOfResidence: customer.personalInfo.countryOfResidence,
+//   //           maritalStatus: customer.personalInfo.maritalStatus || 'single',
+//   //           occupation: customer.personalInfo.occupation,
+//   //           employer: customer.personalInfo.employer
+//   //         },
+//   //         contactInfo: {
+//   //           email: customer.contactInfo.email.toLowerCase().trim(),
+//   //           primaryPhone: customer.contactInfo.primaryPhone,
+//   //           secondaryPhone: customer.contactInfo.secondaryPhone,
+//   //           whatsappNumber: customer.contactInfo.whatsappNumber,
+//   //           address: customer.contactInfo.address || {},
+//   //           emergencyContact: customer.contactInfo.emergencyContact || {}
+//   //         },
+//   //         passportInfo: {
+//   //           passportNumber: customer.passportInfo?.passportNumber,
+//   //           issuingCountry: customer.passportInfo?.issuingCountry,
+//   //           issueDate: customer.passportInfo?.issueDate ? new Date(customer.passportInfo.issueDate) : undefined,
+//   //           expiryDate: customer.passportInfo?.expiryDate ? new Date(customer.passportInfo.expiryDate) : undefined,
+//   //           placeOfIssue: customer.passportInfo?.placeOfIssue,
+//   //           hasPreviousVisas: customer.passportInfo?.hasPreviousVisas || false,
+//   //           previousVisaDetails: customer.passportInfo?.previousVisaDetails || []
+//   //         }
+//   //       },
+//   //       applicationDetails: {
+//   //         visaInfo: {
+//   //           destinationCountry: applicationDetails.visaInfo.destinationCountry,
+//   //           appliedCountries: applicationDetails.visaInfo.appliedCountries || [],
+//   //           visaType: applicationDetails.visaInfo.visaType,
+//   //           category: applicationDetails.visaInfo.category || 'short-term',
+//   //           purposeOfTravel: applicationDetails.visaInfo.purposeOfTravel || '',
+//   //           travelDates: applicationDetails.visaInfo.travelDates || {},
+//   //           entriesRequested: applicationDetails.visaInfo.entriesRequested || 'Single',
+//   //           travelCompanions: applicationDetails.visaInfo.travelCompanions || []
+//   //         },
+//   //         servicePackage: {
+//   //           name: applicationDetails.servicePackage?.name || 'standard',
+//   //           description: applicationDetails.servicePackage?.description || '',
+//   //           processingTime: applicationDetails.servicePackage?.processingTime || '15-20 business days',
+//   //           inclusions: applicationDetails.servicePackage?.inclusions || [],
+//   //           exclusions: applicationDetails.servicePackage?.exclusions || []
+//   //         },
+//   //         fees: {
+//   //           consultationFee: applicationDetails.fees?.consultationFee || 0,
+//   //           serviceFee: applicationDetails.fees?.serviceFee || 0,
+//   //           embassyFee: applicationDetails.fees?.embassyFee || 0,
+//   //           additionalFees: applicationDetails.fees?.additionalFees || 0,
+//   //           discount: applicationDetails.fees?.discount || 0,
+//   //           totalAmount: applicationDetails.fees?.totalAmount || 0,
+//   //           currency: applicationDetails.fees?.currency || 'USD'
+//   //         },
+//   //         payment: {
+//   //           status: applicationDetails.payment?.status || 'pending',
+//   //           amountPaid: applicationDetails.payment?.amountPaid || 0,
+//   //           paymentMethod: applicationDetails.payment?.paymentMethod,
+//   //           dueDate: applicationDetails.payment?.dueDate ? new Date(applicationDetails.payment.dueDate) : undefined,
+//   //           paymentHistory: applicationDetails.payment?.paymentHistory || []
+//   //         },
+//   //         applicationStatus: {
+//   //           current: applicationDetails.applicationStatus?.current || 'draft',
+//   //           submittedAt: applicationDetails.applicationStatus?.submittedAt ? new Date(applicationDetails.applicationStatus.submittedAt) : undefined,
+//   //           processingStartedAt: applicationDetails.applicationStatus?.processingStartedAt ? new Date(applicationDetails.applicationStatus.processingStartedAt) : undefined,
+//   //           expectedCompletionDate: applicationDetails.applicationStatus?.expectedCompletionDate ? new Date(applicationDetails.applicationStatus.expectedCompletionDate) : undefined,
+//   //           actualCompletionDate: applicationDetails.applicationStatus?.actualCompletionDate ? new Date(applicationDetails.applicationStatus.actualCompletionDate) : undefined,
+//   //           embassySubmissionDate: applicationDetails.applicationStatus?.embassySubmissionDate ? new Date(applicationDetails.applicationStatus.embassySubmissionDate) : undefined,
+//   //           decisionDate: applicationDetails.applicationStatus?.decisionDate ? new Date(applicationDetails.applicationStatus.decisionDate) : undefined,
+//   //           collectionDate: applicationDetails.applicationStatus?.collectionDate ? new Date(applicationDetails.applicationStatus.collectionDate) : undefined
+//   //         },
+//   //         embassyInfo: applicationDetails.embassyInfo || {},
+//   //         visaIssuance: applicationDetails.visaIssuance || {}
+//   //       },
+//   //       internal: {
+//   //         assignedTo: internal?.assignedTo ? {
+//   //           agentId: internal.assignedTo.agentId ? new mongoose.Types.ObjectId(internal.assignedTo.agentId) : undefined,
+//   //           agentName: internal.assignedTo.agentName,
+//   //           agentEmail: internal.assignedTo.agentEmail,
+//   //           department: internal.assignedTo.department,
+//   //           assignedAt: internal.assignedTo.assignedAt ? new Date(internal.assignedTo.assignedAt) : new Date(),
+//   //           lastContacted: internal.assignedTo.lastContacted ? new Date(internal.assignedTo.lastContacted) : undefined
+//   //         } : undefined,
+//   //         priority: internal?.priority || 'normal',
+//   //         source: internal?.source || 'website',
+//   //         notes: internal?.notes || []
+//   //       }
+//   //     };
 
-  //     // Create the application
-  //     const newApplication = new VisaService(applicationData);
-  //     await newApplication.save();
+//   //     // Create the application
+//   //     const newApplication = new VisaService(applicationData);
+//   //     await newApplication.save();
 
-  //     // Send confirmation email
-  //     try {
-  //       await sendEmail(
-  //         newApplication.customer.contactInfo.email,
-  //         'applicationSubmitted',
-  //         newApplication.toObject()
-  //       );
-  //     } catch (emailError) {
-  //       console.warn('Email sending failed, but application was created:', emailError.message);
-  //     }
+//   //     // Send confirmation email
+//   //     try {
+//   //       await sendEmail(
+//   //         newApplication.customer.contactInfo.email,
+//   //         'applicationSubmitted',
+//   //         newApplication.toObject()
+//   //       );
+//   //     } catch (emailError) {
+//   //       console.warn('Email sending failed, but application was created:', emailError.message);
+//   //     }
 
-  //     res.status(201).json({
-  //       success: true,
-  //       message: 'Visa application created successfully',
-  //       data: {
-  //         trackingNumber: newApplication.trackingNumber,
-  //         serviceId: newApplication.serviceId,
-  //         serviceType: newApplication.serviceType,
-  //         serviceStage: newApplication.serviceStage,
-  //         applicationStatus: newApplication.applicationDetails.applicationStatus.current,
-  //         customer: {
-  //           fullName: newApplication.customer.personalInfo.fullName,
-  //           email: newApplication.customer.contactInfo.email
-  //         },
-  //         visaInfo: {
-  //           destinationCountry: newApplication.applicationDetails.visaInfo.destinationCountry,
-  //           visaType: newApplication.applicationDetails.visaInfo.visaType
-  //         }
-  //       }
-  //     });
+//   //     res.status(201).json({
+//   //       success: true,
+//   //       message: 'Visa application created successfully',
+//   //       data: {
+//   //         trackingNumber: newApplication.trackingNumber,
+//   //         serviceId: newApplication.serviceId,
+//   //         serviceType: newApplication.serviceType,
+//   //         serviceStage: newApplication.serviceStage,
+//   //         applicationStatus: newApplication.applicationDetails.applicationStatus.current,
+//   //         customer: {
+//   //           fullName: newApplication.customer.personalInfo.fullName,
+//   //           email: newApplication.customer.contactInfo.email
+//   //         },
+//   //         visaInfo: {
+//   //           destinationCountry: newApplication.applicationDetails.visaInfo.destinationCountry,
+//   //           visaType: newApplication.applicationDetails.visaInfo.visaType
+//   //         }
+//   //       }
+//   //     });
 
-  //   } catch (error) {
-  //     console.error('Create application error:', error);
+//   //   } catch (error) {
+//   //     console.error('Create application error:', error);
       
-  //     if (error.name === 'ValidationError') {
-  //       const errors = {};
-  //       Object.keys(error.errors).forEach(key => {
-  //         errors[key] = error.errors[key].message;
-  //       });
+//   //     if (error.name === 'ValidationError') {
+//   //       const errors = {};
+//   //       Object.keys(error.errors).forEach(key => {
+//   //         errors[key] = error.errors[key].message;
+//   //       });
         
-  //       return res.status(400).json({
-  //         success: false,
-  //         message: 'Validation failed',
-  //         errors: errors
-  //       });
-  //     }
+//   //       return res.status(400).json({
+//   //         success: false,
+//   //         message: 'Validation failed',
+//   //         errors: errors
+//   //       });
+//   //     }
       
-  //     if (error.code === 11000) {
-  //       const field = Object.keys(error.keyPattern)[0];
-  //       return res.status(400).json({
-  //         success: false,
-  //         message: `Duplicate value for ${field}`,
-  //         field: field,
-  //         value: error.keyValue[field]
-  //       });
-  //     }
+//   //     if (error.code === 11000) {
+//   //       const field = Object.keys(error.keyPattern)[0];
+//   //       return res.status(400).json({
+//   //         success: false,
+//   //         message: `Duplicate value for ${field}`,
+//   //         field: field,
+//   //         value: error.keyValue[field]
+//   //       });
+//   //     }
       
-  //     res.status(500).json({
-  //       success: false,
-  //       message: 'Failed to create application',
-  //       error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
-  //     });
-  //   }
-  // },
+//   //     res.status(500).json({
+//   //       success: false,
+//   //       message: 'Failed to create application',
+//   //       error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+//   //     });
+//   //   }
+//   // },
 
 
-createApplication: async (req, res) => {
-  try {
-    const { customer, applicationDetails, internal } = req.body;
+// createApplication: async (req, res) => {
+//   try {
+//     const { customer, applicationDetails, internal } = req.body;
 
-    // Validate required fields
-    const requiredFields = [
-      { field: customer?.personalInfo?.fullName, message: 'Customer full name is required' },
-      { field: customer?.personalInfo?.dateOfBirth, message: 'Customer date of birth is required' },
-      { field: customer?.personalInfo?.nationality, message: 'Customer nationality is required' },
-      { field: customer?.personalInfo?.countryOfResidence, message: 'Customer country of residence is required' },
-      { field: customer?.contactInfo?.email, message: 'Customer email is required' },
-      { field: customer?.contactInfo?.primaryPhone, message: 'Customer primary phone is required' },
-      { field: applicationDetails?.visaInfo?.destinationCountry, message: 'Destination country is required' },
-      { field: applicationDetails?.visaInfo?.visaType, message: 'Visa type is required' }
-    ];
+//     // Validate required fields
+//     const requiredFields = [
+//       { field: customer?.personalInfo?.fullName, message: 'Customer full name is required' },
+//       { field: customer?.personalInfo?.dateOfBirth, message: 'Customer date of birth is required' },
+//       { field: customer?.personalInfo?.nationality, message: 'Customer nationality is required' },
+//       { field: customer?.personalInfo?.countryOfResidence, message: 'Customer country of residence is required' },
+//       { field: customer?.contactInfo?.email, message: 'Customer email is required' },
+//       { field: customer?.contactInfo?.primaryPhone, message: 'Customer primary phone is required' },
+//       { field: applicationDetails?.visaInfo?.destinationCountry, message: 'Destination country is required' },
+//       { field: applicationDetails?.visaInfo?.visaType, message: 'Visa type is required' }
+//     ];
 
-    for (const { field, message } of requiredFields) {
-      if (!field) return res.status(400).json({ success: false, message });
-    }
+//     for (const { field, message } of requiredFields) {
+//       if (!field) return res.status(400).json({ success: false, message });
+//     }
 
-    // Validate email format
-    const emailRegex = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/;
-    if (!emailRegex.test(customer.contactInfo.email)) {
-      return res.status(400).json({ success: false, message: 'Please provide a valid email address' });
-    }
+//     // Validate email format
+//     const emailRegex = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/;
+//     if (!emailRegex.test(customer.contactInfo.email)) {
+//       return res.status(400).json({ success: false, message: 'Please provide a valid email address' });
+//     }
 
-    // Prepare application data with auto-generated trackingNumber
-    const applicationData = {
-      serviceType: 'application',
-      serviceStage: 'application-initiated',
-      trackingNumber: `TRK-${Date.now()}-${Math.floor(Math.random() * 10000)}`, // auto-generate
-      serviceId: uuidv4(), // unique service ID
-      customer: {
-        personalInfo: {
-          fullName: customer.personalInfo.fullName.trim(),
-          dateOfBirth: new Date(customer.personalInfo.dateOfBirth),
-          gender: customer.personalInfo.gender || 'prefer-not-to-say',
-          nationality: customer.personalInfo.nationality,
-          countryOfResidence: customer.personalInfo.countryOfResidence,
-          maritalStatus: customer.personalInfo.maritalStatus || 'single',
-          occupation: customer.personalInfo.occupation,
-          employer: customer.personalInfo.employer
-        },
-        contactInfo: {
-          email: customer.contactInfo.email.toLowerCase().trim(),
-          primaryPhone: customer.contactInfo.primaryPhone,
-          secondaryPhone: customer.contactInfo.secondaryPhone,
-          whatsappNumber: customer.contactInfo.whatsappNumber,
-          address: customer.contactInfo.address || {},
-          emergencyContact: customer.contactInfo.emergencyContact || {}
-        },
-        passportInfo: {
-          passportNumber: customer.passportInfo?.passportNumber,
-          issuingCountry: customer.passportInfo?.issuingCountry,
-          issueDate: customer.passportInfo?.issueDate ? new Date(customer.passportInfo.issueDate) : undefined,
-          expiryDate: customer.passportInfo?.expiryDate ? new Date(customer.passportInfo.expiryDate) : undefined,
-          placeOfIssue: customer.passportInfo?.placeOfIssue,
-          hasPreviousVisas: customer.passportInfo?.hasPreviousVisas || false,
-          previousVisaDetails: customer.passportInfo?.previousVisaDetails || []
-        }
-      },
-      applicationDetails: {
-        visaInfo: {
-          destinationCountry: applicationDetails.visaInfo.destinationCountry,
-          appliedCountries: applicationDetails.visaInfo.appliedCountries || [],
-          visaType: applicationDetails.visaInfo.visaType,
-          category: applicationDetails.visaInfo.category || 'short-term',
-          purposeOfTravel: applicationDetails.visaInfo.purposeOfTravel || '',
-          travelDates: applicationDetails.visaInfo.travelDates || {},
-          entriesRequested: applicationDetails.visaInfo.entriesRequested || 'Single',
-          travelCompanions: applicationDetails.visaInfo.travelCompanions || []
-        },
-        servicePackage: {
-          name: applicationDetails.servicePackage?.name || 'standard',
-          description: applicationDetails.servicePackage?.description || '',
-          processingTime: applicationDetails.servicePackage?.processingTime || '15-20 business days',
-          inclusions: applicationDetails.servicePackage?.inclusions || [],
-          exclusions: applicationDetails.servicePackage?.exclusions || []
-        }
-      },
-      internal: {
-        assignedTo: internal?.assignedTo ? {
-          agentId: internal.assignedTo.agentId ? new mongoose.Types.ObjectId(internal.assignedTo.agentId) : undefined,
-          agentName: internal.assignedTo.agentName,
-          agentEmail: internal.assignedTo.agentEmail,
-          department: internal.assignedTo.department,
-          assignedAt: internal.assignedTo.assignedAt ? new Date(internal.assignedTo.assignedAt) : new Date(),
-          lastContacted: internal.assignedTo.lastContacted ? new Date(internal.assignedTo.lastContacted) : undefined
-        } : undefined,
-        priority: internal?.priority || 'normal',
-        source: internal?.source || 'website',
-        notes: internal?.notes || []
-      }
-    };
+//     // Prepare application data with auto-generated trackingNumber
+//     const applicationData = {
+//       serviceType: 'application',
+//       serviceStage: 'application-initiated',
+//       trackingNumber: `TRK-${Date.now()}-${Math.floor(Math.random() * 10000)}`, // auto-generate
+//       serviceId: uuidv4(), // unique service ID
+//       customer: {
+//         personalInfo: {
+//           fullName: customer.personalInfo.fullName.trim(),
+//           dateOfBirth: new Date(customer.personalInfo.dateOfBirth),
+//           gender: customer.personalInfo.gender || 'prefer-not-to-say',
+//           nationality: customer.personalInfo.nationality,
+//           countryOfResidence: customer.personalInfo.countryOfResidence,
+//           maritalStatus: customer.personalInfo.maritalStatus || 'single',
+//           occupation: customer.personalInfo.occupation,
+//           employer: customer.personalInfo.employer
+//         },
+//         contactInfo: {
+//           email: customer.contactInfo.email.toLowerCase().trim(),
+//           primaryPhone: customer.contactInfo.primaryPhone,
+//           secondaryPhone: customer.contactInfo.secondaryPhone,
+//           whatsappNumber: customer.contactInfo.whatsappNumber,
+//           address: customer.contactInfo.address || {},
+//           emergencyContact: customer.contactInfo.emergencyContact || {}
+//         },
+//         passportInfo: {
+//           passportNumber: customer.passportInfo?.passportNumber,
+//           issuingCountry: customer.passportInfo?.issuingCountry,
+//           issueDate: customer.passportInfo?.issueDate ? new Date(customer.passportInfo.issueDate) : undefined,
+//           expiryDate: customer.passportInfo?.expiryDate ? new Date(customer.passportInfo.expiryDate) : undefined,
+//           placeOfIssue: customer.passportInfo?.placeOfIssue,
+//           hasPreviousVisas: customer.passportInfo?.hasPreviousVisas || false,
+//           previousVisaDetails: customer.passportInfo?.previousVisaDetails || []
+//         }
+//       },
+//       applicationDetails: {
+//         visaInfo: {
+//           destinationCountry: applicationDetails.visaInfo.destinationCountry,
+//           appliedCountries: applicationDetails.visaInfo.appliedCountries || [],
+//           visaType: applicationDetails.visaInfo.visaType,
+//           category: applicationDetails.visaInfo.category || 'short-term',
+//           purposeOfTravel: applicationDetails.visaInfo.purposeOfTravel || '',
+//           travelDates: applicationDetails.visaInfo.travelDates || {},
+//           entriesRequested: applicationDetails.visaInfo.entriesRequested || 'Single',
+//           travelCompanions: applicationDetails.visaInfo.travelCompanions || []
+//         },
+//         servicePackage: {
+//           name: applicationDetails.servicePackage?.name || 'standard',
+//           description: applicationDetails.servicePackage?.description || '',
+//           processingTime: applicationDetails.servicePackage?.processingTime || '15-20 business days',
+//           inclusions: applicationDetails.servicePackage?.inclusions || [],
+//           exclusions: applicationDetails.servicePackage?.exclusions || []
+//         }
+//       },
+//       internal: {
+//         assignedTo: internal?.assignedTo ? {
+//           agentId: internal.assignedTo.agentId ? new mongoose.Types.ObjectId(internal.assignedTo.agentId) : undefined,
+//           agentName: internal.assignedTo.agentName,
+//           agentEmail: internal.assignedTo.agentEmail,
+//           department: internal.assignedTo.department,
+//           assignedAt: internal.assignedTo.assignedAt ? new Date(internal.assignedTo.assignedAt) : new Date(),
+//           lastContacted: internal.assignedTo.lastContacted ? new Date(internal.assignedTo.lastContacted) : undefined
+//         } : undefined,
+//         priority: internal?.priority || 'normal',
+//         source: internal?.source || 'website',
+//         notes: internal?.notes || []
+//       }
+//     };
 
-    // Save application
-    const newApplication = new VisaService(applicationData);
-    await newApplication.save();
+//     // Save application
+//     const newApplication = new VisaService(applicationData);
+//     await newApplication.save();
 
-    // Send confirmation email (optional)
-    try {
-      await sendEmail(
-        newApplication.customer.contactInfo.email,
-        'applicationSubmitted',
-        newApplication.toObject()
-      );
-    } catch (emailError) {
-      console.warn('Email sending failed:', emailError.message);
-    }
+//     // Send confirmation email (optional)
+//     try {
+//       await sendEmail(
+//         newApplication.customer.contactInfo.email,
+//         'applicationSubmitted',
+//         newApplication.toObject()
+//       );
+//     } catch (emailError) {
+//       console.warn('Email sending failed:', emailError.message);
+//     }
 
-    // Respond with created application info
-    res.status(201).json({
-      success: true,
-      message: 'Visa application created successfully',
-      data: {
-        trackingNumber: newApplication.trackingNumber,
-        serviceId: newApplication.serviceId,
-        serviceType: newApplication.serviceType,
-        serviceStage: newApplication.serviceStage,
-        applicationStatus: newApplication.applicationDetails.applicationStatus?.current || 'draft',
-        customer: {
-          fullName: newApplication.customer.personalInfo.fullName,
-          email: newApplication.customer.contactInfo.email
-        },
-        visaInfo: {
-          destinationCountry: newApplication.applicationDetails.visaInfo.destinationCountry,
-          visaType: newApplication.applicationDetails.visaInfo.visaType
-        }
-      }
-    });
+//     // Respond with created application info
+//     res.status(201).json({
+//       success: true,
+//       message: 'Visa application created successfully',
+//       data: {
+//         trackingNumber: newApplication.trackingNumber,
+//         serviceId: newApplication.serviceId,
+//         serviceType: newApplication.serviceType,
+//         serviceStage: newApplication.serviceStage,
+//         applicationStatus: newApplication.applicationDetails.applicationStatus?.current || 'draft',
+//         customer: {
+//           fullName: newApplication.customer.personalInfo.fullName,
+//           email: newApplication.customer.contactInfo.email
+//         },
+//         visaInfo: {
+//           destinationCountry: newApplication.applicationDetails.visaInfo.destinationCountry,
+//           visaType: newApplication.applicationDetails.visaInfo.visaType
+//         }
+//       }
+//     });
 
-  } catch (error) {
-    console.error('Create application error:', error);
+//   } catch (error) {
+//     console.error('Create application error:', error);
 
-    // Mongoose validation errors
-    if (error.name === 'ValidationError') {
-      const errors = {};
-      Object.keys(error.errors).forEach(key => errors[key] = error.errors[key].message);
-      return res.status(400).json({ success: false, message: 'Validation failed', errors });
-    }
+//     // Mongoose validation errors
+//     if (error.name === 'ValidationError') {
+//       const errors = {};
+//       Object.keys(error.errors).forEach(key => errors[key] = error.errors[key].message);
+//       return res.status(400).json({ success: false, message: 'Validation failed', errors });
+//     }
 
-    // Generic server error
-    res.status(500).json({
-      success: false,
-      message: 'Failed to create application',
-      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
-    });
-  }
-},
+//     // Generic server error
+//     res.status(500).json({
+//       success: false,
+//       message: 'Failed to create application',
+//       error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+//     });
+//   }
+// },
 
-  // Get application by tracking number
-  getApplicationByTrackingNumber: async (req, res) => {
-    try {
-      const { trackingNumber } = req.params;
+//   // Get application by tracking number
+//   getApplicationByTrackingNumber: async (req, res) => {
+//     try {
+//       const { trackingNumber } = req.params;
 
-      const application = await VisaService.findOne({ 
-        trackingNumber,
-        serviceType: { $in: ['application', 'combined'] }
-      });
+//       const application = await VisaService.findOne({ 
+//         trackingNumber,
+//         serviceType: { $in: ['application', 'combined'] }
+//       });
 
-      if (!application) {
-        return res.status(404).json({
-          success: false,
-          message: 'Application not found'
-        });
-      }
+//       if (!application) {
+//         return res.status(404).json({
+//           success: false,
+//           message: 'Application not found'
+//         });
+//       }
 
-      // Add virtuals to response
-      const applicationData = application.toObject();
-      applicationData.totalDocuments = application.totalDocuments;
-      applicationData.balanceDue = application.balanceDue;
-      applicationData.verifiedDocuments = calculateVerifiedDocuments(application.documents);
+//       // Add virtuals to response
+//       const applicationData = application.toObject();
+//       applicationData.totalDocuments = application.totalDocuments;
+//       applicationData.balanceDue = application.balanceDue;
+//       applicationData.verifiedDocuments = calculateVerifiedDocuments(application.documents);
 
-      res.json({
-        success: true,
-        data: applicationData
-      });
-    } catch (error) {
-      console.error('Get application error:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Failed to get application',
-        error: error.message
-      });
-    }
-  },
+//       res.json({
+//         success: true,
+//         data: applicationData
+//       });
+//     } catch (error) {
+//       console.error('Get application error:', error);
+//       res.status(500).json({
+//         success: false,
+//         message: 'Failed to get application',
+//         error: error.message
+//       });
+//     }
+//   },
 
-  // Update application
-  updateApplication: async (req, res) => {
-    try {
-      const { trackingNumber } = req.params;
-      const updateData = req.body;
+//   // Update application
+//   updateApplication: async (req, res) => {
+//     try {
+//       const { trackingNumber } = req.params;
+//       const updateData = req.body;
 
-      const application = await VisaService.findOne({ 
-        trackingNumber,
-        serviceType: { $in: ['application', 'combined'] }
-      });
+//       const application = await VisaService.findOne({ 
+//         trackingNumber,
+//         serviceType: { $in: ['application', 'combined'] }
+//       });
 
-      if (!application) {
-        return res.status(404).json({
-          success: false,
-          message: 'Application not found'
-        });
-      }
+//       if (!application) {
+//         return res.status(404).json({
+//           success: false,
+//           message: 'Application not found'
+//         });
+//       }
 
-      // Prevent updating trackingNumber and serviceId
-      delete updateData.trackingNumber;
-      delete updateData.serviceId;
+//       // Prevent updating trackingNumber and serviceId
+//       delete updateData.trackingNumber;
+//       delete updateData.serviceId;
 
-      // Update fields
-      Object.keys(updateData).forEach(key => {
-        if (key === 'customer' || key === 'applicationDetails' || key === 'internal') {
-          // Deep merge for nested objects
-          application[key] = { ...application[key], ...updateData[key] };
-        } else if (key === 'serviceStage') {
-          application[key] = updateData[key];
-        }
-      });
+//       // Update fields
+//       Object.keys(updateData).forEach(key => {
+//         if (key === 'customer' || key === 'applicationDetails' || key === 'internal') {
+//           // Deep merge for nested objects
+//           application[key] = { ...application[key], ...updateData[key] };
+//         } else if (key === 'serviceStage') {
+//           application[key] = updateData[key];
+//         }
+//       });
 
-      await application.save();
+//       await application.save();
 
-      res.json({
-        success: true,
-        message: 'Application updated successfully',
-        data: application
-      });
-    } catch (error) {
-      console.error('Update application error:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Failed to update application',
-        error: error.message
-      });
-    }
-  },
+//       res.json({
+//         success: true,
+//         message: 'Application updated successfully',
+//         data: application
+//       });
+//     } catch (error) {
+//       console.error('Update application error:', error);
+//       res.status(500).json({
+//         success: false,
+//         message: 'Failed to update application',
+//         error: error.message
+//       });
+//     }
+//   },
 
-  // Update application status
-  updateApplicationStatus: async (req, res) => {
-    try {
-      const { trackingNumber } = req.params;
-      const { 
-        status, 
-        remarks, 
-        changedBy,
-        submittedAt,
-        processingStartedAt,
-        expectedCompletionDate,
-        actualCompletionDate,
-        embassySubmissionDate,
-        decisionDate,
-        collectionDate
-      } = req.body;
+//   // Update application status
+//   updateApplicationStatus: async (req, res) => {
+//     try {
+//       const { trackingNumber } = req.params;
+//       const { 
+//         status, 
+//         remarks, 
+//         changedBy,
+//         submittedAt,
+//         processingStartedAt,
+//         expectedCompletionDate,
+//         actualCompletionDate,
+//         embassySubmissionDate,
+//         decisionDate,
+//         collectionDate
+//       } = req.body;
 
-      const application = await VisaService.findOne({ 
-        trackingNumber,
-        serviceType: { $in: ['application', 'combined'] }
-      });
+//       const application = await VisaService.findOne({ 
+//         trackingNumber,
+//         serviceType: { $in: ['application', 'combined'] }
+//       });
 
-      if (!application) {
-        return res.status(404).json({
-          success: false,
-          message: 'Application not found'
-        });
-      }
+//       if (!application) {
+//         return res.status(404).json({
+//           success: false,
+//           message: 'Application not found'
+//         });
+//       }
 
-      // Update status
-      const oldStatus = application.applicationDetails.applicationStatus.current;
-      application.applicationDetails.applicationStatus.current = status;
+//       // Update status
+//       const oldStatus = application.applicationDetails.applicationStatus.current;
+//       application.applicationDetails.applicationStatus.current = status;
       
-      // Update dates if provided
-      if (submittedAt) application.applicationDetails.applicationStatus.submittedAt = new Date(submittedAt);
-      if (processingStartedAt) application.applicationDetails.applicationStatus.processingStartedAt = new Date(processingStartedAt);
-      if (expectedCompletionDate) application.applicationDetails.applicationStatus.expectedCompletionDate = new Date(expectedCompletionDate);
-      if (actualCompletionDate) application.applicationDetails.applicationStatus.actualCompletionDate = new Date(actualCompletionDate);
-      if (embassySubmissionDate) application.applicationDetails.applicationStatus.embassySubmissionDate = new Date(embassySubmissionDate);
-      if (decisionDate) application.applicationDetails.applicationStatus.decisionDate = new Date(decisionDate);
-      if (collectionDate) application.applicationDetails.applicationStatus.collectionDate = new Date(collectionDate);
+//       // Update dates if provided
+//       if (submittedAt) application.applicationDetails.applicationStatus.submittedAt = new Date(submittedAt);
+//       if (processingStartedAt) application.applicationDetails.applicationStatus.processingStartedAt = new Date(processingStartedAt);
+//       if (expectedCompletionDate) application.applicationDetails.applicationStatus.expectedCompletionDate = new Date(expectedCompletionDate);
+//       if (actualCompletionDate) application.applicationDetails.applicationStatus.actualCompletionDate = new Date(actualCompletionDate);
+//       if (embassySubmissionDate) application.applicationDetails.applicationStatus.embassySubmissionDate = new Date(embassySubmissionDate);
+//       if (decisionDate) application.applicationDetails.applicationStatus.decisionDate = new Date(decisionDate);
+//       if (collectionDate) application.applicationDetails.applicationStatus.collectionDate = new Date(collectionDate);
 
-      // Update service stage based on status
-      const statusToStageMap = {
-        'submitted-to-embassy': 'application-submitted',
-        'embassy-processing': 'embassy-processing',
-        'approved': 'visa-approved',
-        'visa-printed': 'visa-issued',
-        'collected': 'completed',
-        'cancelled': 'cancelled'
-      };
+//       // Update service stage based on status
+//       const statusToStageMap = {
+//         'submitted-to-embassy': 'application-submitted',
+//         'embassy-processing': 'embassy-processing',
+//         'approved': 'visa-approved',
+//         'visa-printed': 'visa-issued',
+//         'collected': 'completed',
+//         'cancelled': 'cancelled'
+//       };
 
-      if (statusToStageMap[status]) {
-        application.serviceStage = statusToStageMap[status];
-      }
+//       if (statusToStageMap[status]) {
+//         application.serviceStage = statusToStageMap[status];
+//       }
 
-      // Add to status history
-      if (!application.statusHistory) {
-        application.statusHistory = [];
-      }
+//       // Add to status history
+//       if (!application.statusHistory) {
+//         application.statusHistory = [];
+//       }
       
-      application.statusHistory.push({
-        stage: application.serviceStage,
-        status: status,
-        changedAt: new Date(),
-        changedBy: changedBy || 'system',
-        remarks: remarks,
-        oldStatus: oldStatus
-      });
+//       application.statusHistory.push({
+//         stage: application.serviceStage,
+//         status: status,
+//         changedAt: new Date(),
+//         changedBy: changedBy || 'system',
+//         remarks: remarks,
+//         oldStatus: oldStatus
+//       });
 
-      // Add note
-      application.internal.notes.push({
-        note: `Status changed from ${oldStatus} to ${status}. ${remarks || ''}`,
-        addedBy: changedBy || 'system',
-        addedAt: new Date(),
-        category: 'status',
-        priority: 'normal'
-      });
+//       // Add note
+//       application.internal.notes.push({
+//         note: `Status changed from ${oldStatus} to ${status}. ${remarks || ''}`,
+//         addedBy: changedBy || 'system',
+//         addedAt: new Date(),
+//         category: 'status',
+//         priority: 'normal'
+//       });
 
-      await application.save();
+//       await application.save();
 
-      // Send status update email
-      await sendEmail(
-        application.customer.contactInfo.email,
-        'statusUpdate',
-        { 
-          ...application.toObject(), 
-          newStatus: status 
-        }
-      );
+//       // Send status update email
+//       await sendEmail(
+//         application.customer.contactInfo.email,
+//         'statusUpdate',
+//         { 
+//           ...application.toObject(), 
+//           newStatus: status 
+//         }
+//       );
 
-      res.json({
-        success: true,
-        message: 'Application status updated successfully',
-        data: {
-          trackingNumber: application.trackingNumber,
-          oldStatus: oldStatus,
-          newStatus: status,
-          serviceStage: application.serviceStage,
-          updatedAt: application.updatedAt
-        }
-      });
-    } catch (error) {
-      console.error('Update application status error:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Failed to update application status',
-        error: error.message
-      });
-    }
-  },
+//       res.json({
+//         success: true,
+//         message: 'Application status updated successfully',
+//         data: {
+//           trackingNumber: application.trackingNumber,
+//           oldStatus: oldStatus,
+//           newStatus: status,
+//           serviceStage: application.serviceStage,
+//           updatedAt: application.updatedAt
+//         }
+//       });
+//     } catch (error) {
+//       console.error('Update application status error:', error);
+//       res.status(500).json({
+//         success: false,
+//         message: 'Failed to update application status',
+//         error: error.message
+//       });
+//     }
+//   },
 
-  // Upload document using model's addDocument method
-  uploadDocument: async (req, res) => {
-    try {
-      const { trackingNumber } = req.params;
-      const { category, documentType } = req.body;
-      const file = req.file;
+//   // Upload document using model's addDocument method
+//   uploadDocument: async (req, res) => {
+//     try {
+//       const { trackingNumber } = req.params;
+//       const { category, documentType } = req.body;
+//       const file = req.file;
 
-      if (!file) {
-        return res.status(400).json({
-          success: false,
-          message: 'No file uploaded'
-        });
-      }
+//       if (!file) {
+//         return res.status(400).json({
+//           success: false,
+//           message: 'No file uploaded'
+//         });
+//       }
 
-      const application = await VisaService.findOne({ 
-        trackingNumber,
-        serviceType: { $in: ['application', 'combined'] }
-      });
+//       const application = await VisaService.findOne({ 
+//         trackingNumber,
+//         serviceType: { $in: ['application', 'combined'] }
+//       });
 
-      if (!application) {
-        return res.status(404).json({
-          success: false,
-          message: 'Application not found'
-        });
-      }
+//       if (!application) {
+//         return res.status(404).json({
+//           success: false,
+//           message: 'Application not found'
+//         });
+//       }
 
-      // Upload to Cloudinary
-      const uploadResult = await uploadToCloudinary(file, `visa_applications/${trackingNumber}/${category}`);
+//       // Upload to Cloudinary
+//       const uploadResult = await uploadToCloudinary(file, `visa_applications/${trackingNumber}/${category}`);
 
-      if (!uploadResult.success) {
-        return res.status(500).json(uploadResult);
-      }
+//       if (!uploadResult.success) {
+//         return res.status(500).json(uploadResult);
+//       }
 
-      // Prepare document data
-      const documentData = {
-        documentType: documentType || category,
-        cloudinaryUrl: uploadResult.cloudinaryUrl,
-        publicId: uploadResult.publicId,
-        originalName: uploadResult.originalName,
-        uploadedAt: new Date(),
-        verified: false
-      };
+//       // Prepare document data
+//       const documentData = {
+//         documentType: documentType || category,
+//         cloudinaryUrl: uploadResult.cloudinaryUrl,
+//         publicId: uploadResult.publicId,
+//         originalName: uploadResult.originalName,
+//         uploadedAt: new Date(),
+//         verified: false
+//       };
 
-      // Use model's addDocument method
-      application.addDocument(category, documentData);
+//       // Use model's addDocument method
+//       application.addDocument(category, documentData);
 
-      // Update status if needed
-      if (application.applicationDetails.applicationStatus.current === 'draft') {
-        application.applicationDetails.applicationStatus.current = 'document-collection';
-      }
+//       // Update status if needed
+//       if (application.applicationDetails.applicationStatus.current === 'draft') {
+//         application.applicationDetails.applicationStatus.current = 'document-collection';
+//       }
 
-      await application.save();
+//       await application.save();
 
-      // Send document upload confirmation email
-      await sendEmail(
-        application.customer.contactInfo.email,
-        'documentUploadConfirmation',
-        { 
-          ...application.toObject(), 
-          documentType: documentType || category 
-        }
-      );
+//       // Send document upload confirmation email
+//       await sendEmail(
+//         application.customer.contactInfo.email,
+//         'documentUploadConfirmation',
+//         { 
+//           ...application.toObject(), 
+//           documentType: documentType || category 
+//         }
+//       );
 
-      res.json({
-        success: true,
-        message: 'Document uploaded successfully',
-        data: {
-          documentUrl: uploadResult.cloudinaryUrl,
-          category: category,
-          documentType: documentType || category,
-          totalDocuments: application.totalDocuments,
-          verifiedDocuments: calculateVerifiedDocuments(application.documents)
-        }
-      });
-    } catch (error) {
-      console.error('Upload document error:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Failed to upload document',
-        error: error.message
-      });
-    }
-  },
+//       res.json({
+//         success: true,
+//         message: 'Document uploaded successfully',
+//         data: {
+//           documentUrl: uploadResult.cloudinaryUrl,
+//           category: category,
+//           documentType: documentType || category,
+//           totalDocuments: application.totalDocuments,
+//           verifiedDocuments: calculateVerifiedDocuments(application.documents)
+//         }
+//       });
+//     } catch (error) {
+//       console.error('Upload document error:', error);
+//       res.status(500).json({
+//         success: false,
+//         message: 'Failed to upload document',
+//         error: error.message
+//       });
+//     }
+//   },
 
-  // Verify document
-  verifyDocument: async (req, res) => {
-    try {
-      const { trackingNumber } = req.params;
-      const { category, index, verifiedBy } = req.body;
+//   // Verify document
+//   verifyDocument: async (req, res) => {
+//     try {
+//       const { trackingNumber } = req.params;
+//       const { category, index, verifiedBy } = req.body;
 
-      const application = await VisaService.findOne({ 
-        trackingNumber,
-        serviceType: { $in: ['application', 'combined'] }
-      });
+//       const application = await VisaService.findOne({ 
+//         trackingNumber,
+//         serviceType: { $in: ['application', 'combined'] }
+//       });
 
-      if (!application) {
-        return res.status(404).json({
-          success: false,
-          message: 'Application not found'
-        });
-      }
+//       if (!application) {
+//         return res.status(404).json({
+//           success: false,
+//           message: 'Application not found'
+//         });
+//       }
 
-      // Verify document based on category
-      let verified = false;
-      let documentInfo = {};
+//       // Verify document based on category
+//       let verified = false;
+//       let documentInfo = {};
 
-      switch(category.toLowerCase()) {
-        case 'photograph':
-          if (application.documents.photograph) {
-            application.documents.photograph.verified = true;
-            verified = true;
-            documentInfo = { type: 'photograph' };
-          }
-          break;
-        case 'passportcopy':
-          if (application.documents.passportCopy) {
-            application.documents.passportCopy.verified = true;
-            verified = true;
-            documentInfo = { type: 'passport copy' };
-          }
-          break;
-        case 'financial':
-          if (application.documents.financialDocuments && application.documents.financialDocuments[index]) {
-            application.documents.financialDocuments[index].verified = true;
-            verified = true;
-            documentInfo = {
-              type: 'financial document',
-              index: index,
-              documentType: application.documents.financialDocuments[index].documentType
-            };
-          }
-          break;
-        case 'travel':
-          if (application.documents.travelDocuments && application.documents.travelDocuments[index]) {
-            application.documents.travelDocuments[index].verified = true;
-            verified = true;
-            documentInfo = {
-              type: 'travel document',
-              index: index,
-              documentType: application.documents.travelDocuments[index].documentType
-            };
-          }
-          break;
-        case 'supporting':
-          if (application.documents.supportingDocuments && application.documents.supportingDocuments[index]) {
-            application.documents.supportingDocuments[index].verified = true;
-            verified = true;
-            documentInfo = {
-              type: 'supporting document',
-              index: index,
-              documentType: application.documents.supportingDocuments[index].documentType
-            };
-          }
-          break;
-        default:
-          if (application.documents.otherDocuments && application.documents.otherDocuments[index]) {
-            application.documents.otherDocuments[index].verified = true;
-            verified = true;
-            documentInfo = {
-              type: 'other document',
-              index: index,
-              description: application.documents.otherDocuments[index].description
-            };
-          }
-      }
+//       switch(category.toLowerCase()) {
+//         case 'photograph':
+//           if (application.documents.photograph) {
+//             application.documents.photograph.verified = true;
+//             verified = true;
+//             documentInfo = { type: 'photograph' };
+//           }
+//           break;
+//         case 'passportcopy':
+//           if (application.documents.passportCopy) {
+//             application.documents.passportCopy.verified = true;
+//             verified = true;
+//             documentInfo = { type: 'passport copy' };
+//           }
+//           break;
+//         case 'financial':
+//           if (application.documents.financialDocuments && application.documents.financialDocuments[index]) {
+//             application.documents.financialDocuments[index].verified = true;
+//             verified = true;
+//             documentInfo = {
+//               type: 'financial document',
+//               index: index,
+//               documentType: application.documents.financialDocuments[index].documentType
+//             };
+//           }
+//           break;
+//         case 'travel':
+//           if (application.documents.travelDocuments && application.documents.travelDocuments[index]) {
+//             application.documents.travelDocuments[index].verified = true;
+//             verified = true;
+//             documentInfo = {
+//               type: 'travel document',
+//               index: index,
+//               documentType: application.documents.travelDocuments[index].documentType
+//             };
+//           }
+//           break;
+//         case 'supporting':
+//           if (application.documents.supportingDocuments && application.documents.supportingDocuments[index]) {
+//             application.documents.supportingDocuments[index].verified = true;
+//             verified = true;
+//             documentInfo = {
+//               type: 'supporting document',
+//               index: index,
+//               documentType: application.documents.supportingDocuments[index].documentType
+//             };
+//           }
+//           break;
+//         default:
+//           if (application.documents.otherDocuments && application.documents.otherDocuments[index]) {
+//             application.documents.otherDocuments[index].verified = true;
+//             verified = true;
+//             documentInfo = {
+//               type: 'other document',
+//               index: index,
+//               description: application.documents.otherDocuments[index].description
+//             };
+//           }
+//       }
 
-      if (!verified) {
-        return res.status(400).json({
-          success: false,
-          message: 'Document not found for verification'
-        });
-      }
+//       if (!verified) {
+//         return res.status(400).json({
+//           success: false,
+//           message: 'Document not found for verification'
+//         });
+//       }
 
-      // Add note
-      application.internal.notes.push({
-        note: `Document verified: ${documentInfo.type || category} (${documentInfo.documentType || ''}) by ${verifiedBy || 'system'}`,
-        addedBy: verifiedBy || 'system',
-        addedAt: new Date(),
-        category: 'verification',
-        priority: 'normal'
-      });
+//       // Add note
+//       application.internal.notes.push({
+//         note: `Document verified: ${documentInfo.type || category} (${documentInfo.documentType || ''}) by ${verifiedBy || 'system'}`,
+//         addedBy: verifiedBy || 'system',
+//         addedAt: new Date(),
+//         category: 'verification',
+//         priority: 'normal'
+//       });
 
-      await application.save();
+//       await application.save();
 
-      res.json({
-        success: true,
-        message: 'Document verified successfully',
-        data: {
-          verifiedDocuments: calculateVerifiedDocuments(application.documents),
-          totalDocuments: application.totalDocuments,
-          document: documentInfo
-        }
-      });
-    } catch (error) {
-      console.error('Verify document error:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Failed to verify document',
-        error: error.message
-      });
-    }
-  },
+//       res.json({
+//         success: true,
+//         message: 'Document verified successfully',
+//         data: {
+//           verifiedDocuments: calculateVerifiedDocuments(application.documents),
+//           totalDocuments: application.totalDocuments,
+//           document: documentInfo
+//         }
+//       });
+//     } catch (error) {
+//       console.error('Verify document error:', error);
+//       res.status(500).json({
+//         success: false,
+//         message: 'Failed to verify document',
+//         error: error.message
+//       });
+//     }
+//   },
 
-  // Update payment
-  updatePayment: async (req, res) => {
-    try {
-      const { trackingNumber } = req.params;
-      const { amount, method, transactionId, reference, notes } = req.body;
+//   // Update payment
+//   updatePayment: async (req, res) => {
+//     try {
+//       const { trackingNumber } = req.params;
+//       const { amount, method, transactionId, reference, notes } = req.body;
 
-      const application = await VisaService.findOne({ 
-        trackingNumber,
-        serviceType: { $in: ['application', 'combined'] }
-      });
+//       const application = await VisaService.findOne({ 
+//         trackingNumber,
+//         serviceType: { $in: ['application', 'combined'] }
+//       });
 
-      if (!application) {
-        return res.status(404).json({
-          success: false,
-          message: 'Application not found'
-        });
-      }
+//       if (!application) {
+//         return res.status(404).json({
+//           success: false,
+//           message: 'Application not found'
+//         });
+//       }
 
-      // Update payment details
-      const paymentAmount = parseFloat(amount) || 0;
-      application.applicationDetails.payment.amountPaid += paymentAmount;
+//       // Update payment details
+//       const paymentAmount = parseFloat(amount) || 0;
+//       application.applicationDetails.payment.amountPaid += paymentAmount;
       
-      // Update payment status
-      const totalAmount = application.applicationDetails.fees.totalAmount || 0;
-      const amountPaid = application.applicationDetails.payment.amountPaid;
+//       // Update payment status
+//       const totalAmount = application.applicationDetails.fees.totalAmount || 0;
+//       const amountPaid = application.applicationDetails.payment.amountPaid;
       
-      if (amountPaid >= totalAmount) {
-        application.applicationDetails.payment.status = 'paid';
-      } else if (amountPaid > 0) {
-        application.applicationDetails.payment.status = 'partial';
-      } else {
-        application.applicationDetails.payment.status = 'pending';
-      }
+//       if (amountPaid >= totalAmount) {
+//         application.applicationDetails.payment.status = 'paid';
+//       } else if (amountPaid > 0) {
+//         application.applicationDetails.payment.status = 'partial';
+//       } else {
+//         application.applicationDetails.payment.status = 'pending';
+//       }
 
-      // Add to payment history
-      if (!application.applicationDetails.payment.paymentHistory) {
-        application.applicationDetails.payment.paymentHistory = [];
-      }
+//       // Add to payment history
+//       if (!application.applicationDetails.payment.paymentHistory) {
+//         application.applicationDetails.payment.paymentHistory = [];
+//       }
 
-      application.applicationDetails.payment.paymentHistory.push({
-        amount: paymentAmount,
-        date: new Date(),
-        method: method,
-        transactionId: transactionId,
-        reference: reference,
-        notes: notes
-      });
+//       application.applicationDetails.payment.paymentHistory.push({
+//         amount: paymentAmount,
+//         date: new Date(),
+//         method: method,
+//         transactionId: transactionId,
+//         reference: reference,
+//         notes: notes
+//       });
 
-      // Update payment method if not set
-      if (!application.applicationDetails.payment.paymentMethod && method) {
-        application.applicationDetails.payment.paymentMethod = method;
-      }
+//       // Update payment method if not set
+//       if (!application.applicationDetails.payment.paymentMethod && method) {
+//         application.applicationDetails.payment.paymentMethod = method;
+//       }
 
-      // Update status if needed
-      if (application.applicationDetails.applicationStatus.current === 'payment-pending' && 
-          application.applicationDetails.payment.status === 'paid') {
-        application.applicationDetails.applicationStatus.current = 'submitted-to-embassy';
-      }
+//       // Update status if needed
+//       if (application.applicationDetails.applicationStatus.current === 'payment-pending' && 
+//           application.applicationDetails.payment.status === 'paid') {
+//         application.applicationDetails.applicationStatus.current = 'submitted-to-embassy';
+//       }
 
-      await application.save();
+//       await application.save();
 
-      // Send payment confirmation email
-      const paymentDetails = {
-        amount: paymentAmount,
-        method: method,
-        transactionId: transactionId,
-        date: new Date()
-      };
+//       // Send payment confirmation email
+//       const paymentDetails = {
+//         amount: paymentAmount,
+//         method: method,
+//         transactionId: transactionId,
+//         date: new Date()
+//       };
       
-      await sendEmail(
-        application.customer.contactInfo.email,
-        'paymentConfirmation',
-        { 
-          ...application.toObject(), 
-          paymentDetails 
-        }
-      );
+//       await sendEmail(
+//         application.customer.contactInfo.email,
+//         'paymentConfirmation',
+//         { 
+//           ...application.toObject(), 
+//           paymentDetails 
+//         }
+//       );
 
-      res.json({
-        success: true,
-        message: 'Payment updated successfully',
-        data: {
-          amountPaid: application.applicationDetails.payment.amountPaid,
-          balanceDue: application.balanceDue,
-          paymentStatus: application.applicationDetails.payment.status,
-          totalAmount: application.applicationDetails.fees.totalAmount
-        }
-      });
-    } catch (error) {
-      console.error('Update payment error:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Failed to update payment',
-        error: error.message
-      });
-    }
-  },
+//       res.json({
+//         success: true,
+//         message: 'Payment updated successfully',
+//         data: {
+//           amountPaid: application.applicationDetails.payment.amountPaid,
+//           balanceDue: application.balanceDue,
+//           paymentStatus: application.applicationDetails.payment.status,
+//           totalAmount: application.applicationDetails.fees.totalAmount
+//         }
+//       });
+//     } catch (error) {
+//       console.error('Update payment error:', error);
+//       res.status(500).json({
+//         success: false,
+//         message: 'Failed to update payment',
+//         error: error.message
+//       });
+//     }
+//   },
 
-  // Add applied country using model's addAppliedCountry method
-  addAppliedCountry: async (req, res) => {
-    try {
-      const { trackingNumber } = req.params;
-      const { country } = req.body;
+//   // Add applied country using model's addAppliedCountry method
+//   addAppliedCountry: async (req, res) => {
+//     try {
+//       const { trackingNumber } = req.params;
+//       const { country } = req.body;
 
-      const application = await VisaService.findOne({ 
-        trackingNumber,
-        serviceType: { $in: ['application', 'combined'] }
-      });
+//       const application = await VisaService.findOne({ 
+//         trackingNumber,
+//         serviceType: { $in: ['application', 'combined'] }
+//       });
 
-      if (!application) {
-        return res.status(404).json({
-          success: false,
-          message: 'Application not found'
-        });
-      }
+//       if (!application) {
+//         return res.status(404).json({
+//           success: false,
+//           message: 'Application not found'
+//         });
+//       }
 
-      // Use model's addAppliedCountry method
-      application.addAppliedCountry(country);
-      await application.save();
+//       // Use model's addAppliedCountry method
+//       application.addAppliedCountry(country);
+//       await application.save();
 
-      res.json({
-        success: true,
-        message: 'Applied country added successfully',
-        data: {
-          appliedCountries: application.applicationDetails.visaInfo.appliedCountries
-        }
-      });
-    } catch (error) {
-      console.error('Add applied country error:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Failed to add applied country',
-        error: error.message
-      });
-    }
-  },
+//       res.json({
+//         success: true,
+//         message: 'Applied country added successfully',
+//         data: {
+//           appliedCountries: application.applicationDetails.visaInfo.appliedCountries
+//         }
+//       });
+//     } catch (error) {
+//       console.error('Add applied country error:', error);
+//       res.status(500).json({
+//         success: false,
+//         message: 'Failed to add applied country',
+//         error: error.message
+//       });
+//     }
+//   },
 
-  // Get all applications
-  getAllApplications: async (req, res) => {
-    try {
-      const {
-        page = 1,
-        limit = 20,
-        sortBy = 'createdAt',
-        sortOrder = 'desc',
-        status,
-        destinationCountry,
-        visaType,
-        dateFrom,
-        dateTo,
-        customerName,
-        email,
-        agentId
-      } = req.query;
+//   // Get all applications
+//   getAllApplications: async (req, res) => {
+//     try {
+//       const {
+//         page = 1,
+//         limit = 20,
+//         sortBy = 'createdAt',
+//         sortOrder = 'desc',
+//         status,
+//         destinationCountry,
+//         visaType,
+//         dateFrom,
+//         dateTo,
+//         customerName,
+//         email,
+//         agentId
+//       } = req.query;
 
-      const skip = (parseInt(page) - 1) * parseInt(limit);
+//       const skip = (parseInt(page) - 1) * parseInt(limit);
       
-      // Build query for applications
-      const query = { serviceType: { $in: ['application', 'combined'] } };
+//       // Build query for applications
+//       const query = { serviceType: { $in: ['application', 'combined'] } };
       
-      // Apply filters
-      if (status) {
-        query['applicationDetails.applicationStatus.current'] = status;
-      }
+//       // Apply filters
+//       if (status) {
+//         query['applicationDetails.applicationStatus.current'] = status;
+//       }
       
-      if (destinationCountry) {
-        query['applicationDetails.visaInfo.destinationCountry'] = destinationCountry;
-      }
+//       if (destinationCountry) {
+//         query['applicationDetails.visaInfo.destinationCountry'] = destinationCountry;
+//       }
       
-      if (visaType) {
-        query['applicationDetails.visaInfo.visaType'] = visaType;
-      }
+//       if (visaType) {
+//         query['applicationDetails.visaInfo.visaType'] = visaType;
+//       }
       
-      if (dateFrom || dateTo) {
-        query.createdAt = {};
-        if (dateFrom) query.createdAt.$gte = new Date(dateFrom);
-        if (dateTo) query.createdAt.$lte = new Date(dateTo);
-      }
+//       if (dateFrom || dateTo) {
+//         query.createdAt = {};
+//         if (dateFrom) query.createdAt.$gte = new Date(dateFrom);
+//         if (dateTo) query.createdAt.$lte = new Date(dateTo);
+//       }
       
-      if (customerName) {
-        query['customer.personalInfo.fullName'] = { 
-          $regex: customerName, 
-          $options: 'i' 
-        };
-      }
+//       if (customerName) {
+//         query['customer.personalInfo.fullName'] = { 
+//           $regex: customerName, 
+//           $options: 'i' 
+//         };
+//       }
       
-      if (email) {
-        query['customer.contactInfo.email'] = { 
-          $regex: email, 
-          $options: 'i' 
-        };
-      }
+//       if (email) {
+//         query['customer.contactInfo.email'] = { 
+//           $regex: email, 
+//           $options: 'i' 
+//         };
+//       }
       
-      if (agentId && mongoose.Types.ObjectId.isValid(agentId)) {
-        query['internal.assignedTo.agentId'] = new mongoose.Types.ObjectId(agentId);
-      }
+//       if (agentId && mongoose.Types.ObjectId.isValid(agentId)) {
+//         query['internal.assignedTo.agentId'] = new mongoose.Types.ObjectId(agentId);
+//       }
 
-      // Determine sort order
-      const sort = {};
-      sort[sortBy] = sortOrder === 'asc' ? 1 : -1;
+//       // Determine sort order
+//       const sort = {};
+//       sort[sortBy] = sortOrder === 'asc' ? 1 : -1;
 
-      // Get applications with pagination
-      const [applications, total] = await Promise.all([
-        VisaService.find(query)
-          .sort(sort)
-          .skip(skip)
-          .limit(parseInt(limit))
-          .select('-documents -communications -statusHistory -auditLog -__v')
-          .lean(),
-        VisaService.countDocuments(query)
-      ]);
+//       // Get applications with pagination
+//       const [applications, total] = await Promise.all([
+//         VisaService.find(query)
+//           .sort(sort)
+//           .skip(skip)
+//           .limit(parseInt(limit))
+//           .select('-documents -communications -statusHistory -auditLog -__v')
+//           .lean(),
+//         VisaService.countDocuments(query)
+//       ]);
 
-      // Calculate statistics
-      const stats = {
-        totalApplications: total,
-        byStatus: applications.reduce((acc, app) => {
-          const status = app.applicationDetails?.applicationStatus?.current || 'unknown';
-          acc[status] = (acc[status] || 0) + 1;
-          return acc;
-        }, {}),
-        byDestination: applications.reduce((acc, app) => {
-          const country = app.applicationDetails?.visaInfo?.destinationCountry || 'unknown';
-          acc[country] = (acc[country] || 0) + 1;
-          return acc;
-        }, {}),
-        byVisaType: applications.reduce((acc, app) => {
-          const type = app.applicationDetails?.visaInfo?.visaType || 'unknown';
-          acc[type] = (acc[type] || 0) + 1;
-          return acc;
-        }, {}),
-        totalRevenue: applications.reduce((sum, app) => 
-          sum + (app.applicationDetails?.fees?.totalAmount || 0), 0
-        ),
-        totalPaid: applications.reduce((sum, app) => 
-          sum + (app.applicationDetails?.payment?.amountPaid || 0), 0
-        ),
-        pendingPayments: applications.filter(app => 
-          ['pending', 'partial'].includes(app.applicationDetails?.payment?.status)
-        ).length,
-        overduePayments: applications.filter(app => 
-          app.applicationDetails?.payment?.dueDate && 
-          new Date(app.applicationDetails.payment.dueDate) < new Date() &&
-          ['pending', 'partial'].includes(app.applicationDetails?.payment?.status)
-        ).length
-      };
+//       // Calculate statistics
+//       const stats = {
+//         totalApplications: total,
+//         byStatus: applications.reduce((acc, app) => {
+//           const status = app.applicationDetails?.applicationStatus?.current || 'unknown';
+//           acc[status] = (acc[status] || 0) + 1;
+//           return acc;
+//         }, {}),
+//         byDestination: applications.reduce((acc, app) => {
+//           const country = app.applicationDetails?.visaInfo?.destinationCountry || 'unknown';
+//           acc[country] = (acc[country] || 0) + 1;
+//           return acc;
+//         }, {}),
+//         byVisaType: applications.reduce((acc, app) => {
+//           const type = app.applicationDetails?.visaInfo?.visaType || 'unknown';
+//           acc[type] = (acc[type] || 0) + 1;
+//           return acc;
+//         }, {}),
+//         totalRevenue: applications.reduce((sum, app) => 
+//           sum + (app.applicationDetails?.fees?.totalAmount || 0), 0
+//         ),
+//         totalPaid: applications.reduce((sum, app) => 
+//           sum + (app.applicationDetails?.payment?.amountPaid || 0), 0
+//         ),
+//         pendingPayments: applications.filter(app => 
+//           ['pending', 'partial'].includes(app.applicationDetails?.payment?.status)
+//         ).length,
+//         overduePayments: applications.filter(app => 
+//           app.applicationDetails?.payment?.dueDate && 
+//           new Date(app.applicationDetails.payment.dueDate) < new Date() &&
+//           ['pending', 'partial'].includes(app.applicationDetails?.payment?.status)
+//         ).length
+//       };
 
-      res.json({
-        success: true,
-        data: {
-          applications,
-          pagination: {
-            page: parseInt(page),
-            limit: parseInt(limit),
-            total,
-            totalPages: Math.ceil(total / parseInt(limit)),
-            hasNextPage: (parseInt(page) * parseInt(limit)) < total,
-            hasPrevPage: parseInt(page) > 1
-          },
-          statistics: stats
-        }
-      });
-    } catch (error) {
-      console.error('Get all applications error:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Failed to retrieve applications',
-        error: error.message
-      });
-    }
-  },
+//       res.json({
+//         success: true,
+//         data: {
+//           applications,
+//           pagination: {
+//             page: parseInt(page),
+//             limit: parseInt(limit),
+//             total,
+//             totalPages: Math.ceil(total / parseInt(limit)),
+//             hasNextPage: (parseInt(page) * parseInt(limit)) < total,
+//             hasPrevPage: parseInt(page) > 1
+//           },
+//           statistics: stats
+//         }
+//       });
+//     } catch (error) {
+//       console.error('Get all applications error:', error);
+//       res.status(500).json({
+//         success: false,
+//         message: 'Failed to retrieve applications',
+//         error: error.message
+//       });
+//     }
+//   },
 
-  // Search applications
-  searchApplications: async (req, res) => {
-    try {
-      const {
-        trackingNumber,
-        serviceId,
-        email,
-        fullName,
-        passportNumber,
-        destinationCountry,
-        visaType,
-        limit = 50
-      } = req.query;
+//   // Search applications
+//   searchApplications: async (req, res) => {
+//     try {
+//       const {
+//         trackingNumber,
+//         serviceId,
+//         email,
+//         fullName,
+//         passportNumber,
+//         destinationCountry,
+//         visaType,
+//         limit = 50
+//       } = req.query;
 
-      const query = { serviceType: { $in: ['application', 'combined'] } };
+//       const query = { serviceType: { $in: ['application', 'combined'] } };
 
-      if (trackingNumber) query.trackingNumber = trackingNumber;
-      if (serviceId) query.serviceId = serviceId;
-      if (email) query['customer.contactInfo.email'] = { $regex: email, $options: 'i' };
-      if (fullName) query['customer.personalInfo.fullName'] = { $regex: fullName, $options: 'i' };
-      if (passportNumber) query['customer.passportInfo.passportNumber'] = passportNumber;
-      if (destinationCountry) query['applicationDetails.visaInfo.destinationCountry'] = destinationCountry;
-      if (visaType) query['applicationDetails.visaInfo.visaType'] = visaType;
+//       if (trackingNumber) query.trackingNumber = trackingNumber;
+//       if (serviceId) query.serviceId = serviceId;
+//       if (email) query['customer.contactInfo.email'] = { $regex: email, $options: 'i' };
+//       if (fullName) query['customer.personalInfo.fullName'] = { $regex: fullName, $options: 'i' };
+//       if (passportNumber) query['customer.passportInfo.passportNumber'] = passportNumber;
+//       if (destinationCountry) query['applicationDetails.visaInfo.destinationCountry'] = destinationCountry;
+//       if (visaType) query['applicationDetails.visaInfo.visaType'] = visaType;
 
-      const applications = await VisaService.find(query)
-        .sort({ createdAt: -1 })
-        .limit(parseInt(limit))
-        .select('trackingNumber serviceId customer.personalInfo.fullName customer.contactInfo.email applicationDetails.visaInfo.destinationCountry applicationDetails.visaInfo.visaType applicationDetails.applicationStatus.current applicationDetails.fees.totalAmount applicationDetails.payment.status createdAt')
-        .lean();
+//       const applications = await VisaService.find(query)
+//         .sort({ createdAt: -1 })
+//         .limit(parseInt(limit))
+//         .select('trackingNumber serviceId customer.personalInfo.fullName customer.contactInfo.email applicationDetails.visaInfo.destinationCountry applicationDetails.visaInfo.visaType applicationDetails.applicationStatus.current applicationDetails.fees.totalAmount applicationDetails.payment.status createdAt')
+//         .lean();
 
-      res.json({
-        success: true,
-        data: applications,
-        count: applications.length
-      });
-    } catch (error) {
-      console.error('Search applications error:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Failed to search applications',
-        error: error.message
-      });
-    }
-  },
+//       res.json({
+//         success: true,
+//         data: applications,
+//         count: applications.length
+//       });
+//     } catch (error) {
+//       console.error('Search applications error:', error);
+//       res.status(500).json({
+//         success: false,
+//         message: 'Failed to search applications',
+//         error: error.message
+//       });
+//     }
+//   },
 
-  // Get applications by customer email
-  getApplicationsByCustomerEmail: async (req, res) => {
-    try {
-      const { email } = req.params;
+//   // Get applications by customer email
+//   getApplicationsByCustomerEmail: async (req, res) => {
+//     try {
+//       const { email } = req.params;
 
-      const applications = await VisaService.find({ 
-        'customer.contactInfo.email': email.toLowerCase(),
-        serviceType: { $in: ['application', 'combined'] }
-      })
-        .sort({ createdAt: -1 })
-        .select('trackingNumber serviceId serviceType serviceStage applicationDetails.visaInfo.destinationCountry applicationDetails.visaInfo.visaType applicationDetails.applicationStatus.current applicationDetails.fees.totalAmount applicationDetails.payment.status createdAt')
-        .lean();
+//       const applications = await VisaService.find({ 
+//         'customer.contactInfo.email': email.toLowerCase(),
+//         serviceType: { $in: ['application', 'combined'] }
+//       })
+//         .sort({ createdAt: -1 })
+//         .select('trackingNumber serviceId serviceType serviceStage applicationDetails.visaInfo.destinationCountry applicationDetails.visaInfo.visaType applicationDetails.applicationStatus.current applicationDetails.fees.totalAmount applicationDetails.payment.status createdAt')
+//         .lean();
 
-      // Calculate customer statistics
-      const stats = {
-        totalApplications: applications.length,
-        byStatus: applications.reduce((acc, app) => {
-          const status = app.applicationDetails?.applicationStatus?.current || 'unknown';
-          acc[status] = (acc[status] || 0) + 1;
-          return acc;
-        }, {}),
-        byDestination: applications.reduce((acc, app) => {
-          const country = app.applicationDetails?.visaInfo?.destinationCountry || 'unknown';
-          acc[country] = (acc[country] || 0) + 1;
-          return acc;
-        }, {}),
-        totalSpent: applications.reduce((sum, app) => 
-          sum + (app.applicationDetails?.fees?.totalAmount || 0), 0
-        ),
-        successRate: applications.length > 0 ? 
-          (applications.filter(app => app.applicationDetails?.applicationStatus?.current === 'approved').length / applications.length * 100).toFixed(2) + '%' : '0%'
-      };
+//       // Calculate customer statistics
+//       const stats = {
+//         totalApplications: applications.length,
+//         byStatus: applications.reduce((acc, app) => {
+//           const status = app.applicationDetails?.applicationStatus?.current || 'unknown';
+//           acc[status] = (acc[status] || 0) + 1;
+//           return acc;
+//         }, {}),
+//         byDestination: applications.reduce((acc, app) => {
+//           const country = app.applicationDetails?.visaInfo?.destinationCountry || 'unknown';
+//           acc[country] = (acc[country] || 0) + 1;
+//           return acc;
+//         }, {}),
+//         totalSpent: applications.reduce((sum, app) => 
+//           sum + (app.applicationDetails?.fees?.totalAmount || 0), 0
+//         ),
+//         successRate: applications.length > 0 ? 
+//           (applications.filter(app => app.applicationDetails?.applicationStatus?.current === 'approved').length / applications.length * 100).toFixed(2) + '%' : '0%'
+//       };
 
-      res.json({
-        success: true,
-        data: {
-          applications,
-          customerEmail: email,
-          statistics: stats
-        }
-      });
-    } catch (error) {
-      console.error('Get applications by email error:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Failed to get applications by email',
-        error: error.message
-      });
-    }
-  }
-};
+//       res.json({
+//         success: true,
+//         data: {
+//           applications,
+//           customerEmail: email,
+//           statistics: stats
+//         }
+//       });
+//     } catch (error) {
+//       console.error('Get applications by email error:', error);
+//       res.status(500).json({
+//         success: false,
+//         message: 'Failed to get applications by email',
+//         error: error.message
+//       });
+//     }
+//   }
+// };
 
-// ========== DOCUMENT CONTROLLERS ==========
+// // ========== DOCUMENT CONTROLLERS ==========
 
-const DocumentController = {
-  // Get all documents for an application
-  getApplicationDocuments: async (req, res) => {
-    try {
-      const { trackingNumber } = req.params;
+// const DocumentController = {
+//   // Get all documents for an application
+//   getApplicationDocuments: async (req, res) => {
+//     try {
+//       const { trackingNumber } = req.params;
 
-      const application = await VisaService.findOne({ 
-        trackingNumber,
-        serviceType: { $in: ['application', 'combined'] }
-      }).select('documents');
+//       const application = await VisaService.findOne({ 
+//         trackingNumber,
+//         serviceType: { $in: ['application', 'combined'] }
+//       }).select('documents');
 
-      if (!application) {
-        return res.status(404).json({
-          success: false,
-          message: 'Application not found'
-        });
-      }
+//       if (!application) {
+//         return res.status(404).json({
+//           success: false,
+//           message: 'Application not found'
+//         });
+//       }
 
-      // Format documents response
-      const documents = {
-        photograph: application.documents.photograph || {},
-        passportCopy: application.documents.passportCopy || {},
-        financialDocuments: application.documents.financialDocuments || [],
-        travelDocuments: application.documents.travelDocuments || [],
-        supportingDocuments: application.documents.supportingDocuments || [],
-        otherDocuments: application.documents.otherDocuments || [],
-        statistics: {
-          totalDocuments: application.totalDocuments,
-          verifiedDocuments: calculateVerifiedDocuments(application.documents),
-          verificationRate: application.totalDocuments > 0 ? 
-            (calculateVerifiedDocuments(application.documents) / application.totalDocuments * 100).toFixed(2) + '%' : '0%'
-        }
-      };
+//       // Format documents response
+//       const documents = {
+//         photograph: application.documents.photograph || {},
+//         passportCopy: application.documents.passportCopy || {},
+//         financialDocuments: application.documents.financialDocuments || [],
+//         travelDocuments: application.documents.travelDocuments || [],
+//         supportingDocuments: application.documents.supportingDocuments || [],
+//         otherDocuments: application.documents.otherDocuments || [],
+//         statistics: {
+//           totalDocuments: application.totalDocuments,
+//           verifiedDocuments: calculateVerifiedDocuments(application.documents),
+//           verificationRate: application.totalDocuments > 0 ? 
+//             (calculateVerifiedDocuments(application.documents) / application.totalDocuments * 100).toFixed(2) + '%' : '0%'
+//         }
+//       };
 
-      res.json({
-        success: true,
-        data: documents
-      });
-    } catch (error) {
-      console.error('Get application documents error:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Failed to get application documents',
-        error: error.message
-      });
-    }
-  },
+//       res.json({
+//         success: true,
+//         data: documents
+//       });
+//     } catch (error) {
+//       console.error('Get application documents error:', error);
+//       res.status(500).json({
+//         success: false,
+//         message: 'Failed to get application documents',
+//         error: error.message
+//       });
+//     }
+//   },
 
-  // Delete document
-  deleteDocument: async (req, res) => {
-    try {
-      const { trackingNumber } = req.params;
-      const { category, index, publicId } = req.body;
+//   // Delete document
+//   deleteDocument: async (req, res) => {
+//     try {
+//       const { trackingNumber } = req.params;
+//       const { category, index, publicId } = req.body;
 
-      const application = await VisaService.findOne({ 
-        trackingNumber,
-        serviceType: { $in: ['application', 'combined'] }
-      });
+//       const application = await VisaService.findOne({ 
+//         trackingNumber,
+//         serviceType: { $in: ['application', 'combined'] }
+//       });
 
-      if (!application) {
-        return res.status(404).json({
-          success: false,
-          message: 'Application not found'
-        });
-      }
+//       if (!application) {
+//         return res.status(404).json({
+//           success: false,
+//           message: 'Application not found'
+//         });
+//       }
 
-      // Delete from Cloudinary if publicId provided
-      if (publicId) {
-        await deleteFromCloudinary(publicId);
-      }
+//       // Delete from Cloudinary if publicId provided
+//       if (publicId) {
+//         await deleteFromCloudinary(publicId);
+//       }
 
-      // Delete from application based on category
-      let deleted = false;
-      let documentInfo = {};
+//       // Delete from application based on category
+//       let deleted = false;
+//       let documentInfo = {};
 
-      switch(category.toLowerCase()) {
-        case 'photograph':
-          if (application.documents.photograph) {
-            documentInfo = { ...application.documents.photograph };
-            application.documents.photograph = {};
-            deleted = true;
-          }
-          break;
-        case 'passportcopy':
-          if (application.documents.passportCopy) {
-            documentInfo = { ...application.documents.passportCopy };
-            application.documents.passportCopy = {};
-            deleted = true;
-          }
-          break;
-        case 'financial':
-          if (application.documents.financialDocuments && application.documents.financialDocuments[index]) {
-            documentInfo = { ...application.documents.financialDocuments[index] };
-            application.documents.financialDocuments.splice(index, 1);
-            deleted = true;
-          }
-          break;
-        case 'travel':
-          if (application.documents.travelDocuments && application.documents.travelDocuments[index]) {
-            documentInfo = { ...application.documents.travelDocuments[index] };
-            application.documents.travelDocuments.splice(index, 1);
-            deleted = true;
-          }
-          break;
-        case 'supporting':
-          if (application.documents.supportingDocuments && application.documents.supportingDocuments[index]) {
-            documentInfo = { ...application.documents.supportingDocuments[index] };
-            application.documents.supportingDocuments.splice(index, 1);
-            deleted = true;
-          }
-          break;
-        default:
-          if (application.documents.otherDocuments && application.documents.otherDocuments[index]) {
-            documentInfo = { ...application.documents.otherDocuments[index] };
-            application.documents.otherDocuments.splice(index, 1);
-            deleted = true;
-          }
-      }
+//       switch(category.toLowerCase()) {
+//         case 'photograph':
+//           if (application.documents.photograph) {
+//             documentInfo = { ...application.documents.photograph };
+//             application.documents.photograph = {};
+//             deleted = true;
+//           }
+//           break;
+//         case 'passportcopy':
+//           if (application.documents.passportCopy) {
+//             documentInfo = { ...application.documents.passportCopy };
+//             application.documents.passportCopy = {};
+//             deleted = true;
+//           }
+//           break;
+//         case 'financial':
+//           if (application.documents.financialDocuments && application.documents.financialDocuments[index]) {
+//             documentInfo = { ...application.documents.financialDocuments[index] };
+//             application.documents.financialDocuments.splice(index, 1);
+//             deleted = true;
+//           }
+//           break;
+//         case 'travel':
+//           if (application.documents.travelDocuments && application.documents.travelDocuments[index]) {
+//             documentInfo = { ...application.documents.travelDocuments[index] };
+//             application.documents.travelDocuments.splice(index, 1);
+//             deleted = true;
+//           }
+//           break;
+//         case 'supporting':
+//           if (application.documents.supportingDocuments && application.documents.supportingDocuments[index]) {
+//             documentInfo = { ...application.documents.supportingDocuments[index] };
+//             application.documents.supportingDocuments.splice(index, 1);
+//             deleted = true;
+//           }
+//           break;
+//         default:
+//           if (application.documents.otherDocuments && application.documents.otherDocuments[index]) {
+//             documentInfo = { ...application.documents.otherDocuments[index] };
+//             application.documents.otherDocuments.splice(index, 1);
+//             deleted = true;
+//           }
+//       }
 
-      if (!deleted) {
-        return res.status(400).json({
-          success: false,
-          message: 'Document not found for deletion'
-        });
-      }
+//       if (!deleted) {
+//         return res.status(400).json({
+//           success: false,
+//           message: 'Document not found for deletion'
+//         });
+//       }
 
-      await application.save();
+//       await application.save();
 
-      res.json({
-        success: true,
-        message: 'Document deleted successfully',
-        data: {
-          deletedDocument: documentInfo,
-          totalDocuments: application.totalDocuments,
-          verifiedDocuments: calculateVerifiedDocuments(application.documents)
-        }
-      });
-    } catch (error) {
-      console.error('Delete document error:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Failed to delete document',
-        error: error.message
-      });
-    }
-  }
-};
+//       res.json({
+//         success: true,
+//         message: 'Document deleted successfully',
+//         data: {
+//           deletedDocument: documentInfo,
+//           totalDocuments: application.totalDocuments,
+//           verifiedDocuments: calculateVerifiedDocuments(application.documents)
+//         }
+//       });
+//     } catch (error) {
+//       console.error('Delete document error:', error);
+//       res.status(500).json({
+//         success: false,
+//         message: 'Failed to delete document',
+//         error: error.message
+//       });
+//     }
+//   }
+// };
 
-// ========== STATISTICS CONTROLLERS ==========
+// // ========== STATISTICS CONTROLLERS ==========
 
-const StatisticsController = {
-  // Get dashboard statistics
-  getDashboardStats: async (req, res) => {
-    try {
-      const thirtyDaysAgo = new Date();
-      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+// const StatisticsController = {
+//   // Get dashboard statistics
+//   getDashboardStats: async (req, res) => {
+//     try {
+//       const thirtyDaysAgo = new Date();
+//       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-      const [
-        totalBookings,
-        totalApplications,
-        pendingPayments,
-        upcomingAppointments,
-        recentActivities,
-        statusDistribution,
-        revenueStats
-      ] = await Promise.all([
-        // Total bookings (last 30 days)
-        VisaService.countDocuments({
-          serviceType: { $in: ['booking', 'combined'] },
-          createdAt: { $gte: thirtyDaysAgo }
-        }),
+//       const [
+//         totalBookings,
+//         totalApplications,
+//         pendingPayments,
+//         upcomingAppointments,
+//         recentActivities,
+//         statusDistribution,
+//         revenueStats
+//       ] = await Promise.all([
+//         // Total bookings (last 30 days)
+//         VisaService.countDocuments({
+//           serviceType: { $in: ['booking', 'combined'] },
+//           createdAt: { $gte: thirtyDaysAgo }
+//         }),
 
-        // Total applications (last 30 days)
-        VisaService.countDocuments({
-          serviceType: { $in: ['application', 'combined'] },
-          createdAt: { $gte: thirtyDaysAgo }
-        }),
+//         // Total applications (last 30 days)
+//         VisaService.countDocuments({
+//           serviceType: { $in: ['application', 'combined'] },
+//           createdAt: { $gte: thirtyDaysAgo }
+//         }),
 
-        // Pending payments
-        VisaService.aggregate([
-          {
-            $match: {
-              serviceType: { $in: ['application', 'combined'] },
-              'applicationDetails.payment.status': { $in: ['pending', 'partial'] }
-            }
-          },
-          {
-            $group: {
-              _id: null,
-              totalAmount: { $sum: '$applicationDetails.fees.totalAmount' },
-              totalPaid: { $sum: '$applicationDetails.payment.amountPaid' },
-              count: { $sum: 1 }
-            }
-          }
-        ]),
+//         // Pending payments
+//         VisaService.aggregate([
+//           {
+//             $match: {
+//               serviceType: { $in: ['application', 'combined'] },
+//               'applicationDetails.payment.status': { $in: ['pending', 'partial'] }
+//             }
+//           },
+//           {
+//             $group: {
+//               _id: null,
+//               totalAmount: { $sum: '$applicationDetails.fees.totalAmount' },
+//               totalPaid: { $sum: '$applicationDetails.payment.amountPaid' },
+//               count: { $sum: 1 }
+//             }
+//           }
+//         ]),
 
-        // Upcoming appointments
-        VisaService.find({
-          'bookingDetails.appointment.date': { $gte: new Date() },
-          'bookingDetails.bookingStatus': { $in: ['pending', 'confirmed'] },
-          serviceType: { $in: ['booking', 'combined'] }
-        })
-          .sort({ 'bookingDetails.appointment.date': 1 })
-          .limit(10)
-          .select('serviceId customer.personalInfo.fullName bookingDetails.appointment.date bookingDetails.appointment.timeSlot bookingDetails.bookingStatus'),
+//         // Upcoming appointments
+//         VisaService.find({
+//           'bookingDetails.appointment.date': { $gte: new Date() },
+//           'bookingDetails.bookingStatus': { $in: ['pending', 'confirmed'] },
+//           serviceType: { $in: ['booking', 'combined'] }
+//         })
+//           .sort({ 'bookingDetails.appointment.date': 1 })
+//           .limit(10)
+//           .select('serviceId customer.personalInfo.fullName bookingDetails.appointment.date bookingDetails.appointment.timeSlot bookingDetails.bookingStatus'),
 
-        // Recent activities
-        VisaService.find()
-          .sort({ updatedAt: -1 })
-          .limit(10)
-          .select('serviceId trackingNumber serviceType serviceStage applicationDetails.applicationStatus.current bookingDetails.bookingStatus updatedAt'),
+//         // Recent activities
+//         VisaService.find()
+//           .sort({ updatedAt: -1 })
+//           .limit(10)
+//           .select('serviceId trackingNumber serviceType serviceStage applicationDetails.applicationStatus.current bookingDetails.bookingStatus updatedAt'),
 
-        // Status distribution
-        VisaService.aggregate([
-          {
-            $match: {
-              serviceType: { $in: ['application', 'combined'] }
-            }
-          },
-          {
-            $group: {
-              _id: '$applicationDetails.applicationStatus.current',
-              count: { $sum: 1 }
-            }
-          },
-          { $sort: { count: -1 } }
-        ]),
+//         // Status distribution
+//         VisaService.aggregate([
+//           {
+//             $match: {
+//               serviceType: { $in: ['application', 'combined'] }
+//             }
+//           },
+//           {
+//             $group: {
+//               _id: '$applicationDetails.applicationStatus.current',
+//               count: { $sum: 1 }
+//             }
+//           },
+//           { $sort: { count: -1 } }
+//         ]),
 
-        // Revenue statistics
-        VisaService.aggregate([
-          {
-            $match: {
-              createdAt: { $gte: thirtyDaysAgo }
-            }
-          },
-          {
-            $group: {
-              _id: {
-                year: { $year: '$createdAt' },
-                month: { $month: '$createdAt' },
-                day: { $dayOfMonth: '$createdAt' }
-              },
-              revenue: {
-                $sum: {
-                  $add: [
-                    '$bookingDetails.bookingAmount',
-                    '$applicationDetails.fees.totalAmount'
-                  ]
-                }
-              },
-              bookings: {
-                $sum: { $cond: [{ $in: ['$serviceType', ['booking', 'combined']] }, 1, 0] }
-              },
-              applications: {
-                $sum: { $cond: [{ $in: ['$serviceType', ['application', 'combined']] }, 1, 0] }
-              }
-            }
-          },
-          { $sort: { '_id.year': 1, '_id.month': 1, '_id.day': 1 } }
-        ])
-      ]);
+//         // Revenue statistics
+//         VisaService.aggregate([
+//           {
+//             $match: {
+//               createdAt: { $gte: thirtyDaysAgo }
+//             }
+//           },
+//           {
+//             $group: {
+//               _id: {
+//                 year: { $year: '$createdAt' },
+//                 month: { $month: '$createdAt' },
+//                 day: { $dayOfMonth: '$createdAt' }
+//               },
+//               revenue: {
+//                 $sum: {
+//                   $add: [
+//                     '$bookingDetails.bookingAmount',
+//                     '$applicationDetails.fees.totalAmount'
+//                   ]
+//                 }
+//               },
+//               bookings: {
+//                 $sum: { $cond: [{ $in: ['$serviceType', ['booking', 'combined']] }, 1, 0] }
+//               },
+//               applications: {
+//                 $sum: { $cond: [{ $in: ['$serviceType', ['application', 'combined']] }, 1, 0] }
+//               }
+//             }
+//           },
+//           { $sort: { '_id.year': 1, '_id.month': 1, '_id.day': 1 } }
+//         ])
+//       ]);
 
-      res.json({
-        success: true,
-        data: {
-          totalBookings,
-          totalApplications,
-          pendingPayments: pendingPayments[0] || { totalAmount: 0, totalPaid: 0, count: 0 },
-          upcomingAppointments,
-          recentActivities,
-          statusDistribution,
-          revenueStats,
-          summary: {
-            totalServices: totalBookings + totalApplications,
-            pendingDocuments: statusDistribution.find(s => s._id === 'document-collection')?.count || 0,
-            pendingVerification: statusDistribution.find(s => s._id === 'document-review')?.count || 0,
-            inProcessing: statusDistribution.find(s => s._id === 'embassy-processing')?.count || 0
-          }
-        }
-      });
-    } catch (error) {
-      console.error('Get dashboard stats error:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Failed to get dashboard statistics',
-        error: error.message
-      });
-    }
-  }
-};
+//       res.json({
+//         success: true,
+//         data: {
+//           totalBookings,
+//           totalApplications,
+//           pendingPayments: pendingPayments[0] || { totalAmount: 0, totalPaid: 0, count: 0 },
+//           upcomingAppointments,
+//           recentActivities,
+//           statusDistribution,
+//           revenueStats,
+//           summary: {
+//             totalServices: totalBookings + totalApplications,
+//             pendingDocuments: statusDistribution.find(s => s._id === 'document-collection')?.count || 0,
+//             pendingVerification: statusDistribution.find(s => s._id === 'document-review')?.count || 0,
+//             inProcessing: statusDistribution.find(s => s._id === 'embassy-processing')?.count || 0
+//           }
+//         }
+//       });
+//     } catch (error) {
+//       console.error('Get dashboard stats error:', error);
+//       res.status(500).json({
+//         success: false,
+//         message: 'Failed to get dashboard statistics',
+//         error: error.message
+//       });
+//     }
+//   }
+// };
 
-// ========== EXPORT ALL CONTROLLERS ==========
+// // ========== EXPORT ALL CONTROLLERS ==========
 
-module.exports = {
-  BookingController,
-  ApplicationController,
-  DocumentController,
-  StatisticsController,
+// module.exports = {
+//   BookingController,
+//   ApplicationController,
+//   DocumentController,
+//   StatisticsController,
   
-  // Utility functions
-  sendEmail,
-  uploadToCloudinary,
-  deleteFromCloudinary,
-  calculateVerifiedDocuments
+//   // Utility functions
+//   sendEmail,
+//   uploadToCloudinary,
+//   deleteFromCloudinary,
+//   calculateVerifiedDocuments
+// };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+const VisaService = require('../models/Visa');
+const cloudinary = require('cloudinary').v2;
+const fs = require('fs');
+
+/* =====================================================
+   HELPERS
+===================================================== */
+const uploadToCloudinary = async (file, folder) => {
+  if (!file) return null;
+
+  if (file.size > 5 * 1024 * 1024) {
+    throw new Error('File exceeds 5MB limit');
+  }
+
+  const result = await cloudinary.uploader.upload(file.path, {
+    folder,
+    resource_type: 'auto'
+  });
+
+  fs.unlinkSync(file.path);
+
+  return {
+    cloudinaryUrl: result.secure_url,
+    publicId: result.public_id,
+    size: file.size
+  };
+};
+
+/* =====================================================
+   VISA CATALOG CRUD
+===================================================== */
+
+// CREATE
+exports.createVisaCatalog = async (req, res) => {
+  try {
+    const coverImage = await uploadToCloudinary(req.file, 'visa_catalog');
+
+    const visa = await VisaService.create({
+      recordType: 'visa-catalog',
+      visaCatalog: {
+        ...req.body,
+        coverImage
+      }
+    });
+
+    res.status(201).json({ success: true, data: visa });
+  } catch (e) {
+    res.status(400).json({ success: false, message: e.message });
+  }
+};
+
+// READ ALL
+exports.getVisaCatalogs = async (req, res) => {
+  const visas = await VisaService.find({
+    recordType: 'visa-catalog',
+    'visaCatalog.isActive': true
+  });
+  res.json({ success: true, count: visas.length, data: visas });
+};
+
+// READ ONE
+exports.getVisaCatalogById = async (req, res) => {
+  const visa = await VisaService.findById(req.params.id);
+  if (!visa) return res.status(404).json({ success: false });
+  res.json({ success: true, data: visa });
+};
+
+// UPDATE
+exports.updateVisaCatalog = async (req, res) => {
+  const visa = await VisaService.findById(req.params.id);
+  if (!visa) return res.status(404).json({ success: false });
+
+  if (req.file) {
+    if (visa.visaCatalog.coverImage?.publicId) {
+      await cloudinary.uploader.destroy(visa.visaCatalog.coverImage.publicId);
+    }
+    visa.visaCatalog.coverImage = await uploadToCloudinary(req.file, 'visa_catalog');
+  }
+
+  Object.assign(visa.visaCatalog, req.body);
+  await visa.save();
+
+  res.json({ success: true, data: visa });
+};
+
+// DELETE (SOFT)
+exports.deleteVisaCatalog = async (req, res) => {
+  const visa = await VisaService.findById(req.params.id);
+  if (!visa) return res.status(404).json({ success: false });
+
+  visa.visaCatalog.isActive = false;
+  await visa.save();
+
+  res.json({ success: true, message: 'Visa catalog deactivated' });
+};
+
+/* =====================================================
+   BOOKING CRUD
+===================================================== */
+
+// CREATE
+exports.createBooking = async (req, res) => {
+  const booking = await VisaService.create({
+    recordType: 'visa-booking',
+    booking: req.body.booking,
+    customer: req.body.customer
+  });
+
+  res.status(201).json({ success: true, data: booking });
+};
+
+// READ ALL
+exports.getAllBookings = async (req, res) => {
+  const bookings = await VisaService.find({ recordType: 'visa-booking' });
+  res.json({ success: true, count: bookings.length, data: bookings });
+};
+
+// READ ONE
+exports.getBookingById = async (req, res) => {
+  const booking = await VisaService.findById(req.params.id);
+  if (!booking) return res.status(404).json({ success: false });
+  res.json({ success: true, data: booking });
+};
+
+// UPDATE
+exports.updateBooking = async (req, res) => {
+  const booking = await VisaService.findById(req.params.id);
+  if (!booking) return res.status(404).json({ success: false });
+
+  Object.assign(booking.booking, req.body.booking);
+  Object.assign(booking.customer, req.body.customer);
+
+  await booking.save();
+  res.json({ success: true, data: booking });
+};
+
+// DELETE
+exports.deleteBooking = async (req, res) => {
+  await VisaService.findByIdAndDelete(req.params.id);
+  res.json({ success: true, message: 'Booking deleted' });
+};
+
+/* =====================================================
+   DOCUMENT CRUD
+===================================================== */
+exports.uploadDocument = async (req, res) => {
+  const { id, category } = req.params;
+
+  const booking = await VisaService.findById(id);
+  if (!booking) return res.status(404).json({ success: false });
+
+  const doc = await uploadToCloudinary(req.file, 'visa_documents');
+
+  if (Array.isArray(booking.documents[category])) {
+    booking.documents[category].push(doc);
+  } else {
+    booking.documents[category] = doc;
+  }
+
+  await booking.save();
+  res.json({ success: true, data: doc });
+};
+
+exports.deleteDocument = async (req, res) => {
+  const { id, publicId, category } = req.params;
+
+  const booking = await VisaService.findById(id);
+  if (!booking) return res.status(404).json({ success: false });
+
+  await cloudinary.uploader.destroy(publicId);
+
+  booking.documents[category] = booking.documents[category].filter(
+    d => d.publicId !== publicId
+  );
+
+  await booking.save();
+  res.json({ success: true, message: 'Document removed' });
+};
+
+/* =====================================================
+   DASHBOARD STATISTICS
+===================================================== */
+exports.getDashboardStats = async (req, res) => {
+  const totalVisas = await VisaService.countDocuments({ recordType: 'visa-catalog' });
+  const totalBookings = await VisaService.countDocuments({ recordType: 'visa-booking' });
+
+  const bookingStatus = await VisaService.aggregate([
+    { $match: { recordType: 'visa-booking' } },
+    { $group: { _id: '$booking.status', count: { $sum: 1 } } }
+  ]);
+
+  res.json({
+    success: true,
+    data: {
+      totalVisas,
+      totalBookings,
+      bookingStatus
+    }
+  });
 };

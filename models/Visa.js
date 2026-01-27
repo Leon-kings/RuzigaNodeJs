@@ -2425,321 +2425,517 @@
 
 
 
+// const mongoose = require('mongoose');
+// const cloudinary = require('cloudinary').v2;
+
+// // ========== SCHEMA ==========
+// const visaServiceSchema = new mongoose.Schema(
+//   {
+//     // ========================
+//     // PRIMARY IDENTIFIERS
+//     // ========================
+//     serviceId: {
+//       type: String,
+//       required: true,
+//       unique: true,
+//       index: true,
+//       default: function() {
+//         const timestamp = Date.now();
+//         const random = Math.floor(Math.random() * 1000);
+//         return `VS-${timestamp}-${random}`;
+//       }
+//     },
+//     trackingNumber: {
+//       type: String,
+//       unique: true,
+//       sparse: true // Allows null for bookings
+//     },
+
+//     // ========================
+//     // SERVICE TYPE & STAGE
+//     // ========================
+//     serviceType: {
+//       type: String,
+//       enum: ['booking', 'application', 'combined'],
+//       required: true,
+//       default: 'booking'
+//     },
+//     serviceStage: {
+//       type: String,
+//       enum: [
+//         'booking-pending',
+//         'booking-confirmed',
+//         'consultation-completed',
+//         'application-initiated',
+//         'application-submitted',
+//         'document-verification',
+//         'payment-processing',
+//         'embassy-processing',
+//         'visa-approved',
+//         'visa-issued',
+//         'completed',
+//         'cancelled'
+//       ],
+//       default: 'booking-pending'
+//     },
+
+//     // ========================
+//     // CUSTOMER INFO
+//     // ========================
+//     customer: {
+//       personalInfo: {
+//         fullName: { type: String, required: true, trim: true },
+//         dateOfBirth: { type: Date, required: true },
+//         gender: { type: String, enum: ['male', 'female', 'other', 'prefer-not-to-say'], default: 'prefer-not-to-say' },
+//         nationality: { type: String, required: true },
+//         countryOfResidence: { type: String, required: true },
+//         maritalStatus: { type: String, enum: ['single','married','divorced','widowed','separated'], default: 'single' },
+//         occupation: String,
+//         employer: String
+//       },
+//       contactInfo: {
+//         email: { type: String, required: true, lowercase: true, match: [/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/, 'Enter a valid email'] },
+//         primaryPhone: { type: String, required: true },
+//         secondaryPhone: String,
+//         whatsappNumber: String,
+//         address: {
+//           street: String,
+//           city: String,
+//           state: String,
+//           country: String,
+//           postalCode: String
+//         },
+//         emergencyContact: {
+//           name: String,
+//           relationship: String,
+//           phone: String,
+//           email: String
+//         }
+//       },
+//       passportInfo: {
+//         passportNumber: String,
+//         issuingCountry: String,
+//         issueDate: Date,
+//         expiryDate: Date,
+//         placeOfIssue: String,
+//         hasPreviousVisas: { type: Boolean, default: false },
+//         previousVisaDetails: [{
+//           country: String,
+//           type: String,
+//           issueDate: Date,
+//           expiryDate: Date
+//         }]
+//       }
+//     },
+
+//     // ========================
+//     // BOOKING DETAILS
+//     // ========================
+//     bookingDetails: {
+//       type: { type: String, enum: ['consultation','document-submission','appointment','online-help','walk-in'], default: 'consultation' },
+//       serviceRequested: {
+//         type: String,
+//         enum: ['tourist-visa','business-visa','student-visa','work-visa','family-visa','transit-visa','visa-renewal','visa-extension','express-service','premium-service','general-consultation']
+//       },
+//       appointment: {
+//         date: Date,
+//         timeSlot: String,
+//         duration: { type: Number, default: 60 },
+//         mode: { type: String, enum: ['in-person','online','phone'], default: 'in-person' },
+//         location: String,
+//         address: String,
+//         confirmed: { type: Boolean, default: false },
+//         attended: { type: Boolean, default: false },
+//         notes: String
+//       },
+//       bookingStatus: { type: String, enum: ['pending','confirmed','completed','cancelled','no-show','rescheduled'], default: 'pending' },
+//       bookingAmount: { type: Number, default: 0, min: 0 },
+//       bookingPayment: {
+//         status: { type: String, enum: ['pending','paid','refunded'], default: 'pending' },
+//         method: String,
+//         transactionId: String,
+//         paidAt: Date
+//       }
+//     },
+
+//     // ========================
+//     // APPLICATION DETAILS
+//     // ========================
+//     applicationDetails: {
+//       visaInfo: {
+//         destinationCountry: { type: String },
+//         appliedCountries: { type: [String], default: [] }, // countries we applied for
+//         visaType: { type: String, enum: ['Tourist','Business','Student','Work','Transit','Family','Medical','Diplomatic'] },
+//         category: { type: String, enum: ['short-term','long-term','single-entry','multiple-entry','transit'], default: 'short-term' },
+//         purposeOfTravel: String,
+//         travelDates: {
+//           intendedEntry: Date,
+//           intendedExit: Date,
+//           flexibleDates: { type: Boolean, default: false }
+//         },
+//         entriesRequested: { type: String, enum: ['Single','Double','Multiple'], default: 'Single' },
+//         travelCompanions: [{ name: String, relationship: String, age: Number }]
+//       },
+//       servicePackage: {
+//         name: { type: String, enum: ['basic','standard','express','premium','custom'], default: 'standard' },
+//         description: String,
+//         processingTime: { type: String, default: '15-20 business days' },
+//         inclusions: [String],
+//         exclusions: [String]
+//       },
+//       fees: {
+//         consultationFee: { type: Number, default: 0, min: 0 },
+//         serviceFee: { type: Number, default: 0, min: 0 },
+//         embassyFee: { type: Number, default: 0, min: 0 },
+//         additionalFees: { type: Number, default: 0, min: 0 },
+//         discount: { type: Number, default: 0, min: 0 },
+//         totalAmount: { type: Number, default: 0, min: 0 },
+//         currency: { type: String, default: 'USD' }
+//       },
+//       payment: {
+//         status: { type: String, enum: ['pending','partial','paid','overdue','refunded','cancelled'], default: 'pending' },
+//         amountPaid: { type: Number, default: 0, min: 0 },
+//         paymentMethod: { type: String, enum: ['credit-card','debit-card','bank-transfer','cash','online-payment','installment'] },
+//         dueDate: Date,
+//         paymentHistory: [{
+//           amount: Number,
+//           date: Date,
+//           method: String,
+//           transactionId: String,
+//           reference: String,
+//           notes: String
+//         }]
+//       },
+//       applicationStatus: {
+//         current: {
+//           type: String,
+//           enum: ['not-started','draft','document-collection','document-review','application-filling','payment-pending','submitted-to-embassy','embassy-processing','interview-scheduled','decision-pending','additional-documents-requested','approved','rejected','visa-printed','ready-for-collection','collected','cancelled'],
+//           default: 'not-started'
+//         },
+//         submittedAt: Date,
+//         processingStartedAt: Date,
+//         expectedCompletionDate: Date,
+//         actualCompletionDate: Date,
+//         embassySubmissionDate: Date,
+//         decisionDate: Date,
+//         collectionDate: Date
+//       },
+//       embassyInfo: {
+//         embassyName: String,
+//         location: String,
+//         applicationNumber: String,
+//         referenceNumber: String,
+//         trackingNumber: String,
+//         submissionMethod: { type: String, enum: ['in-person','courier','online','agent'] },
+//         submissionDate: Date,
+//         appointmentDate: Date,
+//         interviewDate: Date,
+//         collectionMethod: { type: String, enum: ['in-person','courier','representative'] },
+//         collectionDate: Date,
+//         trackingUrl: String
+//       },
+//       visaIssuance: {
+//         visaNumber: String,
+//         issueDate: Date,
+//         expiryDate: Date,
+//         validityStart: Date,
+//         validityEnd: Date,
+//         durationOfStay: String,
+//         entriesAllowed: String,
+//         remarks: String,
+//         issuedAt: String,
+//         issuingOfficer: String,
+//         visaStickerNumber: String
+//       }
+//     },
+
+//     // ========================
+//     // DOCUMENTS
+//     // ========================
+//     documents: {
+//       photograph: { cloudinaryUrl: String, publicId: String, uploadedAt: Date, verified: { type: Boolean, default: false } },
+//       passportCopy: { cloudinaryUrl: String, publicId: String, uploadedAt: Date, verified: { type: Boolean, default: false } },
+//       financialDocuments: [{ documentType: String, cloudinaryUrl: String, publicId: String, uploadedAt: Date, verified: { type: Boolean, default: false } }],
+//       travelDocuments: [{ documentType: String, cloudinaryUrl: String, publicId: String, uploadedAt: Date, verified: { type: Boolean, default: false } }],
+//       supportingDocuments: [{ documentType: String, cloudinaryUrl: String, publicId: String, uploadedAt: Date, verified: { type: Boolean, default: false } }],
+//       otherDocuments: [{ description: String, cloudinaryUrl: String, publicId: String, uploadedAt: Date, verified: { type: Boolean, default: false } }]
+//     },
+
+//     // ========================
+//     // INTERNAL MANAGEMENT
+//     // ========================
+//     internal: {
+//       assignedTo: {
+//         agentId: mongoose.Schema.Types.ObjectId,
+//         agentName: String,
+//         agentEmail: String,
+//         department: { type: String, enum: ['sales','consultation','processing','verification','customer-service'] },
+//         assignedAt: { type: Date, default: Date.now },
+//         lastContacted: Date
+//       },
+//       priority: { type: String, enum: ['low','normal','high','urgent'], default: 'normal' },
+//       source: { type: String, enum: ['website','walk-in','referral','partner','social-media','repeat-customer'], default: 'website' },
+//       notes: [{ note: String, addedBy: String, addedAt: { type: Date, default: Date.now }, category: String, priority: String }]
+//     },
+
+//     // ========================
+//     // COMMUNICATIONS & AUDIT
+//     // ========================
+//     communications: [{ type: Object }],
+//     statusHistory: [{ type: Object }],
+//     auditLog: [{ type: Object }]
+//   },
+//   { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }
+// );
+
+// // ========== VIRTUALS ==========
+// visaServiceSchema.virtual('totalDocuments').get(function() {
+//   let count = 0;
+//   if (this.documents?.photograph?.cloudinaryUrl) count++;
+//   if (this.documents?.passportCopy?.cloudinaryUrl) count++;
+//   count += this.documents?.financialDocuments?.length || 0;
+//   count += this.documents?.travelDocuments?.length || 0;
+//   count += this.documents?.supportingDocuments?.length || 0;
+//   count += this.documents?.otherDocuments?.length || 0;
+//   return count;
+// });
+
+// visaServiceSchema.virtual('balanceDue').get(function() {
+//   const total = this.applicationDetails?.fees?.totalAmount || 0;
+//   const paid = this.applicationDetails?.payment?.amountPaid || 0;
+//   return Math.max(0, total - paid);
+// });
+
+// visaServiceSchema.virtual('isBooking').get(function() { return this.serviceType === 'booking'; });
+// visaServiceSchema.virtual('isApplication').get(function() { return this.serviceType === 'application' || this.serviceType === 'combined'; });
+// visaServiceSchema.virtual('hasBooking').get(function() { return this.serviceType === 'booking' || this.serviceType === 'combined'; });
+// visaServiceSchema.virtual('hasApplication').get(function() { return this.serviceType === 'application' || this.serviceType === 'combined'; });
+
+// // ========== INSTANCE METHODS ==========
+// visaServiceSchema.methods.addAppliedCountry = function(country) {
+//   if (!this.applicationDetails?.visaInfo?.appliedCountries) {
+//     this.applicationDetails.visaInfo.appliedCountries = [];
+//   }
+//   if (!this.applicationDetails.visaInfo.appliedCountries.includes(country)) {
+//     this.applicationDetails.visaInfo.appliedCountries.push(country);
+//   }
+//   return this;
+// };
+
+// visaServiceSchema.methods.addDocument = function(category, documentData) {
+//   if (!this.documents) this.documents = {};
+//   switch(category.toLowerCase()) {
+//     case 'photograph': this.documents.photograph = { ...this.documents.photograph, ...documentData, uploadedAt: new Date() }; break;
+//     case 'passport': case 'passportcopy': this.documents.passportCopy = { ...this.documents.passportCopy, ...documentData, uploadedAt: new Date() }; break;
+//     case 'financial': if (!this.documents.financialDocuments) this.documents.financialDocuments = []; this.documents.financialDocuments.push({ ...documentData, uploadedAt: new Date() }); break;
+//     case 'travel': if (!this.documents.travelDocuments) this.documents.travelDocuments = []; this.documents.travelDocuments.push({ ...documentData, uploadedAt: new Date() }); break;
+//     case 'supporting': if (!this.documents.supportingDocuments) this.documents.supportingDocuments = []; this.documents.supportingDocuments.push({ ...documentData, uploadedAt: new Date() }); break;
+//     default: if (!this.documents.otherDocuments) this.documents.otherDocuments = []; this.documents.otherDocuments.push({ description: category, ...documentData, uploadedAt: new Date() });
+//   }
+//   return this;
+// };
+
+// visaServiceSchema.methods.uploadDocumentToCloudinary = async function(category, filePath, fileName) {
+//   const result = await cloudinary.uploader.upload(filePath, { folder: 'visa_documents', public_id: fileName, resource_type: 'auto' });
+//   this.addDocument(category, { cloudinaryUrl: result.secure_url, publicId: result.public_id, originalName: fileName });
+//   return result.secure_url;
+// };
+
+// // ========== EXPORT MODEL ==========
+// module.exports = mongoose.model('VisaService', visaServiceSchema);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 const mongoose = require('mongoose');
 const cloudinary = require('cloudinary').v2;
 
-// ========== SCHEMA ==========
-const visaServiceSchema = new mongoose.Schema(
-  {
-    // ========================
-    // PRIMARY IDENTIFIERS
-    // ========================
-    serviceId: {
-      type: String,
-      required: true,
-      unique: true,
-      index: true,
-      default: function() {
-        const timestamp = Date.now();
-        const random = Math.floor(Math.random() * 1000);
-        return `VS-${timestamp}-${random}`;
-      }
-    },
-    trackingNumber: {
-      type: String,
-      unique: true,
-      sparse: true // Allows null for bookings
-    },
+/* =========================
+   CLOUDINARY CONFIG
+========================= */
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_NAME,
+  api_key: process.env.CLOUDINARY_KEY,
+  api_secret: process.env.CLOUDINARY_SECRET
+});
 
-    // ========================
-    // SERVICE TYPE & STAGE
-    // ========================
-    serviceType: {
+/* =========================
+   REUSABLE DOCUMENT SCHEMA
+========================= */
+const cloudDocSchema = new mongoose.Schema({
+  documentType: String,
+  cloudinaryUrl: String,
+  publicId: String,
+  size: { type: Number, max: 5 * 1024 * 1024 }, // <= 5MB
+  uploadedAt: { type: Date, default: Date.now },
+  verified: { type: Boolean, default: false }
+}, { _id: false });
+
+/* =========================
+   MAIN VISA SERVICE SCHEMA
+========================= */
+const visaServiceSchema = new mongoose.Schema({
+
+  /* =========================
+     SYSTEM IDENTIFIERS
+  ========================= */
+  serviceId: {
+    type: String,
+    unique: true,
+    default: () => `VS-${Date.now()}-${Math.floor(Math.random() * 1000)}`
+  },
+  trackingNumber: { type: String, sparse: true },
+
+  /* =========================
+     TYPE DIFFERENTIATION
+     👉 THIS IS THE CORE
+  ========================= */
+  recordType: {
+    type: String,
+    enum: ['visa-catalog', 'visa-booking'],
+    required: true
+  },
+
+  /* =================================================
+     1️⃣ VISA CATALOG (WHAT YOU PROVIDE)
+     recordType = visa-catalog
+  ================================================= */
+  visaCatalog: {
+    country: String,
+    visaType: {
       type: String,
-      enum: ['booking', 'application', 'combined'],
-      required: true,
-      default: 'booking'
+      enum: ['Tourist','Business','Student','Work','Family','Transit']
     },
-    serviceStage: {
+    description: String,
+    processingTime: String,
+    price: {
+      amount: Number,
+      currency: { type: String, default: 'USD' }
+    },
+    coverImage: {
+      cloudinaryUrl: String,
+      publicId: String
+    },
+    isActive: { type: Boolean, default: true }
+  },
+
+  /* =================================================
+     2️⃣ VISA BOOKING / APPLICATION
+     recordType = visa-booking
+  ================================================= */
+  booking: {
+    serviceRef: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'VisaService'
+    },
+    bookingType: {
+      type: String,
+      enum: ['consultation','full-application'],
+      default: 'consultation'
+    },
+    status: {
       type: String,
       enum: [
-        'booking-pending',
-        'booking-confirmed',
-        'consultation-completed',
-        'application-initiated',
-        'application-submitted',
-        'document-verification',
-        'payment-processing',
+        'pending',
+        'confirmed',
+        'documents-collection',
+        'submitted',
         'embassy-processing',
-        'visa-approved',
-        'visa-issued',
+        'approved',
+        'rejected',
         'completed',
         'cancelled'
       ],
-      default: 'booking-pending'
-    },
-
-    // ========================
-    // CUSTOMER INFO
-    // ========================
-    customer: {
-      personalInfo: {
-        fullName: { type: String, required: true, trim: true },
-        dateOfBirth: { type: Date, required: true },
-        gender: { type: String, enum: ['male', 'female', 'other', 'prefer-not-to-say'], default: 'prefer-not-to-say' },
-        nationality: { type: String, required: true },
-        countryOfResidence: { type: String, required: true },
-        maritalStatus: { type: String, enum: ['single','married','divorced','widowed','separated'], default: 'single' },
-        occupation: String,
-        employer: String
-      },
-      contactInfo: {
-        email: { type: String, required: true, lowercase: true, match: [/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/, 'Enter a valid email'] },
-        primaryPhone: { type: String, required: true },
-        secondaryPhone: String,
-        whatsappNumber: String,
-        address: {
-          street: String,
-          city: String,
-          state: String,
-          country: String,
-          postalCode: String
-        },
-        emergencyContact: {
-          name: String,
-          relationship: String,
-          phone: String,
-          email: String
-        }
-      },
-      passportInfo: {
-        passportNumber: String,
-        issuingCountry: String,
-        issueDate: Date,
-        expiryDate: Date,
-        placeOfIssue: String,
-        hasPreviousVisas: { type: Boolean, default: false },
-        previousVisaDetails: [{
-          country: String,
-          type: String,
-          issueDate: Date,
-          expiryDate: Date
-        }]
-      }
-    },
-
-    // ========================
-    // BOOKING DETAILS
-    // ========================
-    bookingDetails: {
-      type: { type: String, enum: ['consultation','document-submission','appointment','online-help','walk-in'], default: 'consultation' },
-      serviceRequested: {
-        type: String,
-        enum: ['tourist-visa','business-visa','student-visa','work-visa','family-visa','transit-visa','visa-renewal','visa-extension','express-service','premium-service','general-consultation']
-      },
-      appointment: {
-        date: Date,
-        timeSlot: String,
-        duration: { type: Number, default: 60 },
-        mode: { type: String, enum: ['in-person','online','phone'], default: 'in-person' },
-        location: String,
-        address: String,
-        confirmed: { type: Boolean, default: false },
-        attended: { type: Boolean, default: false },
-        notes: String
-      },
-      bookingStatus: { type: String, enum: ['pending','confirmed','completed','cancelled','no-show','rescheduled'], default: 'pending' },
-      bookingAmount: { type: Number, default: 0, min: 0 },
-      bookingPayment: {
-        status: { type: String, enum: ['pending','paid','refunded'], default: 'pending' },
-        method: String,
-        transactionId: String,
-        paidAt: Date
-      }
-    },
-
-    // ========================
-    // APPLICATION DETAILS
-    // ========================
-    applicationDetails: {
-      visaInfo: {
-        destinationCountry: { type: String },
-        appliedCountries: { type: [String], default: [] }, // countries we applied for
-        visaType: { type: String, enum: ['Tourist','Business','Student','Work','Transit','Family','Medical','Diplomatic'] },
-        category: { type: String, enum: ['short-term','long-term','single-entry','multiple-entry','transit'], default: 'short-term' },
-        purposeOfTravel: String,
-        travelDates: {
-          intendedEntry: Date,
-          intendedExit: Date,
-          flexibleDates: { type: Boolean, default: false }
-        },
-        entriesRequested: { type: String, enum: ['Single','Double','Multiple'], default: 'Single' },
-        travelCompanions: [{ name: String, relationship: String, age: Number }]
-      },
-      servicePackage: {
-        name: { type: String, enum: ['basic','standard','express','premium','custom'], default: 'standard' },
-        description: String,
-        processingTime: { type: String, default: '15-20 business days' },
-        inclusions: [String],
-        exclusions: [String]
-      },
-      fees: {
-        consultationFee: { type: Number, default: 0, min: 0 },
-        serviceFee: { type: Number, default: 0, min: 0 },
-        embassyFee: { type: Number, default: 0, min: 0 },
-        additionalFees: { type: Number, default: 0, min: 0 },
-        discount: { type: Number, default: 0, min: 0 },
-        totalAmount: { type: Number, default: 0, min: 0 },
-        currency: { type: String, default: 'USD' }
-      },
-      payment: {
-        status: { type: String, enum: ['pending','partial','paid','overdue','refunded','cancelled'], default: 'pending' },
-        amountPaid: { type: Number, default: 0, min: 0 },
-        paymentMethod: { type: String, enum: ['credit-card','debit-card','bank-transfer','cash','online-payment','installment'] },
-        dueDate: Date,
-        paymentHistory: [{
-          amount: Number,
-          date: Date,
-          method: String,
-          transactionId: String,
-          reference: String,
-          notes: String
-        }]
-      },
-      applicationStatus: {
-        current: {
-          type: String,
-          enum: ['not-started','draft','document-collection','document-review','application-filling','payment-pending','submitted-to-embassy','embassy-processing','interview-scheduled','decision-pending','additional-documents-requested','approved','rejected','visa-printed','ready-for-collection','collected','cancelled'],
-          default: 'not-started'
-        },
-        submittedAt: Date,
-        processingStartedAt: Date,
-        expectedCompletionDate: Date,
-        actualCompletionDate: Date,
-        embassySubmissionDate: Date,
-        decisionDate: Date,
-        collectionDate: Date
-      },
-      embassyInfo: {
-        embassyName: String,
-        location: String,
-        applicationNumber: String,
-        referenceNumber: String,
-        trackingNumber: String,
-        submissionMethod: { type: String, enum: ['in-person','courier','online','agent'] },
-        submissionDate: Date,
-        appointmentDate: Date,
-        interviewDate: Date,
-        collectionMethod: { type: String, enum: ['in-person','courier','representative'] },
-        collectionDate: Date,
-        trackingUrl: String
-      },
-      visaIssuance: {
-        visaNumber: String,
-        issueDate: Date,
-        expiryDate: Date,
-        validityStart: Date,
-        validityEnd: Date,
-        durationOfStay: String,
-        entriesAllowed: String,
-        remarks: String,
-        issuedAt: String,
-        issuingOfficer: String,
-        visaStickerNumber: String
-      }
-    },
-
-    // ========================
-    // DOCUMENTS
-    // ========================
-    documents: {
-      photograph: { cloudinaryUrl: String, publicId: String, uploadedAt: Date, verified: { type: Boolean, default: false } },
-      passportCopy: { cloudinaryUrl: String, publicId: String, uploadedAt: Date, verified: { type: Boolean, default: false } },
-      financialDocuments: [{ documentType: String, cloudinaryUrl: String, publicId: String, uploadedAt: Date, verified: { type: Boolean, default: false } }],
-      travelDocuments: [{ documentType: String, cloudinaryUrl: String, publicId: String, uploadedAt: Date, verified: { type: Boolean, default: false } }],
-      supportingDocuments: [{ documentType: String, cloudinaryUrl: String, publicId: String, uploadedAt: Date, verified: { type: Boolean, default: false } }],
-      otherDocuments: [{ description: String, cloudinaryUrl: String, publicId: String, uploadedAt: Date, verified: { type: Boolean, default: false } }]
-    },
-
-    // ========================
-    // INTERNAL MANAGEMENT
-    // ========================
-    internal: {
-      assignedTo: {
-        agentId: mongoose.Schema.Types.ObjectId,
-        agentName: String,
-        agentEmail: String,
-        department: { type: String, enum: ['sales','consultation','processing','verification','customer-service'] },
-        assignedAt: { type: Date, default: Date.now },
-        lastContacted: Date
-      },
-      priority: { type: String, enum: ['low','normal','high','urgent'], default: 'normal' },
-      source: { type: String, enum: ['website','walk-in','referral','partner','social-media','repeat-customer'], default: 'website' },
-      notes: [{ note: String, addedBy: String, addedAt: { type: Date, default: Date.now }, category: String, priority: String }]
-    },
-
-    // ========================
-    // COMMUNICATIONS & AUDIT
-    // ========================
-    communications: [{ type: Object }],
-    statusHistory: [{ type: Object }],
-    auditLog: [{ type: Object }]
+      default: 'pending'
+    }
   },
-  { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }
-);
 
-// ========== VIRTUALS ==========
-visaServiceSchema.virtual('totalDocuments').get(function() {
-  let count = 0;
-  if (this.documents?.photograph?.cloudinaryUrl) count++;
-  if (this.documents?.passportCopy?.cloudinaryUrl) count++;
-  count += this.documents?.financialDocuments?.length || 0;
-  count += this.documents?.travelDocuments?.length || 0;
-  count += this.documents?.supportingDocuments?.length || 0;
-  count += this.documents?.otherDocuments?.length || 0;
-  return count;
-});
+  /* =========================
+     CUSTOMER INFORMATION
+  ========================= */
+  customer: {
+    fullName: String,
+    email: String,
+    phone: String,
+    nationality: String,
+    passportNumber: String
+  },
 
-visaServiceSchema.virtual('balanceDue').get(function() {
-  const total = this.applicationDetails?.fees?.totalAmount || 0;
-  const paid = this.applicationDetails?.payment?.amountPaid || 0;
-  return Math.max(0, total - paid);
-});
+  /* =========================
+     DOCUMENTS (≤ 5MB)
+  ========================= */
+  documents: {
+    photograph: cloudDocSchema,
+    passportCopy: cloudDocSchema,
+    financialDocuments: [cloudDocSchema],
+    travelDocuments: [cloudDocSchema],
+    supportingDocuments: [cloudDocSchema]
+  },
 
-visaServiceSchema.virtual('isBooking').get(function() { return this.serviceType === 'booking'; });
-visaServiceSchema.virtual('isApplication').get(function() { return this.serviceType === 'application' || this.serviceType === 'combined'; });
-visaServiceSchema.virtual('hasBooking').get(function() { return this.serviceType === 'booking' || this.serviceType === 'combined'; });
-visaServiceSchema.virtual('hasApplication').get(function() { return this.serviceType === 'application' || this.serviceType === 'combined'; });
-
-// ========== INSTANCE METHODS ==========
-visaServiceSchema.methods.addAppliedCountry = function(country) {
-  if (!this.applicationDetails?.visaInfo?.appliedCountries) {
-    this.applicationDetails.visaInfo.appliedCountries = [];
+  /* =========================
+     INTERNAL
+  ========================= */
+  internal: {
+    assignedTo: String,
+    notes: [String]
   }
-  if (!this.applicationDetails.visaInfo.appliedCountries.includes(country)) {
-    this.applicationDetails.visaInfo.appliedCountries.push(country);
-  }
-  return this;
-};
 
-visaServiceSchema.methods.addDocument = function(category, documentData) {
-  if (!this.documents) this.documents = {};
-  switch(category.toLowerCase()) {
-    case 'photograph': this.documents.photograph = { ...this.documents.photograph, ...documentData, uploadedAt: new Date() }; break;
-    case 'passport': case 'passportcopy': this.documents.passportCopy = { ...this.documents.passportCopy, ...documentData, uploadedAt: new Date() }; break;
-    case 'financial': if (!this.documents.financialDocuments) this.documents.financialDocuments = []; this.documents.financialDocuments.push({ ...documentData, uploadedAt: new Date() }); break;
-    case 'travel': if (!this.documents.travelDocuments) this.documents.travelDocuments = []; this.documents.travelDocuments.push({ ...documentData, uploadedAt: new Date() }); break;
-    case 'supporting': if (!this.documents.supportingDocuments) this.documents.supportingDocuments = []; this.documents.supportingDocuments.push({ ...documentData, uploadedAt: new Date() }); break;
-    default: if (!this.documents.otherDocuments) this.documents.otherDocuments = []; this.documents.otherDocuments.push({ description: category, ...documentData, uploadedAt: new Date() });
-  }
-  return this;
-};
+}, { timestamps: true });
 
-visaServiceSchema.methods.uploadDocumentToCloudinary = async function(category, filePath, fileName) {
-  const result = await cloudinary.uploader.upload(filePath, { folder: 'visa_documents', public_id: fileName, resource_type: 'auto' });
-  this.addDocument(category, { cloudinaryUrl: result.secure_url, publicId: result.public_id, originalName: fileName });
+/* =========================
+   INSTANCE METHOD:
+   CLOUDINARY UPLOAD (5MB)
+========================= */
+visaServiceSchema.methods.uploadDocument = async function (category, file) {
+  if (file.size > 5 * 1024 * 1024) {
+    throw new Error('File exceeds 5MB limit');
+  }
+
+  const result = await cloudinary.uploader.upload(file.path, {
+    folder: 'visa_documents',
+    resource_type: 'auto'
+  });
+
+  const docData = {
+    cloudinaryUrl: result.secure_url,
+    publicId: result.public_id,
+    size: file.size
+  };
+
+  if (Array.isArray(this.documents[category])) {
+    this.documents[category].push(docData);
+  } else {
+    this.documents[category] = docData;
+  }
+
   return result.secure_url;
 };
 
-// ========== EXPORT MODEL ==========
+/* =========================
+   EXPORT
+========================= */
 module.exports = mongoose.model('VisaService', visaServiceSchema);
+
