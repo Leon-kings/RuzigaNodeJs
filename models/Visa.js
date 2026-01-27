@@ -2770,6 +2770,182 @@
 
 
 
+// const mongoose = require('mongoose');
+// const cloudinary = require('cloudinary').v2;
+
+// /* =========================
+//    CLOUDINARY CONFIG
+// ========================= */
+// cloudinary.config({
+//   cloud_name: process.env.CLOUDINARY_NAME,
+//   api_key: process.env.CLOUDINARY_KEY,
+//   api_secret: process.env.CLOUDINARY_SECRET
+// });
+
+// /* =========================
+//    REUSABLE DOCUMENT SCHEMA
+// ========================= */
+// const cloudDocSchema = new mongoose.Schema({
+//   documentType: String,
+//   cloudinaryUrl: String,
+//   publicId: String,
+//   size: { type: Number, max: 5 * 1024 * 1024 }, // <= 5MB
+//   uploadedAt: { type: Date, default: Date.now },
+//   verified: { type: Boolean, default: false }
+// }, { _id: false });
+
+// /* =========================
+//    MAIN VISA SERVICE SCHEMA
+// ========================= */
+// const visaServiceSchema = new mongoose.Schema({
+
+//   /* =========================
+//      SYSTEM IDENTIFIERS
+//   ========================= */
+//   serviceId: {
+//     type: String,
+//     unique: true,
+//     default: () => `VS-${Date.now()}-${Math.floor(Math.random() * 1000)}`
+//   },
+//   trackingNumber: { type: String, sparse: true },
+
+//   /* =========================
+//      TYPE DIFFERENTIATION
+//      👉 THIS IS THE CORE
+//   ========================= */
+//   recordType: {
+//     type: String,
+//     enum: ['visa-catalog', 'visa-booking'],
+//     required: true
+//   },
+
+//   /* =================================================
+//      1️⃣ VISA CATALOG (WHAT YOU PROVIDE)
+//      recordType = visa-catalog
+//   ================================================= */
+//   visaCatalog: {
+//     country: String,
+//     visaType: {
+//       type: String,
+//       enum: ['Tourist','Business','Student','Work','Family','Transit']
+//     },
+//     description: String,
+//     processingTime: String,
+//     price: {
+//       amount: Number,
+//       currency: { type: String, default: 'USD' }
+//     },
+//     coverImage: {
+//       cloudinaryUrl: String,
+//       publicId: String
+//     },
+//     isActive: { type: Boolean, default: true }
+//   },
+
+//   /* =================================================
+//      2️⃣ VISA BOOKING / APPLICATION
+//      recordType = visa-booking
+//   ================================================= */
+//   booking: {
+//     serviceRef: {
+//       type: mongoose.Schema.Types.ObjectId,
+//       ref: 'VisaService'
+//     },
+//     bookingType: {
+//       type: String,
+//       enum: ['consultation','full-application'],
+//       default: 'consultation'
+//     },
+//     status: {
+//       type: String,
+//       enum: [
+//         'pending',
+//         'confirmed',
+//         'documents-collection',
+//         'submitted',
+//         'embassy-processing',
+//         'approved',
+//         'rejected',
+//         'completed',
+//         'cancelled'
+//       ],
+//       default: 'pending'
+//     }
+//   },
+
+//   /* =========================
+//      CUSTOMER INFORMATION
+//   ========================= */
+//   customer: {
+//     fullName: String,
+//     email: String,
+//     phone: String,
+//     nationality: String,
+//     passportNumber: String
+//   },
+
+//   /* =========================
+//      DOCUMENTS (≤ 5MB)
+//   ========================= */
+//   documents: {
+//     photograph: cloudDocSchema,
+//     passportCopy: cloudDocSchema,
+//     financialDocuments: [cloudDocSchema],
+//     travelDocuments: [cloudDocSchema],
+//     supportingDocuments: [cloudDocSchema]
+//   },
+
+//   /* =========================
+//      INTERNAL
+//   ========================= */
+//   internal: {
+//     assignedTo: String,
+//     notes: [String]
+//   }
+
+// }, { timestamps: true });
+
+// /* =========================
+//    INSTANCE METHOD:
+//    CLOUDINARY UPLOAD (5MB)
+// ========================= */
+// visaServiceSchema.methods.uploadDocument = async function (category, file) {
+//   if (file.size > 5 * 1024 * 1024) {
+//     throw new Error('File exceeds 5MB limit');
+//   }
+
+//   const result = await cloudinary.uploader.upload(file.path, {
+//     folder: 'visa_documents',
+//     resource_type: 'auto'
+//   });
+
+//   const docData = {
+//     cloudinaryUrl: result.secure_url,
+//     publicId: result.public_id,
+//     size: file.size
+//   };
+
+//   if (Array.isArray(this.documents[category])) {
+//     this.documents[category].push(docData);
+//   } else {
+//     this.documents[category] = docData;
+//   }
+
+//   return result.secure_url;
+// };
+
+// /* =========================
+//    EXPORT
+// ========================= */
+// module.exports = mongoose.model('VisaService', visaServiceSchema);
+
+
+
+
+
+
+
+
 const mongoose = require('mongoose');
 const cloudinary = require('cloudinary').v2;
 
@@ -2783,13 +2959,13 @@ cloudinary.config({
 });
 
 /* =========================
-   REUSABLE DOCUMENT SCHEMA
+   CLOUD DOCUMENT SCHEMA
 ========================= */
 const cloudDocSchema = new mongoose.Schema({
   documentType: String,
   cloudinaryUrl: String,
   publicId: String,
-  size: { type: Number, max: 5 * 1024 * 1024 }, // <= 5MB
+  size: { type: Number, max: 5 * 1024 * 1024 }, // ≤ 5MB
   uploadedAt: { type: Date, default: Date.now },
   verified: { type: Boolean, default: false }
 }, { _id: false });
@@ -2807,11 +2983,17 @@ const visaServiceSchema = new mongoose.Schema({
     unique: true,
     default: () => `VS-${Date.now()}-${Math.floor(Math.random() * 1000)}`
   },
-  trackingNumber: { type: String, sparse: true },
+  // trackingNumber: { type: String, sparse: true },
+  trackingNumber: {
+  type: String,
+  unique: true,
+  sparse: true,
+  default: () => `TN-${Date.now()}-${Math.floor(Math.random()*1000)}`
+}
+,
 
   /* =========================
      TYPE DIFFERENTIATION
-     👉 THIS IS THE CORE
   ========================= */
   recordType: {
     type: String,
@@ -2819,15 +3001,16 @@ const visaServiceSchema = new mongoose.Schema({
     required: true
   },
 
-  /* =================================================
-     1️⃣ VISA CATALOG (WHAT YOU PROVIDE)
-     recordType = visa-catalog
-  ================================================= */
+  /* =========================
+     VISA CATALOG DATA
+     Only for 'visa-catalog', no personal info
+  ========================= */
   visaCatalog: {
-    country: String,
+    country: { type: String, required: function() { return this.recordType === 'visa-catalog'; } },
     visaType: {
       type: String,
-      enum: ['Tourist','Business','Student','Work','Family','Transit']
+      enum: ['Tourist','Business','Student','Work','Family','Transit'],
+      required: function() { return this.recordType === 'visa-catalog'; }
     },
     description: String,
     processingTime: String,
@@ -2842,10 +3025,10 @@ const visaServiceSchema = new mongoose.Schema({
     isActive: { type: Boolean, default: true }
   },
 
-  /* =================================================
-     2️⃣ VISA BOOKING / APPLICATION
-     recordType = visa-booking
-  ================================================= */
+  /* =========================
+     VISA BOOKING / APPLICATION
+     Only for 'visa-booking', includes personal data
+  ========================= */
   booking: {
     serviceRef: {
       type: mongoose.Schema.Types.ObjectId,
@@ -2870,29 +3053,21 @@ const visaServiceSchema = new mongoose.Schema({
         'cancelled'
       ],
       default: 'pending'
+    },
+    customer: {
+      fullName: String,
+      email: String,
+      phone: String,
+      nationality: String,
+      passportNumber: String
+    },
+    documents: {
+      photograph: cloudDocSchema,
+      passportCopy: cloudDocSchema,
+      financialDocuments: [cloudDocSchema],
+      travelDocuments: [cloudDocSchema],
+      supportingDocuments: [cloudDocSchema]
     }
-  },
-
-  /* =========================
-     CUSTOMER INFORMATION
-  ========================= */
-  customer: {
-    fullName: String,
-    email: String,
-    phone: String,
-    nationality: String,
-    passportNumber: String
-  },
-
-  /* =========================
-     DOCUMENTS (≤ 5MB)
-  ========================= */
-  documents: {
-    photograph: cloudDocSchema,
-    passportCopy: cloudDocSchema,
-    financialDocuments: [cloudDocSchema],
-    travelDocuments: [cloudDocSchema],
-    supportingDocuments: [cloudDocSchema]
   },
 
   /* =========================
@@ -2906,8 +3081,7 @@ const visaServiceSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 /* =========================
-   INSTANCE METHOD:
-   CLOUDINARY UPLOAD (5MB)
+   INSTANCE METHOD: CLOUDINARY UPLOAD
 ========================= */
 visaServiceSchema.methods.uploadDocument = async function (category, file) {
   if (file.size > 5 * 1024 * 1024) {
@@ -2925,17 +3099,16 @@ visaServiceSchema.methods.uploadDocument = async function (category, file) {
     size: file.size
   };
 
-  if (Array.isArray(this.documents[category])) {
-    this.documents[category].push(docData);
+  if (Array.isArray(this.booking.documents[category])) {
+    this.booking.documents[category].push(docData);
   } else {
-    this.documents[category] = docData;
+    this.booking.documents[category] = docData;
   }
 
   return result.secure_url;
 };
 
 /* =========================
-   EXPORT
+   EXPORT MODEL
 ========================= */
 module.exports = mongoose.model('VisaService', visaServiceSchema);
-
