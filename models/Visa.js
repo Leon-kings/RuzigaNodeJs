@@ -3005,25 +3005,52 @@ const visaServiceSchema = new mongoose.Schema({
      VISA CATALOG DATA
      Only for 'visa-catalog', no personal info
   ========================= */
-  visaCatalog: {
-    country: { type: String, required: function() { return this.recordType === 'visa-catalog'; } },
-    visaType: {
-      type: String,
-      enum: ['Tourist','Business','Student','Work','Family','Transit'],
-      required: function() { return this.recordType === 'visa-catalog'; }
-    },
-    description: String,
-    processingTime: String,
-    price: {
-      amount: Number,
-      currency: { type: String, default: 'USD' }
-    },
-    coverImage: {
-      cloudinaryUrl: String,
-      publicId: String
-    },
-    isActive: { type: Boolean, default: true }
+  // visaCatalog: {
+  //   country: { type: String, required: function() { return this.recordType === 'visa-catalog'; } },
+  //   visaType: {
+  //     type: String,
+  //     enum: ['Tourist','Business','Student','Work','Family','Transit'],
+  //     required: function() { return this.recordType === 'visa-catalog'; }
+  //   },
+  //   description: String,
+  //   processingTime: String,
+  //   price: {
+  //     amount: Number,
+  //     currency: { type: String, default: 'USD' }
+  //   },
+  //   coverImage: {
+  //     cloudinaryUrl: String,
+  //     publicId: String
+  //   },
+  //   isActive: { type: Boolean, default: true }
+  // },
+visaCatalog: {
+  country: {
+    type: String,
+    required: function () {
+      return this.recordType === 'visa-catalog';
+    }
   },
+  visaType: {
+    type: String,
+    enum: ['Tourist','Business','Student','Work','Family','Transit'],
+    required: function () {
+      return this.recordType === 'visa-catalog';
+    }
+  },
+  description: String,
+  processingTime: String,
+  price: {
+    amount: Number,
+    currency: { type: String, default: 'USD' }
+  },
+  coverImage: {
+    cloudinaryUrl: String,
+    publicId: String
+  },
+  isActive: { type: Boolean, default: true }
+}
+,
 
   /* =========================
      VISA BOOKING / APPLICATION
