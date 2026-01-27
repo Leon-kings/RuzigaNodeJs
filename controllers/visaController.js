@@ -6270,22 +6270,74 @@ const uploadToCloudinary = async (file, folder) => {
 ===================================================== */
 
 // CREATE CATALOG
+// exports.createVisaCatalog = async (req, res) => {
+//   try {
+//     const coverImage = await uploadToCloudinary(req.file, 'visa_catalog');
+
+//     const visa = await VisaService.create({
+//       recordType: 'visa-catalog',
+//       visaCatalog: {
+//         ...req.body,
+//         coverImage
+//       }
+//     });
+
+//     res.status(201).json({ success: true, data: visa });
+//   } catch (e) {
+//     console.error('CREATE CATALOG ERROR:', e);
+//     res.status(400).json({ success: false, message: e.message });
+//   }
+// };
+
 exports.createVisaCatalog = async (req, res) => {
   try {
-    const coverImage = await uploadToCloudinary(req.file, 'visa_catalog');
+    const {
+      country,
+      visaType,
+      description,
+      processingTime,
+      price,
+      isActive
+    } = req.body;
+
+    // ✅ Required field validation
+    if (!country || !visaType) {
+      return res.status(400).json({
+        success: false,
+        message: 'country and visaType are required'
+      });
+    }
+
+    // ✅ Upload image only if exists
+    let coverImage = null;
+    if (req.file) {
+      coverImage = await uploadToCloudinary(req.file, 'visa_catalog');
+    }
 
     const visa = await VisaService.create({
       recordType: 'visa-catalog',
       visaCatalog: {
-        ...req.body,
+        country,
+        visaType,
+        description,
+        processingTime,
+        price,
+        isActive,
         coverImage
       }
     });
 
-    res.status(201).json({ success: true, data: visa });
+    res.status(201).json({
+      success: true,
+      data: visa
+    });
+
   } catch (e) {
     console.error('CREATE CATALOG ERROR:', e);
-    res.status(400).json({ success: false, message: e.message });
+    res.status(400).json({
+      success: false,
+      message: e.message
+    });
   }
 };
 
