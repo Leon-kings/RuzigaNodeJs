@@ -5526,12 +5526,229 @@
 
 
 
+// const { Plane, AirportBooking } = require("../models/AirportBooking");
+// const { validationResult } = require("express-validator");
+// const cloudinary = require("cloudinary").v2;
+// const nodemailer = require("nodemailer");
+// const mongoose = require("mongoose");
+// const multer = require("multer");
+
+// /* =========================
+//    CLOUDINARY CONFIG
+// ========================= */
+// cloudinary.config({
+//   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+//   api_key: process.env.CLOUDINARY_API_KEY,
+//   api_secret: process.env.CLOUDINARY_API_SECRET,
+// });
+
+// // multer memory storage for streaming to Cloudinary
+// const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } });
+
+// /* =========================
+//    EMAIL CONFIG
+// ========================= */
+// const transporter = nodemailer.createTransport({
+//   host: process.env.SMTP_HOST || "smtp.gmail.com",
+//   port: 587,
+//   secure: false,
+//   auth: {
+//     user: process.env.SMTP_USER,
+//     pass: process.env.SMTP_PASS,
+//   },
+// });
+
+// const sendEmail = async (to, subject, html) => {
+//   await transporter.sendMail({ from: `"Airport Services" <${process.env.EMAIL_FROM}>`, to, subject, html });
+// };
+
+// /* =========================
+//    BOOKINGS
+// ========================= */
+// exports.getAllBookings = async (req, res) => {
+//   const bookings = await AirportBooking.find()
+//     .populate("plane", "registrationNumber model images isAvailable")
+//     .sort({ createdAt: -1 });
+//   res.json({ success: true, data: bookings });
+// };
+
+// exports.getBookingsByEmail = async (req, res) => {
+//   const { email } = req.params;
+//   const bookings = await AirportBooking.find({ email: email.toLowerCase() })
+//     .populate("plane", "registrationNumber model images isAvailable")
+//     .sort({ createdAt: -1 });
+//   res.json({ success: true, total: bookings.length, data: bookings });
+// };
+
+// exports.getBooking = async (req, res) => {
+//   const booking = await AirportBooking.findById(req.params.id).populate("plane");
+//   if (!booking) return res.status(404).json({ success: false });
+//   res.json({ success: true, data: booking });
+// };
+
+// exports.createBooking = async (req, res) => {
+//   const errors = validationResult(req);
+//   if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
+
+//   const session = await mongoose.startSession();
+//   session.startTransaction();
+//   try {
+//     const plane = await Plane.findById(req.body.plane).session(session);
+//     if (!plane || !plane.isAvailable) throw new Error("Selected plane does not exist or is unavailable");
+
+//     const prices = { standard: 50, vip_service: 150, executive: 100, family: 75, group: 40 };
+//     const base = prices[req.body.serviceType] || 50;
+//     const totalAmount = base * req.body.numberOfPassengers + (req.body.numberOfBags || 0) * 10;
+
+//     const booking = await AirportBooking.create(
+//       [{ ...req.body, email: req.body.email.toLowerCase(), totalAmount, statistics: { totalRevenue: totalAmount } }],
+//       { session }
+//     );
+
+//     plane.isAvailable = false;
+//     await plane.save({ session });
+
+//     await session.commitTransaction();
+//     session.endSession();
+
+//     await sendEmail(booking[0].email, "Booking Confirmation", "<p>Your booking is confirmed.</p>");
+//     await booking[0].incrementEmailCount();
+
+//     res.status(201).json({ success: true, data: booking[0] });
+//   } catch (err) {
+//     await session.abortTransaction();
+//     session.endSession();
+//     res.status(500).json({ success: false, message: err.message });
+//   }
+// };
+
+// exports.updateBooking = async (req, res) => {
+//   const booking = await AirportBooking.findByIdAndUpdate(req.params.id, req.body, { new: true });
+//   res.json({ success: true, data: booking });
+// };
+
+// exports.cancelBooking = async (req, res) => {
+//   const booking = await AirportBooking.findById(req.params.id);
+//   if (!booking) return res.status(404).json({ success: false });
+
+//   booking.status = "cancelled";
+//   await booking.save();
+
+//   if (booking.plane) await Plane.findByIdAndUpdate(booking.plane, { isAvailable: true });
+
+//   res.json({ success: true, data: booking });
+// };
+
+// exports.updateStatus = async (req, res) => {
+//   const booking = await AirportBooking.findByIdAndUpdate(req.params.id, { status: req.body.status }, { new: true });
+//   res.json({ success: true, data: booking });
+// };
+
+// /* =========================
+//    PLANES
+// ========================= */
+
+// exports.getAllPlanes = async (req, res) => {
+//   const planes = await Plane.find();
+//   res.json({ success: true, data: planes });
+// };
+
+// exports.getPlane = async (req, res) => {
+//   const plane = await Plane.findById(req.params.id);
+//   if (!plane) return res.status(404).json({ success: false });
+//   res.json({ success: true, data: plane });
+// };
+
+// // CREATE PLANE WITH CLOUDINARY
+// exports.createPlane = [
+//   upload.single("image"),
+//   async (req, res) => {
+//     try {
+//       const data = { ...req.body };
+//       if (req.file) {
+//         const result = await new Promise((resolve, reject) => {
+//           const stream = cloudinary.uploader.upload_stream({ folder: "airport-service/planes" }, (error, result) => {
+//             if (error) reject(error);
+//             else resolve(result);
+//           });
+//           stream.end(req.file.buffer);
+//         });
+//         data.images = [{ url: result.secure_url, publicId: result.public_id, isPrimary: true }];
+//       }
+//       const plane = await Plane.create(data);
+//       res.status(201).json({ success: true, data: plane });
+//     } catch (err) {
+//       res.status(500).json({ success: false, message: err.message });
+//     }
+//   },
+// ];
+
+// exports.updatePlane = async (req, res) => {
+//   const plane = await Plane.findByIdAndUpdate(req.params.id, req.body, { new: true });
+//   res.json({ success: true, data: plane });
+// };
+
+// exports.deletePlane = async (req, res) => {
+//   const plane = await Plane.findById(req.params.id);
+//   if (!plane) return res.status(404).json({ success: false });
+
+//   for (const img of plane.images) await cloudinary.uploader.destroy(img.publicId);
+
+//   await plane.deleteOne();
+//   res.json({ success: true });
+// };
+
+// // UPLOAD EXTRA IMAGE TO PLANE
+// exports.uploadPlaneImage = [
+//   upload.single("image"),
+//   async (req, res) => {
+//     try {
+//       const plane = await Plane.findById(req.params.id);
+//       if (!plane) return res.status(404).json({ success: false });
+
+//       const result = await new Promise((resolve, reject) => {
+//         const stream = cloudinary.uploader.upload_stream({ folder: "airport-service/planes" }, (error, result) => {
+//           if (error) reject(error);
+//           else resolve(result);
+//         });
+//         stream.end(req.file.buffer);
+//       });
+
+//       plane.images.push({
+//         url: result.secure_url,
+//         publicId: result.public_id,
+//         isPrimary: plane.images.length === 0,
+//       });
+
+//       await plane.save();
+//       res.json({ success: true, data: plane });
+//     } catch (err) {
+//       res.status(500).json({ success: false, message: err.message });
+//     }
+//   },
+// ];
+
+// module.exports.uploadMiddleware = upload; // optional export for router if needed
+
+
+
+
+
+
+
+
+
+
+
+
+
 const { Plane, AirportBooking } = require("../models/AirportBooking");
 const { validationResult } = require("express-validator");
 const cloudinary = require("cloudinary").v2;
 const nodemailer = require("nodemailer");
 const mongoose = require("mongoose");
 const multer = require("multer");
+const fs = require("fs");
 
 /* =========================
    CLOUDINARY CONFIG
@@ -5542,8 +5759,10 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-// multer memory storage for streaming to Cloudinary
-const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } });
+/* =========================
+   MULTER CONFIG (TEMP STORAGE)
+========================= */
+const upload = multer({ dest: "tmp/" }); // temporary storage
 
 /* =========================
    EMAIL CONFIG
@@ -5559,49 +5778,115 @@ const transporter = nodemailer.createTransport({
 });
 
 const sendEmail = async (to, subject, html) => {
-  await transporter.sendMail({ from: `"Airport Services" <${process.env.EMAIL_FROM}>`, to, subject, html });
+  await transporter.sendMail({
+    from: `"Airport Services" <${process.env.EMAIL_FROM}>`,
+    to,
+    subject,
+    html,
+  });
+};
+
+/* =========================
+   CLOUDINARY UPLOAD HELPER
+========================= */
+const uploadToCloudinary = async (file, folder) => {
+  if (!file) return null;
+
+  if (file.size > 5 * 1024 * 1024) {
+    throw new Error("File exceeds 5MB limit");
+  }
+
+  const result = await cloudinary.uploader.upload(file.path, {
+    folder,
+    resource_type: "auto",
+  });
+
+  try {
+    fs.unlinkSync(file.path); // cleanup temp file
+  } catch (err) {
+    console.warn("File cleanup failed", err.message);
+  }
+
+  return {
+    cloudinaryUrl: result.secure_url,
+    publicId: result.public_id,
+    size: file.size,
+  };
 };
 
 /* =========================
    BOOKINGS
 ========================= */
+
+// GET ALL BOOKINGS
 exports.getAllBookings = async (req, res) => {
   const bookings = await AirportBooking.find()
     .populate("plane", "registrationNumber model images isAvailable")
     .sort({ createdAt: -1 });
+
   res.json({ success: true, data: bookings });
 };
 
+// GET BOOKINGS BY EMAIL
 exports.getBookingsByEmail = async (req, res) => {
   const { email } = req.params;
-  const bookings = await AirportBooking.find({ email: email.toLowerCase() })
+
+  const bookings = await AirportBooking.find({
+    email: email.toLowerCase(),
+  })
     .populate("plane", "registrationNumber model images isAvailable")
     .sort({ createdAt: -1 });
+
   res.json({ success: true, total: bookings.length, data: bookings });
 };
 
+// GET SINGLE BOOKING
 exports.getBooking = async (req, res) => {
-  const booking = await AirportBooking.findById(req.params.id).populate("plane");
+  const booking = await AirportBooking.findById(req.params.id).populate(
+    "plane"
+  );
   if (!booking) return res.status(404).json({ success: false });
+
   res.json({ success: true, data: booking });
 };
 
+// CREATE BOOKING
 exports.createBooking = async (req, res) => {
   const errors = validationResult(req);
-  if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
+  if (!errors.isEmpty())
+    return res.status(400).json({ errors: errors.array() });
 
   const session = await mongoose.startSession();
   session.startTransaction();
+
   try {
     const plane = await Plane.findById(req.body.plane).session(session);
-    if (!plane || !plane.isAvailable) throw new Error("Selected plane does not exist or is unavailable");
+    if (!plane || !plane.isAvailable) {
+      throw new Error("Selected plane does not exist or is unavailable");
+    }
 
-    const prices = { standard: 50, vip_service: 150, executive: 100, family: 75, group: 40 };
+    const prices = {
+      standard: 50,
+      vip_service: 150,
+      executive: 100,
+      family: 75,
+      group: 40,
+    };
+
     const base = prices[req.body.serviceType] || 50;
-    const totalAmount = base * req.body.numberOfPassengers + (req.body.numberOfBags || 0) * 10;
+    const totalAmount =
+      base * req.body.numberOfPassengers +
+      (req.body.numberOfBags || 0) * 10;
 
     const booking = await AirportBooking.create(
-      [{ ...req.body, email: req.body.email.toLowerCase(), totalAmount, statistics: { totalRevenue: totalAmount } }],
+      [
+        {
+          ...req.body,
+          email: req.body.email.toLowerCase(),
+          totalAmount,
+          statistics: { totalRevenue: totalAmount },
+        },
+      ],
       { session }
     );
 
@@ -5611,7 +5896,12 @@ exports.createBooking = async (req, res) => {
     await session.commitTransaction();
     session.endSession();
 
-    await sendEmail(booking[0].email, "Booking Confirmation", "<p>Your booking is confirmed.</p>");
+    await sendEmail(
+      booking[0].email,
+      "Booking Confirmation",
+      "<p>Your booking is confirmed.</p>"
+    );
+
     await booking[0].incrementEmailCount();
 
     res.status(201).json({ success: true, data: booking[0] });
@@ -5622,11 +5912,17 @@ exports.createBooking = async (req, res) => {
   }
 };
 
+// UPDATE BOOKING
 exports.updateBooking = async (req, res) => {
-  const booking = await AirportBooking.findByIdAndUpdate(req.params.id, req.body, { new: true });
+  const booking = await AirportBooking.findByIdAndUpdate(
+    req.params.id,
+    req.body,
+    { new: true }
+  );
   res.json({ success: true, data: booking });
 };
 
+// CANCEL BOOKING (SAFE)
 exports.cancelBooking = async (req, res) => {
   const booking = await AirportBooking.findById(req.params.id);
   if (!booking) return res.status(404).json({ success: false });
@@ -5634,13 +5930,20 @@ exports.cancelBooking = async (req, res) => {
   booking.status = "cancelled";
   await booking.save();
 
-  if (booking.plane) await Plane.findByIdAndUpdate(booking.plane, { isAvailable: true });
+  if (booking.plane) {
+    await Plane.findByIdAndUpdate(booking.plane, { isAvailable: true });
+  }
 
   res.json({ success: true, data: booking });
 };
 
+// UPDATE STATUS
 exports.updateStatus = async (req, res) => {
-  const booking = await AirportBooking.findByIdAndUpdate(req.params.id, { status: req.body.status }, { new: true });
+  const booking = await AirportBooking.findByIdAndUpdate(
+    req.params.id,
+    { status: req.body.status },
+    { new: true }
+  );
   res.json({ success: true, data: booking });
 };
 
@@ -5648,14 +5951,17 @@ exports.updateStatus = async (req, res) => {
    PLANES
 ========================= */
 
+// GET ALL PLANES
 exports.getAllPlanes = async (req, res) => {
   const planes = await Plane.find();
   res.json({ success: true, data: planes });
 };
 
+// GET SINGLE PLANE
 exports.getPlane = async (req, res) => {
   const plane = await Plane.findById(req.params.id);
   if (!plane) return res.status(404).json({ success: false });
+
   res.json({ success: true, data: plane });
 };
 
@@ -5665,16 +5971,21 @@ exports.createPlane = [
   async (req, res) => {
     try {
       const data = { ...req.body };
+
       if (req.file) {
-        const result = await new Promise((resolve, reject) => {
-          const stream = cloudinary.uploader.upload_stream({ folder: "airport-service/planes" }, (error, result) => {
-            if (error) reject(error);
-            else resolve(result);
-          });
-          stream.end(req.file.buffer);
-        });
-        data.images = [{ url: result.secure_url, publicId: result.public_id, isPrimary: true }];
+        const uploaded = await uploadToCloudinary(
+          req.file,
+          "airport-service/planes"
+        );
+        data.images = [
+          {
+            url: uploaded.cloudinaryUrl,
+            publicId: uploaded.publicId,
+            isPrimary: true,
+          },
+        ];
       }
+
       const plane = await Plane.create(data);
       res.status(201).json({ success: true, data: plane });
     } catch (err) {
@@ -5683,22 +5994,28 @@ exports.createPlane = [
   },
 ];
 
+// UPDATE PLANE
 exports.updatePlane = async (req, res) => {
-  const plane = await Plane.findByIdAndUpdate(req.params.id, req.body, { new: true });
+  const plane = await Plane.findByIdAndUpdate(req.params.id, req.body, {
+    new: true,
+  });
   res.json({ success: true, data: plane });
 };
 
+// DELETE PLANE + CLEANUP CLOUDINARY
 exports.deletePlane = async (req, res) => {
   const plane = await Plane.findById(req.params.id);
   if (!plane) return res.status(404).json({ success: false });
 
-  for (const img of plane.images) await cloudinary.uploader.destroy(img.publicId);
+  for (const img of plane.images) {
+    await cloudinary.uploader.destroy(img.publicId);
+  }
 
   await plane.deleteOne();
   res.json({ success: true });
 };
 
-// UPLOAD EXTRA IMAGE TO PLANE
+// UPLOAD EXTRA PLANE IMAGE
 exports.uploadPlaneImage = [
   upload.single("image"),
   async (req, res) => {
@@ -5706,17 +6023,14 @@ exports.uploadPlaneImage = [
       const plane = await Plane.findById(req.params.id);
       if (!plane) return res.status(404).json({ success: false });
 
-      const result = await new Promise((resolve, reject) => {
-        const stream = cloudinary.uploader.upload_stream({ folder: "airport-service/planes" }, (error, result) => {
-          if (error) reject(error);
-          else resolve(result);
-        });
-        stream.end(req.file.buffer);
-      });
+      const uploaded = await uploadToCloudinary(
+        req.file,
+        "airport-service/planes"
+      );
 
       plane.images.push({
-        url: result.secure_url,
-        publicId: result.public_id,
+        url: uploaded.cloudinaryUrl,
+        publicId: uploaded.publicId,
         isPrimary: plane.images.length === 0,
       });
 
@@ -5727,5 +6041,3 @@ exports.uploadPlaneImage = [
     }
   },
 ];
-
-module.exports.uploadMiddleware = upload; // optional export for router if needed
