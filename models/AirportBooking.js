@@ -1619,6 +1619,133 @@
 
 
 
+// const mongoose = require("mongoose");
+
+// /* =========================
+//    PLANE MODEL
+// ========================= */
+// const planeSchema = new mongoose.Schema(
+//   {
+//     registrationNumber: {
+//       type: String,
+//       required: true,
+//       unique: true,
+//       uppercase: true,
+//       trim: true,
+//     },
+//     name: { type: String, trim: true },
+//     model: { type: String, required: true, trim: true },
+//     manufacturer: { type: String, required: true, trim: true },
+//     yearOfManufacture: {
+//       type: Number,
+//       required: true,
+//       min: 1950,
+//       max: new Date().getFullYear(),
+//     },
+//     airline: { type: String, trim: true },
+//     flightPlan: { type: String, trim: true },
+//     capacity: {
+//       total: { type: Number, default: 0 },
+//     },
+//     images: [
+//       {
+//         url: { type: String, required: true },
+//         publicId: { type: String, required: true },
+//         isPrimary: { type: Boolean, default: false },
+//       },
+//     ],
+//     isAvailable: { type: Boolean, default: true },
+//   },
+//   { timestamps: true }
+// );
+
+// const Plane = mongoose.model("Plane", planeSchema);
+
+// /* =========================
+//    AIRPORT BOOKING MODEL
+// ========================= */
+// const airportBookingSchema = new mongoose.Schema(
+//   {
+//     bookingReference: {
+//       type: String,
+//       unique: true,
+//       default: () =>
+//         `AIR-${Date.now().toString().slice(-6)}${Math.random()
+//           .toString(36)
+//           .substring(2, 5)
+//           .toUpperCase()}`,
+//     },
+
+//     firstName: { type: String, required: true },
+//     lastName: { type: String, required: true },
+//     email: { type: String, required: true },
+//     phone: String,
+
+//     serviceType: {
+//       type: String,
+//       enum: ["standard", "vip_service", "executive", "family", "group"],
+//       required: true,
+//     },
+
+//     numberOfPassengers: { type: Number, required: true, min: 1 },
+//     numberOfBags: { type: Number, default: 0 },
+
+//     flightNumber: String,
+//     airline: String,
+
+//     plane: {
+//       type: mongoose.Schema.Types.ObjectId,
+//       ref: "Plane",
+//     },
+
+//     departureAirport: String,
+//     arrivalAirport: String,
+
+//     status: {
+//       type: String,
+//       enum: ["pending", "confirmed", "completed", "cancelled"],
+//       default: "pending",
+//     },
+
+//     totalAmount: { type: Number, default: 0 },
+
+//     statistics: {
+//       emailSentCount: { type: Number, default: 0 },
+//       totalRevenue: { type: Number, default: 0 },
+//     },
+//   },
+//   { timestamps: true }
+// );
+
+// /* =========================
+//    METHODS
+// ========================= */
+// airportBookingSchema.methods.incrementEmailCount = async function () {
+//   this.statistics.emailSentCount += 1;
+//   await this.save();
+// };
+
+// const AirportBooking = mongoose.model(
+//   "AirportBooking",
+//   airportBookingSchema
+// );
+
+// module.exports = { Plane, AirportBooking };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 const mongoose = require("mongoose");
 
 /* =========================
@@ -1633,28 +1760,63 @@ const planeSchema = new mongoose.Schema(
       uppercase: true,
       trim: true,
     },
-    name: { type: String, trim: true },
-    model: { type: String, required: true, trim: true },
-    manufacturer: { type: String, required: true, trim: true },
+    name: {
+      type: String,
+      trim: true,
+    },
+    model: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    manufacturer: {
+      type: String,
+      required: true,
+      trim: true,
+    },
     yearOfManufacture: {
       type: Number,
       required: true,
       min: 1950,
       max: new Date().getFullYear(),
     },
-    airline: { type: String, trim: true },
-    flightPlan: { type: String, trim: true },
-    capacity: {
-      total: { type: Number, default: 0 },
+    airline: {
+      type: String,
+      trim: true,
     },
+    flightPlan: {
+      type: String,
+      trim: true,
+    },
+    capacity: {
+      total: {
+        type: Number,
+        default: 0,
+      },
+    },
+
+    /* Cloudinary images */
     images: [
       {
-        url: { type: String, required: true },
-        publicId: { type: String, required: true },
-        isPrimary: { type: Boolean, default: false },
+        url: {
+          type: String,
+          required: true, // secure_url from Cloudinary
+        },
+        publicId: {
+          type: String,
+          required: true, // public_id from Cloudinary
+        },
+        isPrimary: {
+          type: Boolean,
+          default: false,
+        },
       },
     ],
-    isAvailable: { type: Boolean, default: true },
+
+    isAvailable: {
+      type: Boolean,
+      default: true,
+    },
   },
   { timestamps: true }
 );
@@ -1676,9 +1838,18 @@ const airportBookingSchema = new mongoose.Schema(
           .toUpperCase()}`,
     },
 
-    firstName: { type: String, required: true },
-    lastName: { type: String, required: true },
-    email: { type: String, required: true },
+    firstName: {
+      type: String,
+      required: true,
+    },
+    lastName: {
+      type: String,
+      required: true,
+    },
+    email: {
+      type: String,
+      required: true,
+    },
     phone: String,
 
     serviceType: {
@@ -1687,8 +1858,15 @@ const airportBookingSchema = new mongoose.Schema(
       required: true,
     },
 
-    numberOfPassengers: { type: Number, required: true, min: 1 },
-    numberOfBags: { type: Number, default: 0 },
+    numberOfPassengers: {
+      type: Number,
+      required: true,
+      min: 1,
+    },
+    numberOfBags: {
+      type: Number,
+      default: 0,
+    },
 
     flightNumber: String,
     airline: String,
@@ -1707,11 +1885,20 @@ const airportBookingSchema = new mongoose.Schema(
       default: "pending",
     },
 
-    totalAmount: { type: Number, default: 0 },
+    totalAmount: {
+      type: Number,
+      default: 0,
+    },
 
     statistics: {
-      emailSentCount: { type: Number, default: 0 },
-      totalRevenue: { type: Number, default: 0 },
+      emailSentCount: {
+        type: Number,
+        default: 0,
+      },
+      totalRevenue: {
+        type: Number,
+        default: 0,
+      },
     },
   },
   { timestamps: true }
@@ -1731,4 +1918,3 @@ const AirportBooking = mongoose.model(
 );
 
 module.exports = { Plane, AirportBooking };
-
