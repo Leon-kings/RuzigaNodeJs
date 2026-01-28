@@ -136,7 +136,7 @@ app.use("/bookings", serviceRoutes);
 app.use("/main/services", ServiceMainRoutes);
 app.use("/frequent/question", faqRoutes);
 app.use("/newsletter", newsletterRoutes);
-app.use("/csce", CSCEBookingRoutes);
+// app.use("/csce", CSCEBookingRoutes);
 app.use("/blogs", blogRoutes);
 app.use("/comments", commentRoutes);
 // app.use("/bookings", bookingRoutes);
