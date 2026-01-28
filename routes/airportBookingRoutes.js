@@ -162,41 +162,137 @@
 
 
 
+// const express = require("express");
+// const router = express.Router();
+// const controller = require("../controllers/airportBookingController");
+// const { body } = require("express-validator");
+
+// /* =======================
+//    PLANES
+// ======================= */
+// router.get("/planes/all", controller.getAllPlanes);
+// router.get("/planes/:id", controller.getPlane);
+
+// router.post(
+//   "/planes",
+//   [
+//     body("model").notEmpty().withMessage("Model is required"),
+//     body("manufacturer").notEmpty().withMessage("Manufacturer is required"),
+//     body("yearOfManufacture")
+//       .toInt()
+//       .isInt({ min: 1950 })
+//       .withMessage("Invalid year"),
+//   ],
+//   controller.createPlane
+// );
+
+// router.put("/planes/:id", controller.updatePlane);
+// router.delete("/planes/:id", controller.deletePlane);
+// router.post("/planes/:id/upload-image", controller.uploadPlaneImage);
+
+// /* =======================
+//    BOOKINGS
+// ======================= */
+// router.get("/", controller.getAllBookings);
+// router.get("/email/:email", controller.getBookingsByEmail);
+// router.get("/booking/:id", controller.getBooking);
+
+// router.post(
+//   "/",
+//   [
+//     body("firstName").notEmpty().withMessage("First name is required"),
+//     body("lastName").notEmpty().withMessage("Last name is required"),
+//     body("email").isEmail().withMessage("Valid email is required"),
+//     body("serviceType").notEmpty().withMessage("Service type is required"),
+//     body("numberOfPassengers")
+//       .isInt({ min: 1 })
+//       .withMessage("Passengers must be at least 1"),
+//     body("plane").notEmpty().withMessage("Plane ID is required"),
+//   ],
+//   controller.createBooking
+// );
+
+// router.put("/:id", controller.updateBooking);
+// router.patch("/:id/status", controller.updateStatus);
+// router.delete("/:id", controller.cancelBooking);
+
+// module.exports = router;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 const express = require("express");
 const router = express.Router();
 const controller = require("../controllers/airportBookingController");
 const { body } = require("express-validator");
 
 /* =======================
-   PLANES
+   PLANES ROUTES
 ======================= */
-router.get("/planes/all", controller.getAllPlanes);
+
+// Get all planes
+router.get("/planes/all", controller.getPlanes);
+
+// Get single plane
 router.get("/planes/:id", controller.getPlane);
 
+// Create plane + Cloudinary images
 router.post(
   "/planes",
+  controller.upload.array("images", 5), // 👈 multer from controller
   [
+    body("registrationNumber").notEmpty().withMessage("Registration number is required"),
     body("model").notEmpty().withMessage("Model is required"),
     body("manufacturer").notEmpty().withMessage("Manufacturer is required"),
     body("yearOfManufacture")
       .toInt()
       .isInt({ min: 1950 })
-      .withMessage("Invalid year"),
+      .withMessage("Invalid year of manufacture"),
   ],
   controller.createPlane
 );
 
-router.put("/planes/:id", controller.updatePlane);
+// Update plane (optionally add images)
+router.put(
+  "/planes/:id",
+  controller.upload.array("images", 5),
+  controller.updatePlane
+);
+
+// Delete plane (also deletes Cloudinary images)
 router.delete("/planes/:id", controller.deletePlane);
-router.post("/planes/:id/upload-image", controller.uploadPlaneImage);
+
 
 /* =======================
-   BOOKINGS
+   BOOKINGS ROUTES
 ======================= */
-router.get("/", controller.getAllBookings);
+
+// Get all bookings
+router.get("/", controller.getBookings);
+
+// Get bookings by email
 router.get("/email/:email", controller.getBookingsByEmail);
+
+// Get single booking
 router.get("/booking/:id", controller.getBooking);
 
+// Create booking + email notification
 router.post(
   "/",
   [
@@ -212,8 +308,13 @@ router.post(
   controller.createBooking
 );
 
+// Update booking (full update)
 router.put("/:id", controller.updateBooking);
-router.patch("/:id/status", controller.updateStatus);
-router.delete("/:id", controller.cancelBooking);
+
+// Update booking status only + email
+router.patch("/:id/status", controller.updateBookingStatus);
+
+// Cancel / delete booking
+router.delete("/:id", controller.deleteBooking);
 
 module.exports = router;
