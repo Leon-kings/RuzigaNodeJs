@@ -5543,7 +5543,7 @@ cloudinary.config({
 });
 
 // multer memory storage for streaming to Cloudinary
-const upload = multer({ storage: multer.memoryStorage() });
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } });
 
 /* =========================
    EMAIL CONFIG
@@ -5559,19 +5559,12 @@ const transporter = nodemailer.createTransport({
 });
 
 const sendEmail = async (to, subject, html) => {
-  await transporter.sendMail({
-    from: `"Airport Services" <${process.env.EMAIL_FROM}>`,
-    to,
-    subject,
-    html,
-  });
+  await transporter.sendMail({ from: `"Airport Services" <${process.env.EMAIL_FROM}>`, to, subject, html });
 };
 
 /* =========================
    BOOKINGS
 ========================= */
-
-// GET ALL BOOKINGS
 exports.getAllBookings = async (req, res) => {
   const bookings = await AirportBooking.find()
     .populate("plane", "registrationNumber model images isAvailable")
@@ -5579,37 +5572,29 @@ exports.getAllBookings = async (req, res) => {
   res.json({ success: true, data: bookings });
 };
 
-// GET BOOKINGS BY EMAIL
 exports.getBookingsByEmail = async (req, res) => {
   const { email } = req.params;
-  const bookings = await AirportBooking.find({
-    email: email.toLowerCase(),
-  })
+  const bookings = await AirportBooking.find({ email: email.toLowerCase() })
     .populate("plane", "registrationNumber model images isAvailable")
     .sort({ createdAt: -1 });
   res.json({ success: true, total: bookings.length, data: bookings });
 };
 
-// GET SINGLE BOOKING
 exports.getBooking = async (req, res) => {
   const booking = await AirportBooking.findById(req.params.id).populate("plane");
   if (!booking) return res.status(404).json({ success: false });
   res.json({ success: true, data: booking });
 };
 
-// CREATE BOOKING
 exports.createBooking = async (req, res) => {
   const errors = validationResult(req);
-  if (!errors.isEmpty())
-    return res.status(400).json({ errors: errors.array() });
+  if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
 
   const session = await mongoose.startSession();
   session.startTransaction();
   try {
     const plane = await Plane.findById(req.body.plane).session(session);
-    if (!plane || !plane.isAvailable) {
-      throw new Error("Selected plane does not exist or is unavailable");
-    }
+    if (!plane || !plane.isAvailable) throw new Error("Selected plane does not exist or is unavailable");
 
     const prices = { standard: 50, vip_service: 150, executive: 100, family: 75, group: 40 };
     const base = prices[req.body.serviceType] || 50;
@@ -5637,13 +5622,11 @@ exports.createBooking = async (req, res) => {
   }
 };
 
-// UPDATE BOOKING
 exports.updateBooking = async (req, res) => {
   const booking = await AirportBooking.findByIdAndUpdate(req.params.id, req.body, { new: true });
   res.json({ success: true, data: booking });
 };
 
-// CANCEL BOOKING (SAFE)
 exports.cancelBooking = async (req, res) => {
   const booking = await AirportBooking.findById(req.params.id);
   if (!booking) return res.status(404).json({ success: false });
@@ -5656,7 +5639,6 @@ exports.cancelBooking = async (req, res) => {
   res.json({ success: true, data: booking });
 };
 
-// UPDATE STATUS
 exports.updateStatus = async (req, res) => {
   const booking = await AirportBooking.findByIdAndUpdate(req.params.id, { status: req.body.status }, { new: true });
   res.json({ success: true, data: booking });
@@ -5666,13 +5648,11 @@ exports.updateStatus = async (req, res) => {
    PLANES
 ========================= */
 
-// GET ALL PLANES
 exports.getAllPlanes = async (req, res) => {
   const planes = await Plane.find();
   res.json({ success: true, data: planes });
 };
 
-// GET SINGLE PLANE
 exports.getPlane = async (req, res) => {
   const plane = await Plane.findById(req.params.id);
   if (!plane) return res.status(404).json({ success: false });
@@ -5686,14 +5666,14 @@ exports.createPlane = [
     try {
       const data = { ...req.body };
       if (req.file) {
-        const uploadResult = await new Promise((resolve, reject) => {
+        const result = await new Promise((resolve, reject) => {
           const stream = cloudinary.uploader.upload_stream({ folder: "airport-service/planes" }, (error, result) => {
             if (error) reject(error);
             else resolve(result);
           });
           stream.end(req.file.buffer);
         });
-        data.images = [{ url: uploadResult.secure_url, publicId: uploadResult.public_id, isPrimary: true }];
+        data.images = [{ url: result.secure_url, publicId: result.public_id, isPrimary: true }];
       }
       const plane = await Plane.create(data);
       res.status(201).json({ success: true, data: plane });
@@ -5703,13 +5683,11 @@ exports.createPlane = [
   },
 ];
 
-// UPDATE PLANE
 exports.updatePlane = async (req, res) => {
   const plane = await Plane.findByIdAndUpdate(req.params.id, req.body, { new: true });
   res.json({ success: true, data: plane });
 };
 
-// DELETE PLANE + CLOUDINARY CLEANUP
 exports.deletePlane = async (req, res) => {
   const plane = await Plane.findById(req.params.id);
   if (!plane) return res.status(404).json({ success: false });
@@ -5720,7 +5698,7 @@ exports.deletePlane = async (req, res) => {
   res.json({ success: true });
 };
 
-// UPLOAD EXTRA PLANE IMAGE
+// UPLOAD EXTRA IMAGE TO PLANE
 exports.uploadPlaneImage = [
   upload.single("image"),
   async (req, res) => {
@@ -5728,7 +5706,7 @@ exports.uploadPlaneImage = [
       const plane = await Plane.findById(req.params.id);
       if (!plane) return res.status(404).json({ success: false });
 
-      const uploadResult = await new Promise((resolve, reject) => {
+      const result = await new Promise((resolve, reject) => {
         const stream = cloudinary.uploader.upload_stream({ folder: "airport-service/planes" }, (error, result) => {
           if (error) reject(error);
           else resolve(result);
@@ -5737,8 +5715,8 @@ exports.uploadPlaneImage = [
       });
 
       plane.images.push({
-        url: uploadResult.secure_url,
-        publicId: uploadResult.public_id,
+        url: result.secure_url,
+        publicId: result.public_id,
         isPrimary: plane.images.length === 0,
       });
 
@@ -5749,3 +5727,5 @@ exports.uploadPlaneImage = [
     }
   },
 ];
+
+module.exports.uploadMiddleware = upload; // optional export for router if needed
