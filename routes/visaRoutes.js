@@ -57,63 +57,133 @@
 
 
 
-const express = require('express');
+// const express = require('express');
+// const router = express.Router();
+// const multer = require('multer');
+// const VisaController = require('../controllers/visaController');
+
+// // Configure multer for file uploads (diskStorage)
+// const upload = multer({
+//   storage: multer.diskStorage({}),
+//   limits: { fileSize: 5 * 1024 * 1024 } // 5MB max
+// });
+
+// /* =========================
+//    VISA CATALOG ROUTES
+// ========================= */
+// router.post(
+//   '/catalog',
+//   upload.single('coverImage'),
+//   VisaController.createVisaCatalog
+// );
+
+// router.get('/catalog', VisaController.getVisaCatalogs);
+// router.get('/catalog/:id', VisaController.getVisaCatalogById);
+
+// router.put(
+//   '/catalog/:id',
+//   upload.single('coverImage'),
+//   VisaController.updateVisaCatalog
+// );
+
+// router.delete('/catalog/:id', VisaController.deleteVisaCatalog);
+
+// /* =========================
+//    VISA BOOKINGS ROUTES
+// ========================= */
+// router.post('/bookings', VisaController.createBooking);
+// router.get('/bookings', VisaController.getAllBookings);
+// router.get('/bookings/:id', VisaController.getBookingById);
+// router.put('/bookings/:id', VisaController.updateBooking);
+// router.delete('/bookings/:id', VisaController.deleteBooking);
+
+// /* =========================
+//    DOCUMENTS ROUTES
+// ========================= */
+// router.post(
+//   '/bookings/:id/documents/:category',
+//   upload.single('file'),
+//   VisaController.uploadDocument
+// );
+
+// router.delete(
+//   '/bookings/:id/documents/:category/:publicId',
+//   VisaController.deleteDocument
+// );
+
+// /* =========================
+//    DASHBOARD STATISTICS
+// ========================= */
+// router.get('/statistics/dashboard', VisaController.getDashboardStats);
+
+// module.exports = router;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+const express = require("express");
 const router = express.Router();
-const multer = require('multer');
-const VisaController = require('../controllers/visaController');
+const VisaController = require("../controllers/visaController");
 
-// Configure multer for file uploads (diskStorage)
-const upload = multer({
-  storage: multer.diskStorage({}),
-  limits: { fileSize: 5 * 1024 * 1024 } // 5MB max
-});
-
-/* =========================
+/* =====================================================
    VISA CATALOG ROUTES
-========================= */
+===================================================== */
 router.post(
-  '/catalog',
-  upload.single('coverImage'),
+  "/catalog",
+  VisaController.upload.single("coverImage"),
   VisaController.createVisaCatalog
 );
 
-router.get('/catalog', VisaController.getVisaCatalogs);
-router.get('/catalog/:id', VisaController.getVisaCatalogById);
+router.get("/catalog", VisaController.getVisaCatalogs);
+router.get("/catalog/:id", VisaController.getVisaCatalogById);
 
 router.put(
-  '/catalog/:id',
-  upload.single('coverImage'),
+  "/catalog/:id",
+  VisaController.upload.single("coverImage"),
   VisaController.updateVisaCatalog
 );
 
-router.delete('/catalog/:id', VisaController.deleteVisaCatalog);
+router.delete("/catalog/:id", VisaController.deleteVisaCatalog);
 
-/* =========================
+/* =====================================================
    VISA BOOKINGS ROUTES
-========================= */
-router.post('/bookings', VisaController.createBooking);
-router.get('/bookings', VisaController.getAllBookings);
-router.get('/bookings/:id', VisaController.getBookingById);
-router.put('/bookings/:id', VisaController.updateBooking);
-router.delete('/bookings/:id', VisaController.deleteBooking);
+===================================================== */
+router.post("/bookings", VisaController.createBooking);
+router.get("/bookings", VisaController.getAllBookings);
+router.get("/bookings/:id", VisaController.getBookingById);
+router.put("/bookings/:id", VisaController.updateBooking);
+router.delete("/bookings/:id", VisaController.deleteBooking);
 
-/* =========================
+/* =====================================================
    DOCUMENTS ROUTES
-========================= */
+===================================================== */
 router.post(
-  '/bookings/:id/documents/:category',
-  upload.single('file'),
+  "/bookings/:id/documents/:category",
+  VisaController.upload.single("file"),
   VisaController.uploadDocument
 );
 
 router.delete(
-  '/bookings/:id/documents/:category/:publicId',
+  "/bookings/:id/documents/:category/:publicId",
   VisaController.deleteDocument
 );
 
-/* =========================
+/* =====================================================
    DASHBOARD STATISTICS
-========================= */
-router.get('/statistics/dashboard', VisaController.getDashboardStats);
+===================================================== */
+router.get("/statistics/dashboard", VisaController.getDashboardStats);
 
 module.exports = router;
