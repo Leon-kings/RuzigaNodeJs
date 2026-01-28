@@ -68,22 +68,111 @@
 
 
 
+// const express = require("express");
+// const router = express.Router();
+// const controller = require("../controllers/airportBookingController");
+// const { body } = require("express-validator");
+
+// /* =======================
+//    PLANES (Independent)
+// ======================= */
+
+// // GET ALL PLANES
+// router.get("/planes/all", controller.getAllPlanes);
+
+// // GET SINGLE PLANE
+// router.get("/planes/:id", controller.getPlane);
+
+// // CREATE PLANE (Image handled INSIDE controller via Cloudinary)
+// router.post(
+//   "/planes",
+//   [
+//     body("model").notEmpty().withMessage("Model is required"),
+//     body("manufacturer").notEmpty().withMessage("Manufacturer is required"),
+//     body("yearOfManufacture")
+//       .toInt()
+//       .isInt({ min: 1950 })
+//       .withMessage("Invalid year"),
+//   ],
+//   controller.createPlane
+// );
+
+// // UPDATE PLANE
+// router.put("/planes/:id", controller.updatePlane);
+
+// // DELETE PLANE (also deletes Cloudinary images)
+// router.delete("/planes/:id", controller.deletePlane);
+
+// // UPLOAD EXTRA PLANE IMAGE
+// router.post("/planes/:id/upload-image", controller.uploadPlaneImage);
+
+// /* =======================
+//    BOOKINGS
+// ======================= */
+
+// // GET ALL BOOKINGS
+// router.get("/", controller.getAllBookings);
+
+// // GET BOOKINGS BY EMAIL
+// router.get("/email/:email", controller.getBookingsByEmail);
+
+// // GET SINGLE BOOKING BY ID
+// router.get("/booking/:id", controller.getBooking);
+
+// // CREATE BOOKING
+// router.post(
+//   "/",
+//   [
+//     body("firstName").notEmpty().withMessage("First name is required"),
+//     body("lastName").notEmpty().withMessage("Last name is required"),
+//     body("email").isEmail().withMessage("Valid email is required"),
+//     body("serviceType").notEmpty().withMessage("Service type is required"),
+//     body("numberOfPassengers")
+//       .isInt({ min: 1 })
+//       .withMessage("Passengers must be at least 1"),
+//     body("plane").notEmpty().withMessage("Plane ID is required"),
+//   ],
+//   controller.createBooking
+// );
+
+// // UPDATE BOOKING
+// router.put("/:id", controller.updateBooking);
+
+// // UPDATE BOOKING STATUS ONLY
+// router.patch("/:id/status", controller.updateStatus);
+
+// // CANCEL BOOKING (safe delete)
+// router.delete("/:id", controller.cancelBooking);
+
+// module.exports = router;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 const express = require("express");
 const router = express.Router();
 const controller = require("../controllers/airportBookingController");
 const { body } = require("express-validator");
 
 /* =======================
-   PLANES (Independent)
+   PLANES
 ======================= */
-
-// GET ALL PLANES
 router.get("/planes/all", controller.getAllPlanes);
-
-// GET SINGLE PLANE
 router.get("/planes/:id", controller.getPlane);
 
-// CREATE PLANE (Image handled INSIDE controller via Cloudinary)
 router.post(
   "/planes",
   [
@@ -97,29 +186,17 @@ router.post(
   controller.createPlane
 );
 
-// UPDATE PLANE
 router.put("/planes/:id", controller.updatePlane);
-
-// DELETE PLANE (also deletes Cloudinary images)
 router.delete("/planes/:id", controller.deletePlane);
-
-// UPLOAD EXTRA PLANE IMAGE
 router.post("/planes/:id/upload-image", controller.uploadPlaneImage);
 
 /* =======================
    BOOKINGS
 ======================= */
-
-// GET ALL BOOKINGS
 router.get("/", controller.getAllBookings);
-
-// GET BOOKINGS BY EMAIL
 router.get("/email/:email", controller.getBookingsByEmail);
-
-// GET SINGLE BOOKING BY ID
 router.get("/booking/:id", controller.getBooking);
 
-// CREATE BOOKING
 router.post(
   "/",
   [
@@ -135,13 +212,8 @@ router.post(
   controller.createBooking
 );
 
-// UPDATE BOOKING
 router.put("/:id", controller.updateBooking);
-
-// UPDATE BOOKING STATUS ONLY
 router.patch("/:id/status", controller.updateStatus);
-
-// CANCEL BOOKING (safe delete)
 router.delete("/:id", controller.cancelBooking);
 
 module.exports = router;
