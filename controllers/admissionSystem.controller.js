@@ -701,11 +701,334 @@
 
 // module.exports = new UniversityBookingController();
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// const cloudinary = require("../cloudinary/cloudinary");
+// const { University, Booking } = require("../models/AdmissionSystem");
+// const streamifier = require("streamifier");
+
+// /* ===================== CLOUDINARY ===================== */
+// class CloudinaryService {
+//   uploadFromBuffer(buffer, folder = "universities") {
+//     return new Promise((resolve, reject) => {
+//       const stream = cloudinary.uploader.upload_stream(
+//         { folder, quality: "auto" },
+//         (err, result) => {
+//           if (err) return reject(err);
+//           resolve({ public_id: result.public_id, url: result.secure_url });
+//         },
+//       );
+//       streamifier.createReadStream(buffer).pipe(stream);
+//     });
+//   }
+
+//   async uploadMultiple(files) {
+//     const images = [];
+//     for (const file of files) {
+//       images.push(await this.uploadFromBuffer(file.buffer));
+//     }
+//     return images;
+//   }
+
+//   async deleteMultiple(ids) {
+//     for (const id of ids) await cloudinary.uploader.destroy(id);
+//   }
+// }
+
+// const cloudinaryService = new CloudinaryService();
+
+// const DEFAULT_IMAGE = [
+//   {
+//     public_id: "default",
+//     url: "https://wenr.wes.org/wp-content/uploads/2019/09/iStock-1142918319_WENR_Ranking_740_430.jpg",
+//   },
+// ];
+
+// /* ===================== UNIVERSITY CRUD ===================== */
+// exports.createUniversity = async (req, res) => {
+//   try {
+//     let images = DEFAULT_IMAGE;
+
+//     if (req.files?.images) {
+//       const files = Array.isArray(req.files.images)
+//         ? req.files.images
+//         : [req.files.images];
+//       images = await cloudinaryService.uploadMultiple(files);
+//     }
+
+//     const university = await University.create({ ...req.body, images });
+//     res.status(201).json({ success: true, data: university });
+//   } catch (e) {
+//     res.status(500).json({ success: false, message: e.message });
+//   }
+// };
+
+// exports.getUniversities = async (_, res) => {
+//   const data = await University.find();
+//   res.json({ success: true, data });
+// };
+
+// exports.getUniversity = async (req, res) => {
+//   const uni = await University.findById(req.params.id);
+//   if (!uni) return res.status(404).json({ success: false });
+//   res.json({ success: true, data: uni });
+// };
+
+// exports.updateUniversity = async (req, res) => {
+//   try {
+//     const uni = await University.findById(req.params.id);
+//     if (!uni) return res.status(404).json({ success: false });
+
+//     if (req.files?.images) {
+//       if (uni.images.length)
+//         await cloudinaryService.deleteMultiple(
+//           uni.images.map((i) => i.public_id),
+//         );
+
+//       const files = Array.isArray(req.files.images)
+//         ? req.files.images
+//         : [req.files.images];
+//       uni.images = await cloudinaryService.uploadMultiple(files);
+//     }
+
+//     Object.assign(uni, req.body);
+//     await uni.save();
+
+//     res.json({ success: true, data: uni });
+//   } catch (e) {
+//     res.status(500).json({ success: false, message: e.message });
+//   }
+// };
+
+// exports.deleteUniversity = async (req, res) => {
+//   const uni = await University.findById(req.params.id);
+//   if (!uni) return res.status(404).json({ success: false });
+
+//   if (uni.images.length)
+//     await cloudinaryService.deleteMultiple(uni.images.map((i) => i.public_id));
+
+//   await uni.deleteOne();
+//   res.json({ success: true });
+// };
+
+// /* ===================== BOOKING CRUD ===================== */
+// exports.createBooking = async (req, res) => {
+//   try {
+//     const { university, customer, service, bookingDetails } = req.body;
+
+//     const uni = await University.findById(university);
+//     if (!uni) return res.status(404).json({ success: false });
+
+//     const booking = await Booking.create({
+//       university,
+//       universityName: uni.name,
+//       customer,
+//       service,
+//       bookingDetails,
+//     });
+
+//     res.status(201).json({ success: true, data: booking });
+//   } catch (e) {
+//     res.status(500).json({ success: false, message: e.message });
+//   }
+// };
+
+// // exports.getBookings = async (_, res) => {
+// //   const data = await Booking.find().populate("university");
+// //   res.json({ success: true, data });
+// // };
+// exports.getBookings = async (_, res) => {
+//   try {
+//     // Find all bookings and populate 'university' safely
+//     const bookings = await Booking.find()
+//       .populate({
+//         path: "university",
+//         strictPopulate: false, // avoids strictPopulate errors
+//         select: "name country city ranking worldRanking", // only include key fields
+//       })
+//       .sort({ createdAt: -1 }); // optional: newest first
+
+//     res.json({ success: true, data: bookings });
+//   } catch (error) {
+//     console.error("Get Bookings Error:", error);
+//     res.status(500).json({
+//       success: false,
+//       message: "Failed to fetch bookings",
+//       error: error.message,
+//     });
+//   }
+// };
+
+// /* ===================== EDIT BOOKING ===================== */
+// /* ===================== EDIT BOOKING ===================== */
+// exports.editBooking = async (req, res) => {
+//   try {
+//     const { bookingId } = req.params;
+//     const updates = { ...req.body }; // copy of request body
+
+//     // Validate that booking exists
+//     const booking = await Booking.findById(bookingId);
+//     if (!booking) {
+//       return res.status(404).json({ success: false, message: "Booking not found" });
+//     }
+
+//     // ===================== HANDLE NOTES =====================
+//     if (updates.notes) {
+//       // If notes is a string, convert to object
+//       if (typeof updates.notes === "string") {
+//         updates.notes = {
+//           text: updates.notes,
+//           author: "System", // fallback author
+//           date: new Date(),
+//         };
+//       } else if (typeof updates.notes === "object") {
+//         // Ensure date exists
+//         updates.notes.date = updates.notes.date || new Date();
+//       }
+//     }
+
+//     // Apply other updates
+//     Object.keys(updates).forEach(key => {
+//       booking[key] = updates[key];
+//     });
+
+//     // Save updated booking
+//     const updatedBooking = await booking.save();
+
+//     // Populate university after update
+//     await updatedBooking.populate({
+//       path: "university",
+//       strictPopulate: false,
+//       select: "name country city ranking worldRanking",
+//     });
+
+//     res.json({ success: true, data: updatedBooking });
+//   } catch (error) {
+//     console.error("Edit Booking Error:", error);
+//     res.status(500).json({
+//       success: false,
+//       message: "Failed to update booking",
+//       error: error.message,
+//     });
+//   }
+// };
+
+// exports.getBooking = async (req, res) => {
+//   const booking = await Booking.findById(req.params.id).populate("university");
+//   if (!booking) return res.status(404).json({ success: false });
+//   res.json({ success: true, data: booking });
+// };
+
+// exports.updateBookingStatus = async (req, res) => {
+//   const booking = await Booking.findById(req.params.id);
+//   if (!booking) return res.status(404).json({ success: false });
+
+//   booking.status = req.body.status;
+//   await booking.save();
+
+//   res.json({ success: true, data: booking });
+// };
+
+// exports.deleteBooking = async (req, res) => {
+//   const booking = await Booking.findById(req.params.id);
+//   if (!booking) return res.status(404).json({ success: false });
+
+//   await booking.deleteOne();
+//   res.json({ success: true });
+// };
+
+// /* ===================== STATISTICS ===================== */
+// exports.getDashboardStats = async (_, res) => {
+//   const [universities, bookings, pending, confirmed, cancelled] =
+//     await Promise.all([
+//       University.countDocuments(),
+//       Booking.countDocuments(),
+//       Booking.countDocuments({ status: "pending" }),
+//       Booking.countDocuments({ status: "confirmed" }),
+//       Booking.countDocuments({ status: "cancelled" }),
+//     ]);
+
+//   res.json({
+//     success: true,
+//     data: {
+//       universities,
+//       bookings,
+//       status: { pending, confirmed, cancelled },
+//     },
+//   });
+// };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 const cloudinary = require("../cloudinary/cloudinary");
 const { University, Booking } = require("../models/AdmissionSystem");
 const streamifier = require("streamifier");
 
-/* ===================== CLOUDINARY ===================== */
+/* ===================== CLOUDINARY SERVICE ===================== */
 class CloudinaryService {
   uploadFromBuffer(buffer, folder = "universities") {
     return new Promise((resolve, reject) => {
@@ -714,7 +1037,7 @@ class CloudinaryService {
         (err, result) => {
           if (err) return reject(err);
           resolve({ public_id: result.public_id, url: result.secure_url });
-        },
+        }
       );
       streamifier.createReadStream(buffer).pipe(stream);
     });
@@ -734,7 +1057,6 @@ class CloudinaryService {
 }
 
 const cloudinaryService = new CloudinaryService();
-
 const DEFAULT_IMAGE = [
   {
     public_id: "default",
@@ -779,9 +1101,7 @@ exports.updateUniversity = async (req, res) => {
 
     if (req.files?.images) {
       if (uni.images.length)
-        await cloudinaryService.deleteMultiple(
-          uni.images.map((i) => i.public_id),
-        );
+        await cloudinaryService.deleteMultiple(uni.images.map((i) => i.public_id));
 
       const files = Array.isArray(req.files.images)
         ? req.files.images
@@ -812,17 +1132,14 @@ exports.deleteUniversity = async (req, res) => {
 /* ===================== BOOKING CRUD ===================== */
 exports.createBooking = async (req, res) => {
   try {
-    const { university, customer, service, bookingDetails } = req.body;
+    const { university, student, bookingDetails, service } = req.body;
 
     const uni = await University.findById(university);
-    if (!uni) return res.status(404).json({ success: false });
+    if (!uni) return res.status(404).json({ success: false, message: "University not found" });
 
     const booking = await Booking.create({
-      university,
-      universityName: uni.name,
-      customer,
-      service,
-      bookingDetails,
+      booking: { university, student, bookingDetails, service },
+      university: { ...uni.toObject() }, // snapshot of university
     });
 
     res.status(201).json({ success: true, data: booking });
@@ -831,21 +1148,9 @@ exports.createBooking = async (req, res) => {
   }
 };
 
-// exports.getBookings = async (_, res) => {
-//   const data = await Booking.find().populate("university");
-//   res.json({ success: true, data });
-// };
 exports.getBookings = async (_, res) => {
   try {
-    // Find all bookings and populate 'university' safely
-    const bookings = await Booking.find()
-      .populate({
-        path: "university",
-        strictPopulate: false, // avoids strictPopulate errors
-        select: "name country city ranking worldRanking", // only include key fields
-      })
-      .sort({ createdAt: -1 }); // optional: newest first
-
+    const bookings = await Booking.find().sort({ createdAt: -1 });
     res.json({ success: true, data: bookings });
   } catch (error) {
     console.error("Get Bookings Error:", error);
@@ -857,73 +1162,48 @@ exports.getBookings = async (_, res) => {
   }
 };
 
-/* ===================== EDIT BOOKING ===================== */
+exports.getBooking = async (req, res) => {
+  const booking = await Booking.findById(req.params.id);
+  if (!booking) return res.status(404).json({ success: false });
+  res.json({ success: true, data: booking });
+};
+
 /* ===================== EDIT BOOKING ===================== */
 exports.editBooking = async (req, res) => {
   try {
     const { bookingId } = req.params;
-    const updates = { ...req.body }; // copy of request body
+    const updates = { ...req.body };
 
-    // Validate that booking exists
     const booking = await Booking.findById(bookingId);
-    if (!booking) {
-      return res.status(404).json({ success: false, message: "Booking not found" });
-    }
+    if (!booking) return res.status(404).json({ success: false, message: "Booking not found" });
 
-    // ===================== HANDLE NOTES =====================
+    // Handle notes (string -> object)
     if (updates.notes) {
-      // If notes is a string, convert to object
       if (typeof updates.notes === "string") {
-        updates.notes = {
-          text: updates.notes,
-          author: "System", // fallback author
-          date: new Date(),
-        };
+        updates.notes = { text: updates.notes, author: "System", date: new Date() };
       } else if (typeof updates.notes === "object") {
-        // Ensure date exists
         updates.notes.date = updates.notes.date || new Date();
       }
     }
 
-    // Apply other updates
     Object.keys(updates).forEach(key => {
-      booking[key] = updates[key];
+      booking.booking[key] = updates[key]; // update nested booking fields
     });
 
-    // Save updated booking
-    const updatedBooking = await booking.save();
-
-    // Populate university after update
-    await updatedBooking.populate({
-      path: "university",
-      strictPopulate: false,
-      select: "name country city ranking worldRanking",
-    });
-
-    res.json({ success: true, data: updatedBooking });
+    await booking.save();
+    res.json({ success: true, data: booking });
   } catch (error) {
     console.error("Edit Booking Error:", error);
-    res.status(500).json({
-      success: false,
-      message: "Failed to update booking",
-      error: error.message,
-    });
+    res.status(500).json({ success: false, message: "Failed to update booking", error: error.message });
   }
-};
-
-exports.getBooking = async (req, res) => {
-  const booking = await Booking.findById(req.params.id).populate("university");
-  if (!booking) return res.status(404).json({ success: false });
-  res.json({ success: true, data: booking });
 };
 
 exports.updateBookingStatus = async (req, res) => {
   const booking = await Booking.findById(req.params.id);
   if (!booking) return res.status(404).json({ success: false });
 
-  booking.status = req.body.status;
+  booking.booking.status = req.body.status;
   await booking.save();
-
   res.json({ success: true, data: booking });
 };
 
@@ -935,15 +1215,15 @@ exports.deleteBooking = async (req, res) => {
   res.json({ success: true });
 };
 
-/* ===================== STATISTICS ===================== */
+/* ===================== DASHBOARD STATS ===================== */
 exports.getDashboardStats = async (_, res) => {
   const [universities, bookings, pending, confirmed, cancelled] =
     await Promise.all([
       University.countDocuments(),
       Booking.countDocuments(),
-      Booking.countDocuments({ status: "pending" }),
-      Booking.countDocuments({ status: "confirmed" }),
-      Booking.countDocuments({ status: "cancelled" }),
+      Booking.countDocuments({ "booking.status": "pending" }),
+      Booking.countDocuments({ "booking.status": "confirmed" }),
+      Booking.countDocuments({ "booking.status": "cancelled" }),
     ]);
 
   res.json({
