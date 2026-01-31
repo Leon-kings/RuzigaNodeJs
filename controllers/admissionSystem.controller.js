@@ -304,20 +304,6 @@
 
 // module.exports = new UniversityBookingController();
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 // const cloudinary = require("../cloudinary/cloudinary");
 // const { University, Booking } = require("../models/AdmissionSystem");
 // const nodemailer = require("nodemailer");
@@ -715,35 +701,6 @@
 
 // module.exports = new UniversityBookingController();
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 const cloudinary = require("../cloudinary/cloudinary");
 const { University, Booking } = require("../models/AdmissionSystem");
 const streamifier = require("streamifier");
@@ -757,7 +714,7 @@ class CloudinaryService {
         (err, result) => {
           if (err) return reject(err);
           resolve({ public_id: result.public_id, url: result.secure_url });
-        }
+        },
       );
       streamifier.createReadStream(buffer).pipe(stream);
     });
@@ -823,7 +780,7 @@ exports.updateUniversity = async (req, res) => {
     if (req.files?.images) {
       if (uni.images.length)
         await cloudinaryService.deleteMultiple(
-          uni.images.map((i) => i.public_id)
+          uni.images.map((i) => i.public_id),
         );
 
       const files = Array.isArray(req.files.images)
@@ -846,9 +803,7 @@ exports.deleteUniversity = async (req, res) => {
   if (!uni) return res.status(404).json({ success: false });
 
   if (uni.images.length)
-    await cloudinaryService.deleteMultiple(
-      uni.images.map((i) => i.public_id)
-    );
+    await cloudinaryService.deleteMultiple(uni.images.map((i) => i.public_id));
 
   await uni.deleteOne();
   res.json({ success: true });
@@ -900,7 +855,47 @@ exports.getBookings = async (_, res) => {
       error: error.message,
     });
   }
-}
+};
+
+/* ===================== EDIT BOOKING ===================== */
+exports.editBooking = async (req, res) => {
+  try {
+    const { bookingId } = req.params; // booking ID from URL
+    const updates = req.body; // fields to update
+
+    // Validate that booking exists
+    const booking = await Booking.findById(bookingId);
+    if (!booking) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Booking not found" });
+    }
+
+    // Apply updates
+    Object.keys(updates).forEach((key) => {
+      booking[key] = updates[key];
+    });
+
+    // Save updated booking
+    const updatedBooking = await booking.save();
+
+    // Populate university after update
+    await updatedBooking.populate({
+      path: "university",
+      strictPopulate: false,
+      select: "name country city ranking worldRanking",
+    });
+
+    res.json({ success: true, data: updatedBooking });
+  } catch (error) {
+    console.error("Edit Booking Error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to update booking",
+      error: error.message,
+    });
+  }
+};
 
 exports.getBooking = async (req, res) => {
   const booking = await Booking.findById(req.params.id).populate("university");
@@ -928,19 +923,14 @@ exports.deleteBooking = async (req, res) => {
 
 /* ===================== STATISTICS ===================== */
 exports.getDashboardStats = async (_, res) => {
-  const [
-    universities,
-    bookings,
-    pending,
-    confirmed,
-    cancelled,
-  ] = await Promise.all([
-    University.countDocuments(),
-    Booking.countDocuments(),
-    Booking.countDocuments({ status: "pending" }),
-    Booking.countDocuments({ status: "confirmed" }),
-    Booking.countDocuments({ status: "cancelled" }),
-  ]);
+  const [universities, bookings, pending, confirmed, cancelled] =
+    await Promise.all([
+      University.countDocuments(),
+      Booking.countDocuments(),
+      Booking.countDocuments({ status: "pending" }),
+      Booking.countDocuments({ status: "confirmed" }),
+      Booking.countDocuments({ status: "cancelled" }),
+    ]);
 
   res.json({
     success: true,
