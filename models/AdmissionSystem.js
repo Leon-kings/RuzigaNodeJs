@@ -876,69 +876,209 @@
 
 
 
-const mongoose = require('mongoose');
+// const mongoose = require('mongoose');
 
-// ================== University Schema ==================
-const universitySchema = new mongoose.Schema({
-  name: { type: String, required: true, trim: true },
-  country: { type: String, required: true },
-  city: { type: String, required: true },
-  ranking: { type: Number, default: 999 },
-  worldRanking: { type: Number, default: 1000 },
-  programs: { type: [String], default: [] },
-  tuition: { type: String, default: 'Contact for details' },
-  language: { type: String, default: 'English' },
-  deadline: { type: String, default: 'Rolling admission' },
-  scholarships: { type: [String], default: [] },
-  requirements: { type: [String], default: [] },
-  acceptanceRate: { type: String, default: 'Contact for details' },
-  studentPopulation: { type: String, default: 'N/A' },
-  internationalStudents: { type: String, default: 'N/A' },
-  images: { type: [{ public_id: String, url: String }], default: [] },
-  featured: { type: Boolean, default: false },
-  description: { type: String, default: 'A prestigious university offering quality education.' },
-  availableSlots: { type: [{ date: Date, time: String, isBooked: { type: Boolean, default: false } }], default: [] },
-  bookingPrice: { type: Number, default: 0 },
-  consultationDuration: { type: Number, default: 30 },
-}, { timestamps: true });
+// // ================== University Schema ==================
+// const universitySchema = new mongoose.Schema({
+//   name: { type: String, required: true, trim: true },
+//   country: { type: String, required: true },
+//   city: { type: String, required: true },
+//   ranking: { type: Number, default: 999 },
+//   worldRanking: { type: Number, default: 1000 },
+//   programs: { type: [String], default: [] },
+//   tuition: { type: String, default: 'Contact for details' },
+//   language: { type: String, default: 'English' },
+//   deadline: { type: String, default: 'Rolling admission' },
+//   scholarships: { type: [String], default: [] },
+//   requirements: { type: [String], default: [] },
+//   acceptanceRate: { type: String, default: 'Contact for details' },
+//   studentPopulation: { type: String, default: 'N/A' },
+//   internationalStudents: { type: String, default: 'N/A' },
+//   images: { type: [{ public_id: String, url: String }], default: [] },
+//   featured: { type: Boolean, default: false },
+//   description: { type: String, default: 'A prestigious university offering quality education.' },
+//   availableSlots: { type: [{ date: Date, time: String, isBooked: { type: Boolean, default: false } }], default: [] },
+//   bookingPrice: { type: Number, default: 0 },
+//   consultationDuration: { type: Number, default: 30 },
+// }, { timestamps: true });
 
-// ================== Booking Schema ==================
-const bookingSchema = new mongoose.Schema({
-  university: { type: mongoose.Schema.Types.ObjectId, ref: 'University', required: true },
-  student: {
-    fullName: { type: String, required: true },
-    email: { type: String, required: true, lowercase: true, trim: true },
-    phone: { type: String, required: true },
+// // ================== Booking Schema ==================
+// const bookingSchema = new mongoose.Schema({
+//   university: { type: mongoose.Schema.Types.ObjectId, ref: 'University', required: true },
+//   student: {
+//     fullName: { type: String, required: true },
+//     email: { type: String, required: true, lowercase: true, trim: true },
+//     phone: { type: String, required: true },
+//     country: { type: String, required: true },
+//     programInterest: { type: String, required: true },
+//     intakeYear: { type: String, required: true }
+//   },
+//   bookingDetails: {
+//     date: { type: Date, required: true },
+//     time: { type: String, required: true },
+//     duration: { type: Number, default: 30 },
+//     type: { type: String, enum: ['virtual', 'in-person'], default: 'virtual' },
+//     meetingLink: String
+//   },
+//   status: { type: String, enum: ['pending', 'confirmed', 'cancelled', 'completed'], default: 'pending' },
+//   payment: {
+//     amount: { type: Number, default: 0 },
+//     currency: { type: String, default: 'USD' },
+//     status: { type: String, enum: ['pending', 'paid', 'refunded'], default: 'pending' },
+//     transactionId: String
+//   },
+//   notes: String,
+//   emailSent: { type: Boolean, default: false },
+//   reminderSent: { type: Boolean, default: false },
+// }, { timestamps: true });
+
+// // ================== Indexes ==================
+// bookingSchema.index({ university: 1, status: 1 });
+// bookingSchema.index({ 'student.email': 1 });
+// bookingSchema.index({ 'bookingDetails.date': 1 });
+
+// // ================== Export Models ==================
+// const University = mongoose.models.University || mongoose.model('University', universitySchema);
+// const Booking = mongoose.models.Booking || mongoose.model('Booking', bookingSchema);
+
+// module.exports = { University, Booking };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+const mongoose = require("mongoose");
+
+/* ===================== UNIVERSITY ===================== */
+const universitySchema = new mongoose.Schema(
+  {
+    name: { type: String, required: true, trim: true },
     country: { type: String, required: true },
-    programInterest: { type: String, required: true },
-    intakeYear: { type: String, required: true }
-  },
-  bookingDetails: {
-    date: { type: Date, required: true },
-    time: { type: String, required: true },
-    duration: { type: Number, default: 30 },
-    type: { type: String, enum: ['virtual', 'in-person'], default: 'virtual' },
-    meetingLink: String
-  },
-  status: { type: String, enum: ['pending', 'confirmed', 'cancelled', 'completed'], default: 'pending' },
-  payment: {
-    amount: { type: Number, default: 0 },
-    currency: { type: String, default: 'USD' },
-    status: { type: String, enum: ['pending', 'paid', 'refunded'], default: 'pending' },
-    transactionId: String
-  },
-  notes: String,
-  emailSent: { type: Boolean, default: false },
-  reminderSent: { type: Boolean, default: false },
-}, { timestamps: true });
+    city: { type: String, required: true },
 
-// ================== Indexes ==================
-bookingSchema.index({ university: 1, status: 1 });
-bookingSchema.index({ 'student.email': 1 });
-bookingSchema.index({ 'bookingDetails.date': 1 });
+    ranking: { type: Number, default: 999 },
+    worldRanking: { type: Number, default: 1000 },
 
-// ================== Export Models ==================
-const University = mongoose.models.University || mongoose.model('University', universitySchema);
-const Booking = mongoose.models.Booking || mongoose.model('Booking', bookingSchema);
+    programs: { type: [String], default: [] },
+    tuition: { type: String, default: "Contact for details" },
+    language: { type: String, default: "English" },
+    deadline: { type: String, default: "Rolling admission" },
+
+    scholarships: { type: [String], default: [] },
+    requirements: { type: [String], default: [] },
+
+    acceptanceRate: { type: String, default: "Contact for details" },
+    studentPopulation: { type: String, default: "N/A" },
+    internationalStudents: { type: String, default: "N/A" },
+
+    images: {
+      type: [{ public_id: String, url: String }],
+      default: [],
+    },
+
+    featured: { type: Boolean, default: false },
+    description: {
+      type: String,
+      default: "A prestigious university offering quality education.",
+    },
+  },
+  { timestamps: true }
+);
+
+/* ===================== BOOKING ===================== */
+const bookingSchema = new mongoose.Schema(
+  {
+    university: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "University",
+      required: true,
+    },
+
+    universityName: { type: String, required: true },
+
+    customer: {
+      fullName: { type: String, required: true },
+      email: { type: String, required: true },
+      phone: { type: String, required: true },
+      targetCountry: { type: String, required: true },
+    },
+
+    service: {
+      name: { type: String, required: true },
+    },
+
+    bookingDetails: {
+      date: { type: Date, required: true },
+      time: { type: String, required: true },
+      type: {
+        type: String,
+        enum: ["virtual", "in-person"],
+        default: "virtual",
+      },
+    },
+
+    status: {
+      type: String,
+      enum: ["pending", "confirmed", "cancelled", "completed"],
+      default: "pending",
+    },
+  },
+  { timestamps: true }
+);
+
+/* ===================== INDEXES ===================== */
+bookingSchema.index({ university: 1 });
+bookingSchema.index({ "customer.email": 1 });
+
+/* ===================== EXPORT ===================== */
+const University =
+  mongoose.models.University ||
+  mongoose.model("University", universitySchema);
+
+const Booking =
+  mongoose.models.Booking || mongoose.model("Booking", bookingSchema);
 
 module.exports = { University, Booking };
+
