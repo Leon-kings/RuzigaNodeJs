@@ -1130,23 +1130,57 @@ exports.deleteUniversity = async (req, res) => {
 };
 
 /* ===================== BOOKING CRUD ===================== */
+// exports.createBooking = async (req, res) => {
+//   try {
+//     const { university, student, bookingDetails, service } = req.body;
+
+//     const uni = await University.findById(university);
+//     if (!uni) return res.status(404).json({ success: false, message: "University not found" });
+
+//     const booking = await Booking.create({
+//       booking: { university, student, bookingDetails, service },
+//       university: { ...uni.toObject() }, // snapshot of university
+//     });
+
+//     res.status(201).json({ success: true, data: booking });
+//   } catch (e) {
+//     res.status(500).json({ success: false, message: e.message });
+//   }
+// };
+
+/* ===================== CREATE BOOKING ===================== */
 exports.createBooking = async (req, res) => {
   try {
     const { university, student, bookingDetails, service } = req.body;
 
-    const uni = await University.findById(university);
-    if (!uni) return res.status(404).json({ success: false, message: "University not found" });
+    // ------------------ VALIDATE UNIVERSITY ID ------------------
+    if (!university) {
+      return res.status(400).json({ success: false, message: "University ID is required" });
+    }
 
+    if (!mongoose.Types.ObjectId.isValid(university)) {
+      return res.status(400).json({ success: false, message: "Invalid University ID format" });
+    }
+
+    // ------------------ CHECK UNIVERSITY EXISTS ------------------
+    const uni = await University.findById(university);
+    if (!uni) {
+      return res.status(404).json({ success: false, message: "University not found" });
+    }
+
+    // ------------------ CREATE BOOKING ------------------
     const booking = await Booking.create({
       booking: { university, student, bookingDetails, service },
-      university: { ...uni.toObject() }, // snapshot of university
+      university: { ...uni.toObject() }, // snapshot of university data
     });
 
     res.status(201).json({ success: true, data: booking });
   } catch (e) {
-    res.status(500).json({ success: false, message: e.message });
+    console.error("Create Booking Error:", e);
+    res.status(500).json({ success: false, message: "Failed to create booking", error: e.message });
   }
 };
+
 
 exports.getBookings = async (_, res) => {
   try {
