@@ -876,10 +876,31 @@ exports.createBooking = async (req, res) => {
   }
 };
 
+// exports.getBookings = async (_, res) => {
+//   const data = await Booking.find().populate("university");
+//   res.json({ success: true, data });
+// };
 exports.getBookings = async (_, res) => {
-  const data = await Booking.find().populate("university");
-  res.json({ success: true, data });
-};
+  try {
+    // Find all bookings and populate 'university' safely
+    const bookings = await Booking.find()
+      .populate({
+        path: "university",
+        strictPopulate: false, // avoids strictPopulate errors
+        select: "name country city ranking worldRanking", // only include key fields
+      })
+      .sort({ createdAt: -1 }); // optional: newest first
+
+    res.json({ success: true, data: bookings });
+  } catch (error) {
+    console.error("Get Bookings Error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch bookings",
+      error: error.message,
+    });
+  }
+}
 
 exports.getBooking = async (req, res) => {
   const booking = await Booking.findById(req.params.id).populate("university");
