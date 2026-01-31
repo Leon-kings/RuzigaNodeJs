@@ -858,21 +858,35 @@ exports.getBookings = async (_, res) => {
 };
 
 /* ===================== EDIT BOOKING ===================== */
+/* ===================== EDIT BOOKING ===================== */
 exports.editBooking = async (req, res) => {
   try {
-    const { bookingId } = req.params; // booking ID from URL
-    const updates = req.body; // fields to update
+    const { bookingId } = req.params;
+    const updates = { ...req.body }; // copy of request body
 
     // Validate that booking exists
     const booking = await Booking.findById(bookingId);
     if (!booking) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Booking not found" });
+      return res.status(404).json({ success: false, message: "Booking not found" });
     }
 
-    // Apply updates
-    Object.keys(updates).forEach((key) => {
+    // ===================== HANDLE NOTES =====================
+    if (updates.notes) {
+      // If notes is a string, convert to object
+      if (typeof updates.notes === "string") {
+        updates.notes = {
+          text: updates.notes,
+          author: "System", // fallback author
+          date: new Date(),
+        };
+      } else if (typeof updates.notes === "object") {
+        // Ensure date exists
+        updates.notes.date = updates.notes.date || new Date();
+      }
+    }
+
+    // Apply other updates
+    Object.keys(updates).forEach(key => {
       booking[key] = updates[key];
     });
 
