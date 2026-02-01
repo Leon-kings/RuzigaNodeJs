@@ -1121,7 +1121,7 @@ exports.createBooking = async (req, res) => {
     const { university, student, bookingDetails, service } = req.body;
 
     // ------------------ VALIDATE UNIVERSITY ID ------------------
-    if (!university) {
+    if (!req.body.university) {
       return res.status(400).json({
         success: false,
         message: "University ID is required",
@@ -1220,13 +1220,11 @@ exports.editBooking = async (req, res) => {
     res.json({ success: true, data: booking });
   } catch (error) {
     console.error("Edit Booking Error:", error);
-    res
-      .status(500)
-      .json({
-        success: false,
-        message: "Failed to update booking",
-        error: error.message,
-      });
+    res.status(500).json({
+      success: false,
+      message: "Failed to update booking",
+      error: error.message,
+    });
   }
 };
 
