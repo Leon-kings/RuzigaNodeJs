@@ -701,35 +701,6 @@
 
 // module.exports = new UniversityBookingController();
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 // const cloudinary = require("../cloudinary/cloudinary");
 // const { University, Booking } = require("../models/AdmissionSystem");
 // const streamifier = require("streamifier");
@@ -985,45 +956,6 @@
 //   });
 // };
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 const cloudinary = require("../cloudinary/cloudinary");
 const { University, Booking } = require("../models/AdmissionSystem");
 const streamifier = require("streamifier");
@@ -1037,7 +969,7 @@ class CloudinaryService {
         (err, result) => {
           if (err) return reject(err);
           resolve({ public_id: result.public_id, url: result.secure_url });
-        }
+        },
       );
       streamifier.createReadStream(buffer).pipe(stream);
     });
@@ -1101,7 +1033,9 @@ exports.updateUniversity = async (req, res) => {
 
     if (req.files?.images) {
       if (uni.images.length)
-        await cloudinaryService.deleteMultiple(uni.images.map((i) => i.public_id));
+        await cloudinaryService.deleteMultiple(
+          uni.images.map((i) => i.public_id),
+        );
 
       const files = Array.isArray(req.files.images)
         ? req.files.images
@@ -1149,38 +1083,89 @@ exports.deleteUniversity = async (req, res) => {
 // };
 
 /* ===================== CREATE BOOKING ===================== */
+// exports.createBooking = async (req, res) => {
+//   try {
+//     const { university, student, bookingDetails, service } = req.body;
+// const { universityId } = useParams();
+
+//     // ------------------ VALIDATE UNIVERSITY ID ------------------
+//     if (!university) {
+//       return res.status(400).json({ success: false, message: "University ID is required" });
+//     }
+
+//     if (!mongoose.Types.ObjectId.isValid(university)) {
+//       return res.status(400).json({ success: false, message: "Invalid University ID format" });
+//     }
+
+//     // ------------------ CHECK UNIVERSITY EXISTS ------------------
+//     const uni = await University.findById(university);
+//     if (!uni) {
+//       return res.status(404).json({ success: false, message: "University not found" });
+//     }
+
+//     // ------------------ CREATE BOOKING ------------------
+//     const booking = await Booking.create({
+//       booking: { university, student, bookingDetails, service },
+//       university: { ...uni.toObject() }, // snapshot of university data
+//     });
+
+//     res.status(201).json({ success: true, data: booking });
+//   } catch (e) {
+//     console.error("Create Booking Error:", e);
+//     res.status(500).json({ success: false, message: "Failed to create booking", error: e.message });
+//   }
+// };
+
 exports.createBooking = async (req, res) => {
   try {
     const { university, student, bookingDetails, service } = req.body;
 
     // ------------------ VALIDATE UNIVERSITY ID ------------------
     if (!university) {
-      return res.status(400).json({ success: false, message: "University ID is required" });
+      return res.status(400).json({
+        success: false,
+        message: "University ID is required",
+      });
     }
 
     if (!mongoose.Types.ObjectId.isValid(university)) {
-      return res.status(400).json({ success: false, message: "Invalid University ID format" });
+      return res.status(400).json({
+        success: false,
+        message: "Invalid University ID format",
+      });
     }
 
     // ------------------ CHECK UNIVERSITY EXISTS ------------------
     const uni = await University.findById(university);
     if (!uni) {
-      return res.status(404).json({ success: false, message: "University not found" });
+      return res.status(404).json({
+        success: false,
+        message: "University not found",
+      });
     }
 
     // ------------------ CREATE BOOKING ------------------
     const booking = await Booking.create({
-      booking: { university, student, bookingDetails, service },
-      university: { ...uni.toObject() }, // snapshot of university data
+      university, // reference
+      student,
+      bookingDetails,
+      service,
+      universitySnapshot: { ...uni.toObject() }, // optional snapshot
     });
 
-    res.status(201).json({ success: true, data: booking });
-  } catch (e) {
-    console.error("Create Booking Error:", e);
-    res.status(500).json({ success: false, message: "Failed to create booking", error: e.message });
+    res.status(201).json({
+      success: true,
+      data: booking,
+    });
+  } catch (error) {
+    console.error("Create Booking Error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to create booking",
+      error: error.message,
+    });
   }
 };
-
 
 exports.getBookings = async (_, res) => {
   try {
@@ -1209,18 +1194,25 @@ exports.editBooking = async (req, res) => {
     const updates = { ...req.body };
 
     const booking = await Booking.findById(bookingId);
-    if (!booking) return res.status(404).json({ success: false, message: "Booking not found" });
+    if (!booking)
+      return res
+        .status(404)
+        .json({ success: false, message: "Booking not found" });
 
     // Handle notes (string -> object)
     if (updates.notes) {
       if (typeof updates.notes === "string") {
-        updates.notes = { text: updates.notes, author: "System", date: new Date() };
+        updates.notes = {
+          text: updates.notes,
+          author: "System",
+          date: new Date(),
+        };
       } else if (typeof updates.notes === "object") {
         updates.notes.date = updates.notes.date || new Date();
       }
     }
 
-    Object.keys(updates).forEach(key => {
+    Object.keys(updates).forEach((key) => {
       booking.booking[key] = updates[key]; // update nested booking fields
     });
 
@@ -1228,7 +1220,13 @@ exports.editBooking = async (req, res) => {
     res.json({ success: true, data: booking });
   } catch (error) {
     console.error("Edit Booking Error:", error);
-    res.status(500).json({ success: false, message: "Failed to update booking", error: error.message });
+    res
+      .status(500)
+      .json({
+        success: false,
+        message: "Failed to update booking",
+        error: error.message,
+      });
   }
 };
 
