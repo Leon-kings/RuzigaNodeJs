@@ -66,7 +66,7 @@ const bookingSchema = new mongoose.Schema(
         default: "pending",
       },
       payment: {
-        method: { type: String, default: "unpaid" },
+        method: { type: String, default: "payed" },
         amount: { type: Number, default: 0 },
         paid: { type: Boolean, default: false },
       },

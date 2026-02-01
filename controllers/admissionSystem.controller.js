@@ -180,18 +180,65 @@ exports.getBooking = async (req, res) => {
 };
 
 /* ===================== EDIT BOOKING ===================== */
+// exports.editBooking = async (req, res) => {
+//   try {
+//     const { bookingId } = req.params;
+//     const updates = { ...req.body };
+
+//     const booking = await Booking.findById(bookingId);
+//     if (!booking)
+//       return res
+//         .status(404)
+//         .json({ success: false, message: "Booking not found" });
+
+//     // Handle notes (string -> object)
+//     if (updates.notes) {
+//       if (typeof updates.notes === "string") {
+//         updates.notes = {
+//           text: updates.notes,
+//           author: "System",
+//           date: new Date(),
+//         };
+//       } else if (typeof updates.notes === "object") {
+//         updates.notes.date = updates.notes.date || new Date();
+//       }
+//     }
+
+//     Object.keys(updates).forEach((key) => {
+//       booking.booking[key] = updates[key]; // update nested booking fields
+//     });
+
+//     await booking.save();
+//     res.json({ success: true, data: booking });
+//   } catch (error) {
+//     console.error("Edit Booking Error:", error);
+//     res.status(500).json({
+//       success: false,
+//       message: "Failed to update booking",
+//       error: error.message,
+//     });
+//   }
+// };
+
 exports.editBooking = async (req, res) => {
   try {
     const { bookingId } = req.params;
     const updates = { ...req.body };
 
     const booking = await Booking.findById(bookingId);
-    if (!booking)
-      return res
-        .status(404)
-        .json({ success: false, message: "Booking not found" });
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        message: "Booking not found",
+      });
+    }
 
-    // Handle notes (string -> object)
+    // 🔥 ENSURE NESTED OBJECT EXISTS
+    if (!booking.booking) {
+      booking.booking = {};
+    }
+
+    // ---------------- NOTES HANDLING ----------------
     if (updates.notes) {
       if (typeof updates.notes === "string") {
         updates.notes = {
@@ -204,12 +251,17 @@ exports.editBooking = async (req, res) => {
       }
     }
 
+    // ---------------- UPDATE NESTED BOOKING ----------------
     Object.keys(updates).forEach((key) => {
-      booking.booking[key] = updates[key]; // update nested booking fields
+      booking.booking[key] = updates[key];
     });
 
     await booking.save();
-    res.json({ success: true, data: booking });
+
+    res.json({
+      success: true,
+      data: booking,
+    });
   } catch (error) {
     console.error("Edit Booking Error:", error);
     res.status(500).json({
@@ -219,6 +271,7 @@ exports.editBooking = async (req, res) => {
     });
   }
 };
+
 
 exports.updateBookingStatus = async (req, res) => {
   const booking = await Booking.findById(req.params.id);
