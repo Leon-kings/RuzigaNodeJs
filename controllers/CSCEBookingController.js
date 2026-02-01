@@ -2960,6 +2960,252 @@
 
 
 
+// const nodemailer = require("nodemailer");
+// const cloudinary = require("cloudinary").v2;
+// const Exam = require("../models/Exam");
+
+// // ================== Cloudinary Setup ==================
+// cloudinary.config({
+//   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+//   api_key: process.env.CLOUDINARY_API_KEY,
+//   api_secret: process.env.CLOUDINARY_API_SECRET,
+// });
+
+// class CSEController {
+//   constructor() {
+//     this.mailer = nodemailer.createTransport({
+//       host: process.env.SMTP_HOST,
+//       port: process.env.SMTP_PORT,
+//       secure: false,
+//       auth: {
+//         user: process.env.SMTP_USER,
+//         pass: process.env.SMTP_PASS,
+//       },
+//     });
+//   }
+
+//   // ================== Email Helper ==================
+//   async sendEmail(to, subject, html) {
+//     await this.mailer.sendMail({
+//       from: `"CSCCE Exams" <${process.env.SMTP_USER}>`,
+//       to,
+//       subject,
+//       html,
+//     });
+//   }
+
+//   // ================== Cloudinary Upload Helper ==================
+//   async uploadFilesToCloudinary(files, folder = "exams") {
+//     const uploadedImages = [];
+//     if (files && files.length) {
+//       for (const file of files) {
+//         const result = await cloudinary.uploader.upload(
+//           `data:${file.mimetype};base64,${file.buffer.toString("base64")}`,
+//           { folder }
+//         );
+//         uploadedImages.push({ url: result.secure_url, public_id: result.public_id });
+//       }
+//     }
+//     return uploadedImages;
+//   }
+
+//   // ================== EXAMS CRUD ==================
+
+//   async createExam(req, res) {
+//     try {
+//       const images = await this.uploadFilesToCloudinary(req.files);
+//       const exam = await Exam.create({ ...req.body, images, createdBy: req.user._id });
+//       res.status(201).json({ success: true, data: exam });
+//     } catch (error) {
+//       res.status(400).json({ success: false, message: error.message });
+//     }
+//   }
+
+//   async getAllExams(req, res) {
+//     try {
+//       const exams = await Exam.find({ isActive: true });
+//       res.json({ success: true, data: exams });
+//     } catch (error) {
+//       res.status(500).json({ success: false, message: error.message });
+//     }
+//   }
+
+//   async getSingleExam(req, res) {
+//     try {
+//       const exam = await Exam.findById(req.params.examId);
+//       if (!exam) return res.status(404).json({ success: false, message: "Exam not found" });
+//       res.json({ success: true, data: exam });
+//     } catch (error) {
+//       res.status(500).json({ success: false, message: error.message });
+//     }
+//   }
+
+//   async updateExam(req, res) {
+//     try {
+//       const exam = await Exam.findById(req.params.examId);
+//       if (!exam) return res.status(404).json({ success: false, message: "Exam not found" });
+
+//       if (req.files && req.files.length) {
+//         for (const img of exam.images || []) {
+//           await cloudinary.uploader.destroy(img.public_id);
+//         }
+//         exam.images = await this.uploadFilesToCloudinary(req.files);
+//       }
+
+//       Object.assign(exam, req.body);
+//       await exam.save();
+//       res.json({ success: true, data: exam });
+//     } catch (error) {
+//       res.status(400).json({ success: false, message: error.message });
+//     }
+//   }
+
+//   async deleteExam(req, res) {
+//     try {
+//       const exam = await Exam.findByIdAndUpdate(
+//         req.params.examId,
+//         { isActive: false },
+//         { new: true }
+//       );
+//       if (!exam) return res.status(404).json({ success: false, message: "Exam not found" });
+//       res.json({ success: true, message: "Exam deleted" });
+//     } catch (error) {
+//       res.status(400).json({ success: false, message: error.message });
+//     }
+//   }
+
+//   // ================== BOOKINGS CRUD ==================
+
+//   async createBooking(req, res) {
+//     try {
+//       const exam = await Exam.findById(req.params.examId);
+//       if (!exam) return res.status(404).json({ success: false, message: "Exam not found" });
+
+//       exam.registrations.push(req.body);
+//       await exam.save();
+
+//       await this.sendEmail(
+//         req.body.userEmail,
+//         "Exam Booking Confirmed",
+//         `<p>Hello ${req.body.userName},<br/>Your exam booking for <b>${exam.name}</b> is confirmed.</p>`
+//       );
+
+//       res.status(201).json({ success: true, message: "Booking created" });
+//     } catch (error) {
+//       res.status(400).json({ success: false, message: error.message });
+//     }
+//   }
+
+//   async getExamBookings(req, res) {
+//     try {
+//       const exam = await Exam.findById(req.params.examId).select("registrations");
+//       if (!exam) return res.status(404).json({ success: false, message: "Exam not found" });
+//       res.json({ success: true, data: exam.registrations });
+//     } catch (error) {
+//       res.status(500).json({ success: false, message: error.message });
+//     }
+//   }
+
+//   async updateBookingStatus(req, res) {
+//     try {
+//       const { examId, bookingId } = req.params;
+//       const exam = await Exam.findById(examId);
+//       const booking = exam?.registrations.id(bookingId);
+
+//       if (!booking) return res.status(404).json({ success: false, message: "Booking not found" });
+
+//       booking.status = req.body.status;
+//       await exam.save();
+
+//       res.json({ success: true, message: "Booking updated" });
+//     } catch (error) {
+//       res.status(400).json({ success: false, message: error.message });
+//     }
+//   }
+
+//   async deleteBooking(req, res) {
+//     try {
+//       const { examId, bookingId } = req.params;
+//       const exam = await Exam.findById(examId);
+//       const booking = exam?.registrations.id(bookingId);
+
+//       if (!booking) return res.status(404).json({ success: false, message: "Booking not found" });
+
+//       booking.remove();
+//       await exam.save();
+
+//       res.json({ success: true, message: "Booking deleted" });
+//     } catch (error) {
+//       res.status(400).json({ success: false, message: error.message });
+//     }
+//   }
+
+//   async getAllBookings(req, res) {
+//     try {
+//       const exams = await Exam.find().select("name code registrations").lean();
+//       const bookings = exams.flatMap((exam) =>
+//         exam.registrations.map((r) => ({
+//           examName: exam.name,
+//           examCode: exam.code,
+//           bookingId: r._id,
+//           userName: r.userName,
+//           userEmail: r.userEmail,
+//           status: r.status,
+//           examSession: r.examSession,
+//         }))
+//       );
+//       res.json({ success: true, total: bookings.length, data: bookings });
+//     } catch (error) {
+//       res.status(500).json({ success: false, message: error.message });
+//     }
+//   }
+
+//   // ================== BOOKINGS BY EMAIL ==================
+//   async getBookingsByEmail(req, res) {
+//     try {
+//       const email = req.params.email.toLowerCase();
+//       const exams = await Exam.find().select("name code registrations").lean();
+
+//       const filtered = exams.flatMap((exam) =>
+//         (exam.registrations || [])
+//           .filter((r) => r.userEmail.toLowerCase() === email)
+//           .map((r) => ({
+//             examId: exam._id,
+//             examName: exam.name,
+//             examCode: exam.code,
+//             bookingId: r._id,
+//             userName: r.userName,
+//             userEmail: r.userEmail,
+//             status: r.status,
+//             examSession: r.examSession,
+//           }))
+//       );
+
+//       res.json({ success: true, total: filtered.length, data: filtered });
+//     } catch (error) {
+//       res.status(500).json({ success: false, message: error.message });
+//     }
+//   }
+// }
+
+// module.exports = new CSEController();
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 const nodemailer = require("nodemailer");
 const cloudinary = require("cloudinary").v2;
 const Exam = require("../models/Exam");
@@ -2973,6 +3219,7 @@ cloudinary.config({
 
 class CSEController {
   constructor() {
+    // Nodemailer transporter
     this.mailer = nodemailer.createTransport({
       host: process.env.SMTP_HOST,
       port: process.env.SMTP_PORT,
@@ -2985,17 +3232,17 @@ class CSEController {
   }
 
   // ================== Email Helper ==================
-  async sendEmail(to, subject, html) {
+  sendEmail = async (to, subject, html) => {
     await this.mailer.sendMail({
       from: `"CSCCE Exams" <${process.env.SMTP_USER}>`,
       to,
       subject,
       html,
     });
-  }
+  };
 
   // ================== Cloudinary Upload Helper ==================
-  async uploadFilesToCloudinary(files, folder = "exams") {
+  uploadFilesToCloudinary = async (files, folder = "exams") => {
     const uploadedImages = [];
     if (files && files.length) {
       for (const file of files) {
@@ -3007,30 +3254,30 @@ class CSEController {
       }
     }
     return uploadedImages;
-  }
+  };
 
   // ================== EXAMS CRUD ==================
-
-  async createExam(req, res) {
+  createExam = async (req, res) => {
     try {
       const images = await this.uploadFilesToCloudinary(req.files);
       const exam = await Exam.create({ ...req.body, images, createdBy: req.user._id });
+
       res.status(201).json({ success: true, data: exam });
     } catch (error) {
       res.status(400).json({ success: false, message: error.message });
     }
-  }
+  };
 
-  async getAllExams(req, res) {
+  getAllExams = async (req, res) => {
     try {
       const exams = await Exam.find({ isActive: true });
       res.json({ success: true, data: exams });
     } catch (error) {
       res.status(500).json({ success: false, message: error.message });
     }
-  }
+  };
 
-  async getSingleExam(req, res) {
+  getSingleExam = async (req, res) => {
     try {
       const exam = await Exam.findById(req.params.examId);
       if (!exam) return res.status(404).json({ success: false, message: "Exam not found" });
@@ -3038,13 +3285,14 @@ class CSEController {
     } catch (error) {
       res.status(500).json({ success: false, message: error.message });
     }
-  }
+  };
 
-  async updateExam(req, res) {
+  updateExam = async (req, res) => {
     try {
       const exam = await Exam.findById(req.params.examId);
       if (!exam) return res.status(404).json({ success: false, message: "Exam not found" });
 
+      // Delete old images if new ones are uploaded
       if (req.files && req.files.length) {
         for (const img of exam.images || []) {
           await cloudinary.uploader.destroy(img.public_id);
@@ -3058,25 +3306,20 @@ class CSEController {
     } catch (error) {
       res.status(400).json({ success: false, message: error.message });
     }
-  }
+  };
 
-  async deleteExam(req, res) {
+  deleteExam = async (req, res) => {
     try {
-      const exam = await Exam.findByIdAndUpdate(
-        req.params.examId,
-        { isActive: false },
-        { new: true }
-      );
+      const exam = await Exam.findByIdAndUpdate(req.params.examId, { isActive: false }, { new: true });
       if (!exam) return res.status(404).json({ success: false, message: "Exam not found" });
       res.json({ success: true, message: "Exam deleted" });
     } catch (error) {
       res.status(400).json({ success: false, message: error.message });
     }
-  }
+  };
 
   // ================== BOOKINGS CRUD ==================
-
-  async createBooking(req, res) {
+  createBooking = async (req, res) => {
     try {
       const exam = await Exam.findById(req.params.examId);
       if (!exam) return res.status(404).json({ success: false, message: "Exam not found" });
@@ -3087,16 +3330,16 @@ class CSEController {
       await this.sendEmail(
         req.body.userEmail,
         "Exam Booking Confirmed",
-        `<p>Hello ${req.body.userName},<br/>Your exam booking for <b>${exam.name}</b> is confirmed.</p>`
+        `<p>Hello ${req.body.userName}, your booking for <b>${exam.name}</b> is confirmed.</p>`
       );
 
       res.status(201).json({ success: true, message: "Booking created" });
     } catch (error) {
       res.status(400).json({ success: false, message: error.message });
     }
-  }
+  };
 
-  async getExamBookings(req, res) {
+  getExamBookings = async (req, res) => {
     try {
       const exam = await Exam.findById(req.params.examId).select("registrations");
       if (!exam) return res.status(404).json({ success: false, message: "Exam not found" });
@@ -3104,9 +3347,9 @@ class CSEController {
     } catch (error) {
       res.status(500).json({ success: false, message: error.message });
     }
-  }
+  };
 
-  async updateBookingStatus(req, res) {
+  updateBookingStatus = async (req, res) => {
     try {
       const { examId, bookingId } = req.params;
       const exam = await Exam.findById(examId);
@@ -3114,16 +3357,16 @@ class CSEController {
 
       if (!booking) return res.status(404).json({ success: false, message: "Booking not found" });
 
-      booking.status = req.body.status;
+      booking.status = req.body.status || booking.status;
       await exam.save();
 
       res.json({ success: true, message: "Booking updated" });
     } catch (error) {
       res.status(400).json({ success: false, message: error.message });
     }
-  }
+  };
 
-  async deleteBooking(req, res) {
+  deleteBooking = async (req, res) => {
     try {
       const { examId, bookingId } = req.params;
       const exam = await Exam.findById(examId);
@@ -3138,13 +3381,14 @@ class CSEController {
     } catch (error) {
       res.status(400).json({ success: false, message: error.message });
     }
-  }
+  };
 
-  async getAllBookings(req, res) {
+  getAllBookings = async (req, res) => {
     try {
       const exams = await Exam.find().select("name code registrations").lean();
       const bookings = exams.flatMap((exam) =>
-        exam.registrations.map((r) => ({
+        (exam.registrations || []).map((r) => ({
+          examId: exam._id,
           examName: exam.name,
           examCode: exam.code,
           bookingId: r._id,
@@ -3158,10 +3402,10 @@ class CSEController {
     } catch (error) {
       res.status(500).json({ success: false, message: error.message });
     }
-  }
+  };
 
-  // ================== BOOKINGS BY EMAIL ==================
-  async getBookingsByEmail(req, res) {
+  // ================== GET BOOKINGS BY EMAIL ==================
+  getBookingsByEmail = async (req, res) => {
     try {
       const email = req.params.email.toLowerCase();
       const exams = await Exam.find().select("name code registrations").lean();
@@ -3185,7 +3429,7 @@ class CSEController {
     } catch (error) {
       res.status(500).json({ success: false, message: error.message });
     }
-  }
+  };
 }
 
 module.exports = new CSEController();
