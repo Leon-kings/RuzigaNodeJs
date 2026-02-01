@@ -108,56 +108,73 @@ exports.deleteUniversity = async (req, res) => {
 
 /* ===================== BOOKING CRUD ===================== */
 
+// exports.createBooking = async (req, res) => {
+//   try {
+//     const { university, student, bookingDetails, service } = req.body;
+
+//     // ------------------ VALIDATE UNIVERSITY ID ------------------
+//     if (!req.body.university) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "University ID is required",
+//       });
+//     }
+
+//     if (!mongoose.Types.ObjectId.isValid(university)) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Invalid University ID format",
+//       });
+//     }
+
+//     // ------------------ CHECK UNIVERSITY EXISTS ------------------
+//     const uni = await University.findById(university);
+//     if (!uni) {
+//       return res.status(404).json({
+//         success: false,
+//         message: "University not found",
+//       });
+//     }
+
+//     // ------------------ CREATE BOOKING ------------------
+//     const booking = await Booking.create({
+//       university, // reference
+//       student,
+//       bookingDetails,
+//       service,
+//       universitySnapshot: { ...uni.toObject() }, // optional snapshot
+//     });
+
+//     res.status(201).json({
+//       success: true,
+//       data: booking,
+//     });
+//   } catch (error) {
+//     console.error("Create Booking Error:", error);
+//     res.status(500).json({
+//       success: false,
+//       message: "Failed to create booking",
+//       error: error.message,
+//     });
+//   }
+// };
 exports.createBooking = async (req, res) => {
   try {
-    const { university, student, bookingDetails, service } = req.body;
-
-    // ------------------ VALIDATE UNIVERSITY ID ------------------
-    if (!req.body.university) {
-      return res.status(400).json({
-        success: false,
-        message: "University ID is required",
-      });
-    }
-
-    if (!mongoose.Types.ObjectId.isValid(university)) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid University ID format",
-      });
-    }
-
-    // ------------------ CHECK UNIVERSITY EXISTS ------------------
-    const uni = await University.findById(university);
-    if (!uni) {
-      return res.status(404).json({
-        success: false,
-        message: "University not found",
-      });
-    }
-
-    // ------------------ CREATE BOOKING ------------------
-    const booking = await Booking.create({
-      university, // reference
-      student,
-      bookingDetails,
-      service,
-      universitySnapshot: { ...uni.toObject() }, // optional snapshot
-    });
+    const booking = await Booking.create(req.body);
 
     res.status(201).json({
       success: true,
       data: booking,
     });
   } catch (error) {
-    console.error("Create Booking Error:", error);
-    res.status(500).json({
+    res.status(400).json({
       success: false,
       message: "Failed to create booking",
       error: error.message,
     });
   }
 };
+
 
 exports.getBookings = async (_, res) => {
   try {
