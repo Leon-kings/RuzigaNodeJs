@@ -2611,76 +2611,419 @@
 
 
 
-const mongoose = require('mongoose');
-const nodemailer = require('nodemailer');
-const Exam = require('../models/Exam');
+// const mongoose = require('mongoose');
+// const nodemailer = require('nodemailer');
+// const Exam = require('../models/Exam');
+
+// class CSEController {
+//   constructor() {
+//     // Auto-bind methods
+//     [
+//       'getDashboardStats',
+//       'createExam',
+//       'getAllExams',
+//       'getSingleExam',
+//       'registerForExam',
+//       'getExamRegistrations',
+//       'updateRegistrationStatus',
+//       'getAllRegistrations',
+//       'createBooking',
+//       'getExamBookings',
+//       'updateBookingStatus',
+//       'deleteBooking',
+//       'getAllBookings',
+//       'getBookingsByEmail'
+//     ].forEach(method => this[method] && (this[method] = this[method].bind(this)));
+
+//     // Email transporter
+//     this.mailer = nodemailer.createTransport({
+//       host: process.env.SMTP_HOST,
+//       port: process.env.SMTP_PORT,
+//       secure: false,
+//       auth: {
+//         user: process.env.SMTP_USER,
+//         pass: process.env.SMTP_PASS
+//       }
+//     });
+//   }
+
+//   // Email helper
+//   async sendEmail(to, subject, html) {
+//     await this.mailer.sendMail({
+//       from: `"CSCCE Exams" <${process.env.SMTP_USER}>`,
+//       to,
+//       subject,
+//       html
+//     });
+//   }
+
+//   // ================= CREATE EXAM =================
+//   async createExam(req, res) {
+//     try {
+//       const exam = await Exam.create({
+//         ...req.body,
+//         createdBy: req.user._id
+//       });
+
+//       await this.sendEmail(
+//         process.env.ADMIN_EMAIL,
+//         'New Exam Created',
+//         `<p>New exam <b>${exam.name}</b> has been created.</p>`
+//       );
+
+//       res.status(201).json({ success: true, data: exam });
+//     } catch (error) {
+//       res.status(400).json({ success: false, message: error.message });
+//     }
+//   }
+
+//   // ================= READ EXAMS =================
+//   async getAllExams(req, res) {
+//     try {
+//       const exams = await Exam.find({ isActive: true }).sort({ createdAt: -1 });
+//       res.json({ success: true, data: exams });
+//     } catch (error) {
+//       res.status(500).json({ success: false, message: error.message });
+//     }
+//   }
+
+//   async getSingleExam(req, res) {
+//     try {
+//       const exam = await Exam.findById(req.params.id);
+//       if (!exam) return res.status(404).json({ success: false, message: 'Exam not found' });
+//       res.json({ success: true, data: exam });
+//     } catch (error) {
+//       res.status(500).json({ success: false, message: error.message });
+//     }
+//   }
+
+//   // ================= REGISTRATIONS =================
+//   async registerForExam(req, res) {
+//     try {
+//       const exam = await Exam.findById(req.params.examId);
+//       if (!exam) return res.status(404).json({ success: false, message: 'Exam not found' });
+
+//       exam.registrations.push({ ...req.body, userId: req.user._id });
+//       await exam.save();
+
+//       await this.sendEmail(
+//         req.body.userEmail,
+//         'Exam Registration Successful',
+//         `<p>Hello ${req.body.userName},<br/>
+//         You have successfully registered for <b>${exam.name}</b>.</p>`
+//       );
+
+//       res.status(201).json({ success: true, message: 'Registration submitted' });
+//     } catch (error) {
+//       res.status(400).json({ success: false, message: error.message });
+//     }
+//   }
+
+//   async getExamRegistrations(req, res) {
+//     try {
+//       const exam = await Exam.findById(req.params.examId).select('registrations');
+//       if (!exam) return res.status(404).json({ success: false, message: 'Exam not found' });
+//       res.json({ success: true, data: exam.registrations });
+//     } catch (error) {
+//       res.status(500).json({ success: false, message: error.message });
+//     }
+//   }
+
+//   async getAllRegistrations(req, res) {
+//     try {
+//       const exams = await Exam.find().select('name code registrations');
+//       const allRegistrations = exams.flatMap(exam =>
+//         exam.registrations.map(reg => ({
+//           examId: exam._id,
+//           examName: exam.name,
+//           examCode: exam.code,
+//           registrationId: reg._id,
+//           studentName: reg.userName,
+//           studentEmail: reg.userEmail,
+//           studentPhone: reg.userPhone,
+//           organization: reg.organization,
+//           registrationDate: reg.registrationDate,
+//           status: reg.status,
+//           examSession: reg.examSession,
+//           notes: reg.notes,
+//           attachments: reg.attachments || []
+//         }))
+//       );
+//       res.json({ success: true, total: allRegistrations.length, data: allRegistrations });
+//     } catch (error) {
+//       res.status(500).json({ success: false, message: error.message });
+//     }
+//   }
+
+//   async updateRegistrationStatus(req, res) {
+//     try {
+//       const { examId, registrationId } = req.params;
+//       const { status } = req.body;
+
+//       const exam = await Exam.findById(examId);
+//       if (!exam) return res.status(404).json({ success: false, message: 'Exam not found' });
+
+//       const registration = exam.registrations.id(registrationId);
+//       if (!registration) return res.status(404).json({ success: false, message: 'Registration not found' });
+
+//       registration.status = status || registration.status;
+//       await exam.save();
+
+//       await this.sendEmail(
+//         registration.userEmail,
+//         'Registration Status Updated',
+//         `<p>Your registration for <b>${exam.name}</b> has been updated to <b>${registration.status}</b>.</p>`
+//       );
+
+//       res.json({ success: true, message: 'Registration updated' });
+//     } catch (error) {
+//       res.status(400).json({ success: false, message: error.message });
+//     }
+//   }
+
+//   // ================= BOOKINGS =================
+//   async createBooking(req, res) {
+//     try {
+//       const exam = await Exam.findById(req.params.examId);
+//       if (!exam) return res.status(404).json({ success: false, message: 'Exam not found' });
+
+//       exam.bookings.push(req.body);
+//       await exam.save();
+
+//       await this.sendEmail(
+//         req.body.studentEmail,
+//         'Exam Booking Confirmed',
+//         `<p>Hello ${req.body.studentName},<br/>
+//         Your exam session for <b>${exam.name}</b> is booked.</p>`
+//       );
+
+//       res.status(201).json({ success: true, message: 'Booking created' });
+//     } catch (error) {
+//       res.status(400).json({ success: false, message: error.message });
+//     }
+//   }
+
+//   async getExamBookings(req, res) {
+//     try {
+//       const exam = await Exam.findById(req.params.examId).select('bookings');
+//       if (!exam) return res.status(404).json({ success: false, message: 'Exam not found' });
+//       res.json({ success: true, data: exam.bookings });
+//     } catch (error) {
+//       res.status(500).json({ success: false, message: error.message });
+//     }
+//   }
+
+//   async updateBookingStatus(req, res) {
+//     try {
+//       const { examId, bookingId } = req.params;
+//       const { status } = req.body;
+
+//       const exam = await Exam.findById(examId);
+//       if (!exam) return res.status(404).json({ success: false, message: 'Exam not found' });
+
+//       const booking = exam.bookings.id(bookingId);
+//       if (!booking) return res.status(404).json({ success: false, message: 'Booking not found' });
+
+//       booking.status = status || booking.status;
+//       await exam.save();
+
+//       res.json({ success: true, message: 'Booking updated' });
+//     } catch (error) {
+//       res.status(400).json({ success: false, message: error.message });
+//     }
+//   }
+
+//   async deleteBooking(req, res) {
+//     try {
+//       const { examId, bookingId } = req.params;
+
+//       const exam = await Exam.findById(examId);
+//       if (!exam) return res.status(404).json({ success: false, message: 'Exam not found' });
+
+//       exam.bookings.id(bookingId).remove();
+//       await exam.save();
+
+//       res.json({ success: true, message: 'Booking deleted' });
+//     } catch (error) {
+//       res.status(400).json({ success: false, message: error.message });
+//     }
+//   }
+
+//   async getAllBookings(req, res) {
+//     try {
+//       const exams = await Exam.find().select('name code registrations').lean();
+//       const allBookings = exams.flatMap(exam =>
+//         (exam.registrations || []).map(reg => ({
+//           examId: exam._id,
+//           examName: exam.name,
+//           examCode: exam.code,
+//           registrationId: reg._id,
+//           studentName: reg.userName,
+//           studentEmail: reg.userEmail,
+//           studentPhone: reg.userPhone,
+//           organization: reg.organization,
+//           registrationDate: reg.registrationDate,
+//           status: reg.status,
+//           examSession: reg.examSession,
+//           notes: reg.notes,
+//           attachments: reg.attachments || []
+//         }))
+//       );
+
+//       res.json({ success: true, total: allBookings.length, data: allBookings });
+//     } catch (error) {
+//       res.status(500).json({ success: false, message: error.message });
+//     }
+//   }
+
+//   async getBookingsByEmail(req, res) {
+//     try {
+//       const { email } = req.params;
+//       const exams = await Exam.find().select('name code registrations').lean();
+//       const filtered = exams.flatMap(exam =>
+//         (exam.registrations || []).filter(reg => reg.userEmail.toLowerCase() === email.toLowerCase())
+//           .map(reg => ({
+//             examId: exam._id,
+//             examName: exam.name,
+//             examCode: exam.code,
+//             registrationId: reg._id,
+//             studentName: reg.userName,
+//             studentEmail: reg.userEmail,
+//             studentPhone: reg.userPhone,
+//             organization: reg.organization,
+//             registrationDate: reg.registrationDate,
+//             status: reg.status,
+//             examSession: reg.examSession,
+//             notes: reg.notes,
+//             attachments: reg.attachments || []
+//           }))
+//       );
+//       res.json({ success: true, total: filtered.length, data: filtered });
+//     } catch (error) {
+//       res.status(500).json({ success: false, message: error.message });
+//     }
+//   }
+
+//   // ================= DASHBOARD =================
+//   async getDashboardStats(req, res) {
+//     try {
+//       const totalExams = await Exam.countDocuments({ isActive: true });
+//       const registrations = await Exam.aggregate([
+//         { $project: { count: { $size: '$registrations' } } },
+//         { $group: { _id: null, total: { $sum: '$count' } } }
+//       ]);
+
+//       res.json({
+//         success: true,
+//         data: {
+//           totalExams,
+//           totalRegistrations: registrations[0]?.total || 0
+//         }
+//       });
+//     } catch (error) {
+//       res.status(500).json({ success: false, message: error.message });
+//     }
+//   }
+// }
+
+// // Export single instance
+// module.exports = new CSEController();
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+const nodemailer = require("nodemailer");
+const cloudinary = require("cloudinary").v2;
+const Exam = require("../models/Exam");
+
+// ================== Cloudinary Setup ==================
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
 
 class CSEController {
   constructor() {
-    // Auto-bind methods
-    [
-      'getDashboardStats',
-      'createExam',
-      'getAllExams',
-      'getSingleExam',
-      'registerForExam',
-      'getExamRegistrations',
-      'updateRegistrationStatus',
-      'getAllRegistrations',
-      'createBooking',
-      'getExamBookings',
-      'updateBookingStatus',
-      'deleteBooking',
-      'getAllBookings',
-      'getBookingsByEmail'
-    ].forEach(method => this[method] && (this[method] = this[method].bind(this)));
-
-    // Email transporter
     this.mailer = nodemailer.createTransport({
       host: process.env.SMTP_HOST,
       port: process.env.SMTP_PORT,
       secure: false,
       auth: {
         user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS
-      }
+        pass: process.env.SMTP_PASS,
+      },
     });
   }
 
-  // Email helper
+  // ================== Email Helper ==================
   async sendEmail(to, subject, html) {
     await this.mailer.sendMail({
       from: `"CSCCE Exams" <${process.env.SMTP_USER}>`,
       to,
       subject,
-      html
+      html,
     });
   }
 
-  // ================= CREATE EXAM =================
+  // ================== Cloudinary Upload Helper ==================
+  async uploadFilesToCloudinary(files, folder = "exams") {
+    const uploadedImages = [];
+    if (files && files.length) {
+      for (const file of files) {
+        const result = await cloudinary.uploader.upload(
+          `data:${file.mimetype};base64,${file.buffer.toString("base64")}`,
+          { folder }
+        );
+        uploadedImages.push({ url: result.secure_url, public_id: result.public_id });
+      }
+    }
+    return uploadedImages;
+  }
+
+  // ================== EXAMS CRUD ==================
+
   async createExam(req, res) {
     try {
-      const exam = await Exam.create({
-        ...req.body,
-        createdBy: req.user._id
-      });
-
-      await this.sendEmail(
-        process.env.ADMIN_EMAIL,
-        'New Exam Created',
-        `<p>New exam <b>${exam.name}</b> has been created.</p>`
-      );
-
+      const images = await this.uploadFilesToCloudinary(req.files);
+      const exam = await Exam.create({ ...req.body, images, createdBy: req.user._id });
       res.status(201).json({ success: true, data: exam });
     } catch (error) {
       res.status(400).json({ success: false, message: error.message });
     }
   }
 
-  // ================= READ EXAMS =================
   async getAllExams(req, res) {
     try {
-      const exams = await Exam.find({ isActive: true }).sort({ createdAt: -1 });
+      const exams = await Exam.find({ isActive: true });
       res.json({ success: true, data: exams });
     } catch (error) {
       res.status(500).json({ success: false, message: error.message });
@@ -2689,115 +3032,65 @@ class CSEController {
 
   async getSingleExam(req, res) {
     try {
-      const exam = await Exam.findById(req.params.id);
-      if (!exam) return res.status(404).json({ success: false, message: 'Exam not found' });
+      const exam = await Exam.findById(req.params.examId);
+      if (!exam) return res.status(404).json({ success: false, message: "Exam not found" });
       res.json({ success: true, data: exam });
     } catch (error) {
       res.status(500).json({ success: false, message: error.message });
     }
   }
 
-  // ================= REGISTRATIONS =================
-  async registerForExam(req, res) {
+  async updateExam(req, res) {
     try {
       const exam = await Exam.findById(req.params.examId);
-      if (!exam) return res.status(404).json({ success: false, message: 'Exam not found' });
+      if (!exam) return res.status(404).json({ success: false, message: "Exam not found" });
 
-      exam.registrations.push({ ...req.body, userId: req.user._id });
+      if (req.files && req.files.length) {
+        for (const img of exam.images || []) {
+          await cloudinary.uploader.destroy(img.public_id);
+        }
+        exam.images = await this.uploadFilesToCloudinary(req.files);
+      }
+
+      Object.assign(exam, req.body);
+      await exam.save();
+      res.json({ success: true, data: exam });
+    } catch (error) {
+      res.status(400).json({ success: false, message: error.message });
+    }
+  }
+
+  async deleteExam(req, res) {
+    try {
+      const exam = await Exam.findByIdAndUpdate(
+        req.params.examId,
+        { isActive: false },
+        { new: true }
+      );
+      if (!exam) return res.status(404).json({ success: false, message: "Exam not found" });
+      res.json({ success: true, message: "Exam deleted" });
+    } catch (error) {
+      res.status(400).json({ success: false, message: error.message });
+    }
+  }
+
+  // ================== BOOKINGS CRUD ==================
+
+  async createBooking(req, res) {
+    try {
+      const exam = await Exam.findById(req.params.examId);
+      if (!exam) return res.status(404).json({ success: false, message: "Exam not found" });
+
+      exam.registrations.push(req.body);
       await exam.save();
 
       await this.sendEmail(
         req.body.userEmail,
-        'Exam Registration Successful',
-        `<p>Hello ${req.body.userName},<br/>
-        You have successfully registered for <b>${exam.name}</b>.</p>`
+        "Exam Booking Confirmed",
+        `<p>Hello ${req.body.userName},<br/>Your exam booking for <b>${exam.name}</b> is confirmed.</p>`
       );
 
-      res.status(201).json({ success: true, message: 'Registration submitted' });
-    } catch (error) {
-      res.status(400).json({ success: false, message: error.message });
-    }
-  }
-
-  async getExamRegistrations(req, res) {
-    try {
-      const exam = await Exam.findById(req.params.examId).select('registrations');
-      if (!exam) return res.status(404).json({ success: false, message: 'Exam not found' });
-      res.json({ success: true, data: exam.registrations });
-    } catch (error) {
-      res.status(500).json({ success: false, message: error.message });
-    }
-  }
-
-  async getAllRegistrations(req, res) {
-    try {
-      const exams = await Exam.find().select('name code registrations');
-      const allRegistrations = exams.flatMap(exam =>
-        exam.registrations.map(reg => ({
-          examId: exam._id,
-          examName: exam.name,
-          examCode: exam.code,
-          registrationId: reg._id,
-          studentName: reg.userName,
-          studentEmail: reg.userEmail,
-          studentPhone: reg.userPhone,
-          organization: reg.organization,
-          registrationDate: reg.registrationDate,
-          status: reg.status,
-          examSession: reg.examSession,
-          notes: reg.notes,
-          attachments: reg.attachments || []
-        }))
-      );
-      res.json({ success: true, total: allRegistrations.length, data: allRegistrations });
-    } catch (error) {
-      res.status(500).json({ success: false, message: error.message });
-    }
-  }
-
-  async updateRegistrationStatus(req, res) {
-    try {
-      const { examId, registrationId } = req.params;
-      const { status } = req.body;
-
-      const exam = await Exam.findById(examId);
-      if (!exam) return res.status(404).json({ success: false, message: 'Exam not found' });
-
-      const registration = exam.registrations.id(registrationId);
-      if (!registration) return res.status(404).json({ success: false, message: 'Registration not found' });
-
-      registration.status = status || registration.status;
-      await exam.save();
-
-      await this.sendEmail(
-        registration.userEmail,
-        'Registration Status Updated',
-        `<p>Your registration for <b>${exam.name}</b> has been updated to <b>${registration.status}</b>.</p>`
-      );
-
-      res.json({ success: true, message: 'Registration updated' });
-    } catch (error) {
-      res.status(400).json({ success: false, message: error.message });
-    }
-  }
-
-  // ================= BOOKINGS =================
-  async createBooking(req, res) {
-    try {
-      const exam = await Exam.findById(req.params.examId);
-      if (!exam) return res.status(404).json({ success: false, message: 'Exam not found' });
-
-      exam.bookings.push(req.body);
-      await exam.save();
-
-      await this.sendEmail(
-        req.body.studentEmail,
-        'Exam Booking Confirmed',
-        `<p>Hello ${req.body.studentName},<br/>
-        Your exam session for <b>${exam.name}</b> is booked.</p>`
-      );
-
-      res.status(201).json({ success: true, message: 'Booking created' });
+      res.status(201).json({ success: true, message: "Booking created" });
     } catch (error) {
       res.status(400).json({ success: false, message: error.message });
     }
@@ -2805,9 +3098,9 @@ class CSEController {
 
   async getExamBookings(req, res) {
     try {
-      const exam = await Exam.findById(req.params.examId).select('bookings');
-      if (!exam) return res.status(404).json({ success: false, message: 'Exam not found' });
-      res.json({ success: true, data: exam.bookings });
+      const exam = await Exam.findById(req.params.examId).select("registrations");
+      if (!exam) return res.status(404).json({ success: false, message: "Exam not found" });
+      res.json({ success: true, data: exam.registrations });
     } catch (error) {
       res.status(500).json({ success: false, message: error.message });
     }
@@ -2816,18 +3109,15 @@ class CSEController {
   async updateBookingStatus(req, res) {
     try {
       const { examId, bookingId } = req.params;
-      const { status } = req.body;
-
       const exam = await Exam.findById(examId);
-      if (!exam) return res.status(404).json({ success: false, message: 'Exam not found' });
+      const booking = exam?.registrations.id(bookingId);
 
-      const booking = exam.bookings.id(bookingId);
-      if (!booking) return res.status(404).json({ success: false, message: 'Booking not found' });
+      if (!booking) return res.status(404).json({ success: false, message: "Booking not found" });
 
-      booking.status = status || booking.status;
+      booking.status = req.body.status;
       await exam.save();
 
-      res.json({ success: true, message: 'Booking updated' });
+      res.json({ success: true, message: "Booking updated" });
     } catch (error) {
       res.status(400).json({ success: false, message: error.message });
     }
@@ -2836,14 +3126,15 @@ class CSEController {
   async deleteBooking(req, res) {
     try {
       const { examId, bookingId } = req.params;
-
       const exam = await Exam.findById(examId);
-      if (!exam) return res.status(404).json({ success: false, message: 'Exam not found' });
+      const booking = exam?.registrations.id(bookingId);
 
-      exam.bookings.id(bookingId).remove();
+      if (!booking) return res.status(404).json({ success: false, message: "Booking not found" });
+
+      booking.remove();
       await exam.save();
 
-      res.json({ success: true, message: 'Booking deleted' });
+      res.json({ success: true, message: "Booking deleted" });
     } catch (error) {
       res.status(400).json({ success: false, message: error.message });
     }
@@ -2851,80 +3142,50 @@ class CSEController {
 
   async getAllBookings(req, res) {
     try {
-      const exams = await Exam.find().select('name code registrations').lean();
-      const allBookings = exams.flatMap(exam =>
-        (exam.registrations || []).map(reg => ({
-          examId: exam._id,
+      const exams = await Exam.find().select("name code registrations").lean();
+      const bookings = exams.flatMap((exam) =>
+        exam.registrations.map((r) => ({
           examName: exam.name,
           examCode: exam.code,
-          registrationId: reg._id,
-          studentName: reg.userName,
-          studentEmail: reg.userEmail,
-          studentPhone: reg.userPhone,
-          organization: reg.organization,
-          registrationDate: reg.registrationDate,
-          status: reg.status,
-          examSession: reg.examSession,
-          notes: reg.notes,
-          attachments: reg.attachments || []
+          bookingId: r._id,
+          userName: r.userName,
+          userEmail: r.userEmail,
+          status: r.status,
+          examSession: r.examSession,
         }))
       );
-
-      res.json({ success: true, total: allBookings.length, data: allBookings });
+      res.json({ success: true, total: bookings.length, data: bookings });
     } catch (error) {
       res.status(500).json({ success: false, message: error.message });
     }
   }
 
+  // ================== BOOKINGS BY EMAIL ==================
   async getBookingsByEmail(req, res) {
     try {
-      const { email } = req.params;
-      const exams = await Exam.find().select('name code registrations').lean();
-      const filtered = exams.flatMap(exam =>
-        (exam.registrations || []).filter(reg => reg.userEmail.toLowerCase() === email.toLowerCase())
-          .map(reg => ({
+      const email = req.params.email.toLowerCase();
+      const exams = await Exam.find().select("name code registrations").lean();
+
+      const filtered = exams.flatMap((exam) =>
+        (exam.registrations || [])
+          .filter((r) => r.userEmail.toLowerCase() === email)
+          .map((r) => ({
             examId: exam._id,
             examName: exam.name,
             examCode: exam.code,
-            registrationId: reg._id,
-            studentName: reg.userName,
-            studentEmail: reg.userEmail,
-            studentPhone: reg.userPhone,
-            organization: reg.organization,
-            registrationDate: reg.registrationDate,
-            status: reg.status,
-            examSession: reg.examSession,
-            notes: reg.notes,
-            attachments: reg.attachments || []
+            bookingId: r._id,
+            userName: r.userName,
+            userEmail: r.userEmail,
+            status: r.status,
+            examSession: r.examSession,
           }))
       );
+
       res.json({ success: true, total: filtered.length, data: filtered });
-    } catch (error) {
-      res.status(500).json({ success: false, message: error.message });
-    }
-  }
-
-  // ================= DASHBOARD =================
-  async getDashboardStats(req, res) {
-    try {
-      const totalExams = await Exam.countDocuments({ isActive: true });
-      const registrations = await Exam.aggregate([
-        { $project: { count: { $size: '$registrations' } } },
-        { $group: { _id: null, total: { $sum: '$count' } } }
-      ]);
-
-      res.json({
-        success: true,
-        data: {
-          totalExams,
-          totalRegistrations: registrations[0]?.total || 0
-        }
-      });
     } catch (error) {
       res.status(500).json({ success: false, message: error.message });
     }
   }
 }
 
-// Export single instance
 module.exports = new CSEController();

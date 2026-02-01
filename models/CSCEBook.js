@@ -899,7 +899,244 @@
 
 
 
-const mongoose = require('mongoose');
+// const mongoose = require('mongoose');
+
+// /* ===============================
+//    REGISTRATION SUB-SCHEMA
+// ================================ */
+// const registrationSchema = new mongoose.Schema(
+//   {
+//     userId: {
+//       type: mongoose.Schema.Types.ObjectId,
+//       ref: 'User',
+//       required: true
+//     },
+
+//     userEmail: {
+//       type: String,
+//       required: true,
+//       trim: true,
+//       lowercase: true,
+//       match: [/^[^\s@]+@[^\s@]+\.[^\s@]+$/, 'Invalid email']
+//     },
+
+//     userName: {
+//       type: String,
+//       required: true,
+//       trim: true
+//     },
+
+//     userPhone: {
+//       type: String,
+//       required: true,
+//       trim: true
+//     },
+
+//     organization: String,
+
+//     registrationDate: {
+//       type: Date,
+//       default: Date.now
+//     },
+
+//     status: {
+//       type: String,
+//       enum: ['pending', 'confirmed', 'cancelled', 'attended'],
+//       default: 'pending'
+//     },
+
+//     examSession: {
+//       date: Date,
+//       center: String,
+//       seatNumber: String,
+//       room: String
+//     },
+
+//     notes: String,
+
+//     attachments: [
+//       {
+//         name: String,
+//         url: String,
+//         type: String
+//       }
+//     ]
+//   },
+//   { timestamps: true }
+// );
+
+// /* ===============================
+//    EXAM SCHEMA
+// ================================ */
+// const examSchema = new mongoose.Schema(
+//   {
+//     name: {
+//       type: String,
+//       required: true,
+//       enum: ['TOEFL', 'IELTS', 'CSCE', 'Duolingo', 'Other'],
+//       unique: true,
+//       trim: true
+//     },
+
+//     code: {
+//       type: String,
+//       required: true,
+//       unique: true,
+//       uppercase: true,
+//       trim: true
+//     },
+
+//     type: {
+//       type: String,
+//       required: true,
+//       enum: ['Language', 'National', 'International'],
+//       trim: true
+//     },
+
+//     levels: [
+//       {
+//         type: String,
+//         enum: ['Secondary', 'Undergraduate', 'Graduate', 'All Levels'],
+//         trim: true
+//       }
+//     ],
+
+//     nextExamDate: {
+//       type: Date,
+//       required: true
+//     },
+
+//     registrationDeadline: {
+//       type: Date,
+//       required: true
+//     },
+
+//     registrationStatus: {
+//       type: String,
+//       enum: ['open', 'closed', 'upcoming', 'full'],
+//       default: 'open'
+//     },
+
+//     duration: {
+//       value: Number,
+//       unit: {
+//         type: String,
+//         enum: ['minutes', 'hours'],
+//         default: 'hours'
+//       }
+//     },
+
+//     description: {
+//       type: String,
+//       required: true,
+//       trim: true
+//     },
+
+//     requirements: [String],
+
+//     testCenters: [
+//       {
+//         name: String,
+//         address: String,
+//         city: String,
+//         capacity: Number,
+//         contact: String,
+//         email: String
+//       }
+//     ],
+
+//     schedule: [
+//       {
+//         date: Date,
+//         time: String,
+//         center: String,
+//         availableSeats: Number,
+//         totalSeats: Number
+//       }
+//     ],
+
+//     registrations: [registrationSchema],
+
+//     maxRegistrations: {
+//       type: Number,
+//       default: 100
+//     },
+
+//     createdBy: {
+//       type: mongoose.Schema.Types.ObjectId,
+//       ref: 'User',
+//       required: true
+//     },
+
+//     updatedBy: {
+//       type: mongoose.Schema.Types.ObjectId,
+//       ref: 'User'
+//     },
+
+//     isActive: {
+//       type: Boolean,
+//       default: true
+//     },
+
+//     tags: [String],
+
+//     metadata: {
+//       lastUpdated: {
+//         type: Date,
+//         default: Date.now
+//       },
+//       version: {
+//         type: Number,
+//         default: 1
+//       }
+//     }
+//   },
+//   { timestamps: true }
+// );
+
+// /* ===============================
+//    INITIAL FORM (FRONTEND HELPER)
+// ================================ */
+// const INITIAL_BOOKING_FORM = {
+//   examId: "",
+//   examName: "",
+//   studentName: "",
+//   studentEmail: "",
+//   studentPhone: "",
+//   registrationDate: new Date().toISOString().split("T")[0],
+//   status: "pending",
+//   examSession: {
+//     date: "",
+//     center: ""
+//   },
+//   notes: ""
+// };
+
+// const Exam = mongoose.models.Exam || mongoose.model('Exam', examSchema);
+
+// module.exports = {
+//   Exam,
+//   INITIAL_BOOKING_FORM
+// };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+const mongoose = require("mongoose");
 
 /* ===============================
    REGISTRATION SUB-SCHEMA
@@ -908,8 +1145,8 @@ const registrationSchema = new mongoose.Schema(
   {
     userId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'User',
-      required: true
+      ref: "User",
+      required: true,
     },
 
     userEmail: {
@@ -917,39 +1154,39 @@ const registrationSchema = new mongoose.Schema(
       required: true,
       trim: true,
       lowercase: true,
-      match: [/^[^\s@]+@[^\s@]+\.[^\s@]+$/, 'Invalid email']
+      match: [/^[^\s@]+@[^\s@]+\.[^\s@]+$/, "Invalid email"],
     },
 
     userName: {
       type: String,
       required: true,
-      trim: true
+      trim: true,
     },
 
     userPhone: {
       type: String,
       required: true,
-      trim: true
+      trim: true,
     },
 
     organization: String,
 
     registrationDate: {
       type: Date,
-      default: Date.now
+      default: Date.now,
     },
 
     status: {
       type: String,
-      enum: ['pending', 'confirmed', 'cancelled', 'attended'],
-      default: 'pending'
+      enum: ["pending", "confirmed", "cancelled", "attended"],
+      default: "pending",
     },
 
     examSession: {
       date: Date,
       center: String,
       seatNumber: String,
-      room: String
+      room: String,
     },
 
     notes: String,
@@ -958,9 +1195,9 @@ const registrationSchema = new mongoose.Schema(
       {
         name: String,
         url: String,
-        type: String
-      }
-    ]
+        type: String,
+      },
+    ],
   },
   { timestamps: true }
 );
@@ -973,9 +1210,9 @@ const examSchema = new mongoose.Schema(
     name: {
       type: String,
       required: true,
-      enum: ['TOEFL', 'IELTS', 'CSCE', 'Duolingo', 'Other'],
+      enum: ["TOEFL", "IELTS", "CSCE", "Duolingo", "Other"],
       unique: true,
-      trim: true
+      trim: true,
     },
 
     code: {
@@ -983,53 +1220,53 @@ const examSchema = new mongoose.Schema(
       required: true,
       unique: true,
       uppercase: true,
-      trim: true
+      trim: true,
     },
 
     type: {
       type: String,
       required: true,
-      enum: ['Language', 'National', 'International'],
-      trim: true
+      enum: ["Language", "National", "International"],
+      trim: true,
     },
 
     levels: [
       {
         type: String,
-        enum: ['Secondary', 'Undergraduate', 'Graduate', 'All Levels'],
-        trim: true
-      }
+        enum: ["Secondary", "Undergraduate", "Graduate", "All Levels"],
+        trim: true,
+      },
     ],
 
     nextExamDate: {
       type: Date,
-      required: true
+      required: true,
     },
 
     registrationDeadline: {
       type: Date,
-      required: true
+      required: true,
     },
 
     registrationStatus: {
       type: String,
-      enum: ['open', 'closed', 'upcoming', 'full'],
-      default: 'open'
+      enum: ["open", "closed", "upcoming", "full"],
+      default: "open",
     },
 
     duration: {
       value: Number,
       unit: {
         type: String,
-        enum: ['minutes', 'hours'],
-        default: 'hours'
-      }
+        enum: ["minutes", "hours"],
+        default: "hours",
+      },
     },
 
     description: {
       type: String,
       required: true,
-      trim: true
+      trim: true,
     },
 
     requirements: [String],
@@ -1041,8 +1278,8 @@ const examSchema = new mongoose.Schema(
         city: String,
         capacity: Number,
         contact: String,
-        email: String
-      }
+        email: String,
+      },
     ],
 
     schedule: [
@@ -1051,31 +1288,35 @@ const examSchema = new mongoose.Schema(
         time: String,
         center: String,
         availableSeats: Number,
-        totalSeats: Number
-      }
+        totalSeats: Number,
+      },
     ],
 
-    registrations: [registrationSchema],
+    // ✅ FIXED: default empty array
+    registrations: {
+      type: [registrationSchema],
+      default: [],
+    },
 
     maxRegistrations: {
       type: Number,
-      default: 100
+      default: 100,
     },
 
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'User',
-      required: true
+      ref: "User",
+      required: true,
     },
 
     updatedBy: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'User'
+      ref: "User",
     },
 
     isActive: {
       type: Boolean,
-      default: true
+      default: true,
     },
 
     tags: [String],
@@ -1083,38 +1324,17 @@ const examSchema = new mongoose.Schema(
     metadata: {
       lastUpdated: {
         type: Date,
-        default: Date.now
+        default: Date.now,
       },
       version: {
         type: Number,
-        default: 1
-      }
-    }
+        default: 1,
+      },
+    },
   },
   { timestamps: true }
 );
 
-/* ===============================
-   INITIAL FORM (FRONTEND HELPER)
-================================ */
-const INITIAL_BOOKING_FORM = {
-  examId: "",
-  examName: "",
-  studentName: "",
-  studentEmail: "",
-  studentPhone: "",
-  registrationDate: new Date().toISOString().split("T")[0],
-  status: "pending",
-  examSession: {
-    date: "",
-    center: ""
-  },
-  notes: ""
-};
+const Exam = mongoose.models.Exam || mongoose.model("Exam", examSchema);
 
-const Exam = mongoose.models.Exam || mongoose.model('Exam', examSchema);
-
-module.exports = {
-  Exam,
-  INITIAL_BOOKING_FORM
-};
+module.exports = Exam;
