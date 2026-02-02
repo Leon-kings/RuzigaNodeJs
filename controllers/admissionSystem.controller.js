@@ -108,56 +108,8 @@ exports.deleteUniversity = async (req, res) => {
 
 /* ===================== BOOKING CRUD ===================== */
 
-// exports.createBooking = async (req, res) => {
-//   try {
-//     const { university, student, bookingDetails, service } = req.body;
-
-//     // ------------------ VALIDATE UNIVERSITY ID ------------------
-//     if (!req.body.university) {
-//       return res.status(400).json({
-//         success: false,
-//         message: "University ID is required",
-//       });
-//     }
-
-//     if (!mongoose.Types.ObjectId.isValid(university)) {
-//       return res.status(400).json({
-//         success: false,
-//         message: "Invalid University ID format",
-//       });
-//     }
-
-//     // ------------------ CHECK UNIVERSITY EXISTS ------------------
-//     const uni = await University.findById(university);
-//     if (!uni) {
-//       return res.status(404).json({
-//         success: false,
-//         message: "University not found",
-//       });
-//     }
-
 //     // ------------------ CREATE BOOKING ------------------
-//     const booking = await Booking.create({
-//       university, // reference
-//       student,
-//       bookingDetails,
-//       service,
-//       universitySnapshot: { ...uni.toObject() }, // optional snapshot
-//     });
 
-//     res.status(201).json({
-//       success: true,
-//       data: booking,
-//     });
-//   } catch (error) {
-//     console.error("Create Booking Error:", error);
-//     res.status(500).json({
-//       success: false,
-//       message: "Failed to create booking",
-//       error: error.message,
-//     });
-//   }
-// };
 exports.createBooking = async (req, res) => {
   try {
     const booking = await Booking.create(req.body);
@@ -170,6 +122,35 @@ exports.createBooking = async (req, res) => {
     res.status(400).json({
       success: false,
       message: "Failed to create booking",
+      error: error.message,
+    });
+  }
+};
+
+exports.getBookingsByEmail = async (req, res) => {
+  try {
+    const { email } = req.params;
+
+    const bookings = await Booking.find({ email })
+      .sort({ createdAt: -1 });
+
+    if (!bookings.length) {
+      return res.status(404).json({
+        success: false,
+        message: "No bookings found for this email",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      count: bookings.length,
+      data: bookings,
+    });
+  } catch (error) {
+    console.error("Get Bookings By Email Error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch bookings",
       error: error.message,
     });
   }
@@ -197,45 +178,6 @@ exports.getBooking = async (req, res) => {
 };
 
 /* ===================== EDIT BOOKING ===================== */
-// exports.editBooking = async (req, res) => {
-//   try {
-//     const { bookingId } = req.params;
-//     const updates = { ...req.body };
-
-//     const booking = await Booking.findById(bookingId);
-//     if (!booking)
-//       return res
-//         .status(404)
-//         .json({ success: false, message: "Booking not found" });
-
-//     // Handle notes (string -> object)
-//     if (updates.notes) {
-//       if (typeof updates.notes === "string") {
-//         updates.notes = {
-//           text: updates.notes,
-//           author: "System",
-//           date: new Date(),
-//         };
-//       } else if (typeof updates.notes === "object") {
-//         updates.notes.date = updates.notes.date || new Date();
-//       }
-//     }
-
-//     Object.keys(updates).forEach((key) => {
-//       booking.booking[key] = updates[key]; // update nested booking fields
-//     });
-
-//     await booking.save();
-//     res.json({ success: true, data: booking });
-//   } catch (error) {
-//     console.error("Edit Booking Error:", error);
-//     res.status(500).json({
-//       success: false,
-//       message: "Failed to update booking",
-//       error: error.message,
-//     });
-//   }
-// };
 
 exports.editBooking = async (req, res) => {
   try {
