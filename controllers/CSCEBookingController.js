@@ -3257,16 +3257,44 @@ class CSEController {
   };
 
   // ================== EXAMS CRUD ==================
-  createExam = async (req, res) => {
-    try {
-      const images = await this.uploadFilesToCloudinary(req.files);
-      const exam = await Exam.create({ ...req.body, images, createdBy: req.user._id });
+  // createExam = async (req, res) => {
+  //   try {
+  //     const images = await this.uploadFilesToCloudinary(req.files);
+  //     const exam = await Exam.create({ ...req.body, images, createdBy: req.user._id });
 
-      res.status(201).json({ success: true, data: exam });
-    } catch (error) {
-      res.status(400).json({ success: false, message: error.message });
+  //     res.status(201).json({ success: true, data: exam });
+  //   } catch (error) {
+  //     res.status(400).json({ success: false, message: error.message });
+  //   }
+  // };
+
+  createExam = async (req, res) => {
+  try {
+    let images = [];
+
+    if (req.files && req.files.length > 0) {
+      images = await this.uploadFilesToCloudinary(req.files);
     }
-  };
+
+    const exam = await Exam.create({
+      ...req.body,
+      images,
+      createdBy: req.user?._id, // prevent crash
+    });
+
+    res.status(201).json({
+      success: true,
+      data: exam,
+    });
+  } catch (error) {
+    console.error("Create exam error:", error);
+    res.status(400).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
 
   getAllExams = async (req, res) => {
     try {
