@@ -14,9 +14,9 @@ router.delete("/universities/:id", controller.deleteUniversity);
 /* Bookings */
 router.post("/bookings", controller.createBooking);
 router.get("/bookings", controller.getBookings);
+router.get("/bookings/email/:email", controller.getBookingsByEmail);
 router.put("/bookings/:bookingId", controller.editBooking);
 router.get("/bookings/:id", controller.getBooking);
-router.get("/bookings/email/:email", controller.getBookingsByEmail);
 router.patch("/bookings/:id/status", controller.updateBookingStatus);
 router.delete("/bookings/:id", controller.deleteBooking);
 
