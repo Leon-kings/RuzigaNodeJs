@@ -127,6 +127,35 @@ exports.createBooking = async (req, res) => {
   }
 };
 
+// exports.getBookingsByEmail = async (req, res) => {
+//   try {
+//     const { email } = req.params;
+
+//     const bookings = await Booking.find({ email })
+//       .sort({ createdAt: -1 });
+
+//     if (!bookings.length) {
+//       return res.status(404).json({
+//         success: false,
+//         message: "No bookings found for this email",
+//       });
+//     }
+
+//     res.status(200).json({
+//       success: true,
+//       count: bookings.length,
+//       data: bookings,
+//     });
+//   } catch (error) {
+//     console.error("Get Bookings By Email Error:", error);
+//     res.status(500).json({
+//       success: false,
+//       message: "Failed to fetch bookings",
+//       error: error.message,
+//     });
+//   }
+// };
+
 exports.getBookingsByEmail = async (req, res) => {
   try {
     const { email } = req.params;
@@ -134,27 +163,19 @@ exports.getBookingsByEmail = async (req, res) => {
     const bookings = await Booking.find({ email })
       .sort({ createdAt: -1 });
 
-    if (!bookings.length) {
-      return res.status(404).json({
-        success: false,
-        message: "No bookings found for this email",
-      });
-    }
-
     res.status(200).json({
       success: true,
-      count: bookings.length,
       data: bookings,
     });
   } catch (error) {
-    console.error("Get Bookings By Email Error:", error);
+    console.error("Get Bookings Error:", error);
     res.status(500).json({
       success: false,
-      message: "Failed to fetch bookings",
-      error: error.message,
+      message: error.message,
     });
   }
 };
+
 
 
 exports.getBookings = async (_, res) => {
