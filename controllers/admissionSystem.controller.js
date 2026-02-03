@@ -127,34 +127,6 @@ exports.createBooking = async (req, res) => {
   }
 };
 
-// exports.getBookingsByEmail = async (req, res) => {
-//   try {
-//     const { email } = req.params;
-
-//     const bookings = await Booking.find({ email })
-//       .sort({ createdAt: -1 });
-
-//     if (!bookings.length) {
-//       return res.status(404).json({
-//         success: false,
-//         message: "No bookings found for this email",
-//       });
-//     }
-
-//     res.status(200).json({
-//       success: true,
-//       count: bookings.length,
-//       data: bookings,
-//     });
-//   } catch (error) {
-//     console.error("Get Bookings By Email Error:", error);
-//     res.status(500).json({
-//       success: false,
-//       message: "Failed to fetch bookings",
-//       error: error.message,
-//     });
-//   }
-// };
 
 exports.getBookingsByEmail = async (req, res) => {
   try {
@@ -177,11 +149,24 @@ exports.getBookingsByEmail = async (req, res) => {
 };
 
 
-
-exports.getBookings = async (_, res) => {
+exports.getBookings = async (req, res) => {
   try {
-    const bookings = await Booking.find().sort({ createdAt: -1 });
-    res.json({ success: true, data: bookings });
+    const { email } = req.query;
+
+    // Build filter dynamically
+    const filter = {};
+    if (email) {
+      filter.email = email; // email used during booking creation
+    }
+
+    const bookings = await Booking.find(filter)
+      .sort({ createdAt: -1 });
+
+    res.status(200).json({
+      success: true,
+      count: bookings.length,
+      data: bookings,
+    });
   } catch (error) {
     console.error("Get Bookings Error:", error);
     res.status(500).json({
@@ -191,6 +176,7 @@ exports.getBookings = async (_, res) => {
     });
   }
 };
+
 
 exports.getBooking = async (req, res) => {
   const booking = await Booking.findById(req.params.id);
