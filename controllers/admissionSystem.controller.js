@@ -148,6 +148,34 @@ exports.createBooking = async (req, res) => {
 // };
 
 // GET BOOKINGS BY EMAIL
+// exports.getBookingsByEmail = async (req, res) => {
+//   try {
+//     const { email } = req.params;
+
+//     if (!email) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Email is required",
+//       });
+//     }
+
+//     const bookings = await Booking.find({ email })
+//       .sort({ createdAt: -1 });
+
+//     res.status(200).json({
+//       success: true,
+//       count: bookings.length,
+//       data: bookings,
+//     });
+//   } catch (error) {
+//     console.error("Get Bookings By Email Error:", error);
+//     res.status(500).json({
+//       success: false,
+//       message: "Failed to fetch bookings by email",
+//       error: error.message,
+//     });
+//   }
+// };
 exports.getBookingsByEmail = async (req, res) => {
   try {
     const { email } = req.params;
@@ -159,8 +187,10 @@ exports.getBookingsByEmail = async (req, res) => {
       });
     }
 
-    const bookings = await Booking.find({ email })
-      .sort({ createdAt: -1 });
+    // Query nested customer.email
+    const bookings = await Booking.find({
+      "customer.email": { $regex: `^${email.trim()}$`, $options: 'i' }
+    }).sort({ createdAt: -1 });
 
     res.status(200).json({
       success: true,
