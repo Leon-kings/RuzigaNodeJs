@@ -1,4 +1,4 @@
-const mongoose = require('mongoose')
+const mongoose = require("mongoose");
 const cloudinary = require("../cloudinary/cloudinary");
 const { University, Booking } = require("../models/AdmissionSystem");
 const streamifier = require("streamifier");
@@ -127,39 +127,39 @@ exports.createBooking = async (req, res) => {
   }
 };
 
+// exports.getBookingsByEmail = async (req, res) => {
+//   try {
+//     const { email } = req.params;
 
+//     const bookings = await Booking.find({ email })
+//       .sort({ createdAt: -1 });
+
+//     res.status(200).json({
+//       success: true,
+//       data: bookings,
+//     });
+//   } catch (error) {
+//     console.error("Get Bookings Error:", error);
+//     res.status(500).json({
+//       success: false,
+//       message: error.message,
+//     });
+//   }
+// };
+
+// GET BOOKINGS BY EMAIL
 exports.getBookingsByEmail = async (req, res) => {
   try {
     const { email } = req.params;
 
-    const bookings = await Booking.find({ email })
-      .sort({ createdAt: -1 });
-
-    res.status(200).json({
-      success: true,
-      data: bookings,
-    });
-  } catch (error) {
-    console.error("Get Bookings Error:", error);
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
-  }
-};
-
-
-exports.getBookings = async (req, res) => {
-  try {
-    const { email } = req.query;
-
-    // Build filter dynamically
-    const filter = {};
-    if (email) {
-      filter.email = email; // email used during booking creation
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: "Email is required",
+      });
     }
 
-    const bookings = await Booking.find(filter)
+    const bookings = await Booking.find({ email })
       .sort({ createdAt: -1 });
 
     res.status(200).json({
@@ -167,6 +167,21 @@ exports.getBookings = async (req, res) => {
       count: bookings.length,
       data: bookings,
     });
+  } catch (error) {
+    console.error("Get Bookings By Email Error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch bookings by email",
+      error: error.message,
+    });
+  }
+};
+
+
+exports.getBookings = async (_, res) => {
+  try {
+    const bookings = await Booking.find().sort({ createdAt: -1 });
+    res.json({ success: true, data: bookings });
   } catch (error) {
     console.error("Get Bookings Error:", error);
     res.status(500).json({
@@ -176,7 +191,6 @@ exports.getBookings = async (req, res) => {
     });
   }
 };
-
 
 exports.getBooking = async (req, res) => {
   const booking = await Booking.findById(req.params.id);
@@ -237,7 +251,6 @@ exports.editBooking = async (req, res) => {
     });
   }
 };
-
 
 exports.updateBookingStatus = async (req, res) => {
   const booking = await Booking.findById(req.params.id);
