@@ -163,6 +163,7 @@ router.delete("/catalog/:id", VisaController.deleteVisaCatalog);
 ===================================================== */
 router.post("/bookings", VisaController.createBooking);
 router.get("/bookings", VisaController.getAllBookings);
+router.get("/bookings/email/:email", VisaController.getBookingsByEmail);
 router.get("/bookings/:id", VisaController.getBookingById);
 router.put("/bookings/:id", VisaController.updateBooking);
 router.delete("/bookings/:id", VisaController.deleteBooking);
