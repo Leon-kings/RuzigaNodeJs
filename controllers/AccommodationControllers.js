@@ -1939,20 +1939,36 @@ const bookingController = {
     }
   },
 
+  // getBookingsByEmail: async (req, res) => {
+  //   const { email } = req.params;
+  //   try {
+  //     const bookings = await Booking.find({ email }).sort({ createdAt: -1 });
+  //     res.status(200).json({
+  //       success: true,
+  //       count: bookings.length,
+  //       data: bookings,
+  //       message: bookings.length === 0 ? 'No bookings found for this email' : 'Bookings fetched successfully'
+  //     });
+  //   } catch (error) {
+  //     res.status(500).json({ success: false, message: 'Error fetching bookings by email', error: error.message });
+  //   }
+  // },
+
   getBookingsByEmail: async (req, res) => {
-    const { email } = req.params;
-    try {
-      const bookings = await Booking.find({ email }).sort({ createdAt: -1 });
-      res.status(200).json({
-        success: true,
-        count: bookings.length,
-        data: bookings,
-        message: bookings.length === 0 ? 'No bookings found for this email' : 'Bookings fetched successfully'
-      });
-    } catch (error) {
-      res.status(500).json({ success: false, message: 'Error fetching bookings by email', error: error.message });
-    }
-  },
+  const { email } = req.params;
+  try {
+    const bookings = await Booking.find({ "customer.email": email }).sort({ createdAt: -1 });
+
+    res.status(200).json({
+      success: true,
+      count: bookings.length,
+      data: bookings,
+      message: bookings.length === 0 ? 'No bookings found for this email' : 'Bookings fetched successfully'
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Error fetching bookings by email', error: error.message });
+  }
+},
 
   getBooking: async (req, res) => {
     const { id } = req.params;
