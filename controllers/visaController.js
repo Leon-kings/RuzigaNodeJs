@@ -7488,18 +7488,43 @@ exports.deleteVisaCatalog = async (req, res) => {
 //   }
 // };
 
+// exports.createBooking = async (req, res) => {
+//   try {
+//     const booking = await VisaService.create({
+//       recordType: "visa-booking",
+
+//       booking: {
+//         bookingType: req.body.bookingType,
+//         serviceRef: req.body.serviceRef,
+//         status: req.body.status,
+//       },
+
+//       customer: req.body.customer,
+//     });
+
+//     res.status(201).json({ success: true, data: booking });
+//   } catch (err) {
+//     res.status(400).json({ success: false, message: err.message });
+//   }
+// };
+
 exports.createBooking = async (req, res) => {
   try {
     const booking = await VisaService.create({
       recordType: "visa-booking",
-
       booking: {
         bookingType: req.body.bookingType,
         serviceRef: req.body.serviceRef,
         status: req.body.status,
+        customer: {
+          fullName: req.body.customer?.fullName,
+          email: req.body.customer?.email,
+          phone: req.body.customer?.phone,
+          nationality: req.body.customer?.nationality,
+          passportNumber: req.body.customer?.passportNumber,
+        },
+        documents: req.body.documents || {},
       },
-
-      customer: req.body.customer,
     });
 
     res.status(201).json({ success: true, data: booking });
