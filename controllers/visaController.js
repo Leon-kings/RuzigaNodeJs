@@ -7509,14 +7509,33 @@ exports.createBooking = async (req, res) => {
 };
 
 
+// exports.getAllBookings = async (req, res) => {
+//   try {
+//     const bookings = await VisaService.find({ recordType: "visa-booking" });
+//     res.json({ success: true, count: bookings.length, data: bookings });
+//   } catch (err) {
+//     res.status(500).json({ success: false, message: err.message });
+//   }
+// };
 exports.getAllBookings = async (req, res) => {
   try {
-    const bookings = await VisaService.find({ recordType: "visa-booking" });
-    res.json({ success: true, count: bookings.length, data: bookings });
+    const bookings = await VisaService.find({
+      recordType: "visa-booking",
+    });
+
+    res.status(200).json({
+      success: true,
+      count: bookings.length,
+      data: bookings,
+    });
   } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
+    res.status(500).json({
+      success: false,
+      message: err.message,
+    });
   }
 };
+
 
 // exports.getBookingsByEmail = async (req, res) => {
 //   try {
@@ -7561,7 +7580,7 @@ exports.getBookingsByEmail = async (req, res) => {
     const bookings = await VisaService.find({
       recordType: "visa-booking",
       "booking.customer.email": email,
-    }).sort({ createdAt: -1 });
+    });
 
     res.status(200).json({
       success: true,
@@ -7575,6 +7594,7 @@ exports.getBookingsByEmail = async (req, res) => {
     });
   }
 };
+
 
 
 exports.getBookingById = async (req, res) => {
