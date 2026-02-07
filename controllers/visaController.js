@@ -7487,6 +7487,7 @@ exports.deleteVisaCatalog = async (req, res) => {
 //     res.status(400).json({ success: false, message: err.message });
 //   }
 // };
+
 exports.createBooking = async (req, res) => {
   try {
     const booking = await VisaService.create({
@@ -7517,20 +7518,49 @@ exports.getAllBookings = async (req, res) => {
   }
 };
 
+// exports.getBookingsByEmail = async (req, res) => {
+//   try {
+//     const { email } = req.query;
+
+//     if (!email) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Email query is required",
+//       });
+//     }
+
+//     const bookings = await VisaService.find({
+//       recordType: "visa-booking",
+//       email,
+//     }).sort({ createdAt: -1 });
+
+//     res.status(200).json({
+//       success: true,
+//       count: bookings.length,
+//       data: bookings,
+//     });
+//   } catch (err) {
+//     res.status(500).json({
+//       success: false,
+//       message: err.message,
+//     });
+//   }
+// };
+
 exports.getBookingsByEmail = async (req, res) => {
   try {
-    const { email } = req.query;
+    const { email } = req.params;
 
     if (!email) {
       return res.status(400).json({
         success: false,
-        message: "Email query is required",
+        message: "Email parameter is required",
       });
     }
 
     const bookings = await VisaService.find({
       recordType: "visa-booking",
-      email,
+      "customer.email": email,
     }).sort({ createdAt: -1 });
 
     res.status(200).json({
@@ -7545,6 +7575,7 @@ exports.getBookingsByEmail = async (req, res) => {
     });
   }
 };
+
 
 
 exports.getBookingById = async (req, res) => {
