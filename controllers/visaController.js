@@ -7474,11 +7474,30 @@ exports.deleteVisaCatalog = async (req, res) => {
    VISA BOOKINGS CRUD
 ===================================================== */
 
+// exports.createBooking = async (req, res) => {
+//   try {
+//     const booking = await VisaService.create({
+//       recordType: "visa-booking",
+//       booking: req.body.booking,
+//       customer: req.body.customer,
+//     });
+
+//     res.status(201).json({ success: true, data: booking });
+//   } catch (err) {
+//     res.status(400).json({ success: false, message: err.message });
+//   }
+// };
 exports.createBooking = async (req, res) => {
   try {
     const booking = await VisaService.create({
       recordType: "visa-booking",
-      booking: req.body.booking,
+
+      booking: {
+        bookingType: req.body.bookingType,
+        serviceRef: req.body.serviceRef,
+        status: req.body.status,
+      },
+
       customer: req.body.customer,
     });
 
@@ -7487,6 +7506,7 @@ exports.createBooking = async (req, res) => {
     res.status(400).json({ success: false, message: err.message });
   }
 };
+
 
 exports.getAllBookings = async (req, res) => {
   try {
