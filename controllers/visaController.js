@@ -7560,7 +7560,7 @@ exports.getBookingsByEmail = async (req, res) => {
 
     const bookings = await VisaService.find({
       recordType: "visa-booking",
-      "customer.email": email,
+      "booking.customer.email": email,
     }).sort({ createdAt: -1 });
 
     res.status(200).json({
@@ -7575,7 +7575,6 @@ exports.getBookingsByEmail = async (req, res) => {
     });
   }
 };
-
 
 
 exports.getBookingById = async (req, res) => {
