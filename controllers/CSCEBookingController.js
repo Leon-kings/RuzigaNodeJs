@@ -3432,6 +3432,52 @@ class CSEController {
     }
   };
 
+  getBookingStatistics = async (req, res) => {
+  try {
+    const exams = await Exam.find()
+      .select("registrations")
+      .lean();
+
+    let totalExams = exams.length;
+    let totalBookings = 0;
+
+    const statusStats = {};
+    const sessionStats = {};
+
+    exams.forEach((exam) => {
+      const registrations = exam.registrations || [];
+
+      totalBookings += registrations.length;
+
+      registrations.forEach((r) => {
+        // Count status
+        const status = r.status || "unknown";
+        statusStats[status] = (statusStats[status] || 0) + 1;
+
+        // Count session
+        const session = r.examSession || "unknown";
+        sessionStats[session] = (sessionStats[session] || 0) + 1;
+      });
+    });
+
+    res.json({
+      success: true,
+      statistics: {
+        totalExams,
+        totalBookings,
+        statusStats,
+        sessionStats,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+
   // ================== GET BOOKINGS BY EMAIL ==================
   getBookingsByEmail = async (req, res) => {
     try {
