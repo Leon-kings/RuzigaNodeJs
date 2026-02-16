@@ -14,6 +14,7 @@ router.post(
   cseController.createBooking
 );
 
+router.get("/statistics", cseController.getBookingStatistics);
 // Get bookings for a specific exam (admin)
 router.get(
   "/:email/bookings",
