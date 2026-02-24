@@ -33,7 +33,7 @@ const examSchema = new mongoose.Schema({
     amount: Number,
     currency: {
       type: String,
-      default: 'USD'
+      default: 'RMB'
     }
   },
   difficulty: {
