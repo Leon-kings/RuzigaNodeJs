@@ -15,8 +15,7 @@ const Blog = mongoose.models.Blog || mongoose.model('Blog', new mongoose.Schema(
   },
   excerpt: {
     type: String,
-    required: true,
-    maxlength: 200
+    required: true
   },
   content: {
     type: String,
