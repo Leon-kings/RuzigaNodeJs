@@ -1,9 +1,13 @@
+
+
 // const mongoose = require('mongoose');
 
 // const viewTrackingSchema = new mongoose.Schema({
 //   ip: {
 //     type: String,
-//     required: true
+//     required: true,
+//     unique: true, // Prevent duplicate IP entries
+//     trim: true
 //   },
 //   timestamp: {
 //     type: Date,
@@ -15,17 +19,11 @@
 
 // // Index for faster queries
 // viewTrackingSchema.index({ timestamp: -1 });
-// viewTrackingSchema.index({ ip: 1 });
+// viewTrackingSchema.index({ ip: 1 }, { unique: true }); // Optional: enforce uniqueness at index level
 
 // const ViewTracking = mongoose.model('ViewTracking', viewTrackingSchema);
 
 // module.exports = ViewTracking;
-
-
-
-
-
-
 
 
 
@@ -49,7 +47,7 @@ const viewTrackingSchema = new mongoose.Schema({
   ip: {
     type: String,
     required: true,
-    unique: true, // Prevent duplicate IP entries
+    unique: true, // Prevent duplicate IP entries (creates index automatically)
     trim: true
   },
   timestamp: {
@@ -60,9 +58,8 @@ const viewTrackingSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Index for faster queries
+// Index for faster sorting by newest
 viewTrackingSchema.index({ timestamp: -1 });
-viewTrackingSchema.index({ ip: 1 }, { unique: true }); // Optional: enforce uniqueness at index level
 
 const ViewTracking = mongoose.model('ViewTracking', viewTrackingSchema);
 
