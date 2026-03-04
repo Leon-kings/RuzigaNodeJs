@@ -30,7 +30,7 @@ const visaRoutes = require("./routes/visaRoutes");
 const accommodationRoutes = require("./routes/accomodationRoutes");
 const accomodationBookingRoutes = require("./routes/accomodationBookingRoutes");
 const createScholarshipRoutes = require("./routes/createScholarshipRoutes");
-const admissionRoutes = require('./routes/admissionSystem.routes');
+const admissionRoutes = require("./routes/admissionSystem.routes");
 
 const app = express();
 
@@ -46,7 +46,7 @@ app.use(
     origin: (origin, callback) => callback(null, true),
     credentials: true,
     optionsSuccessStatus: 200,
-  })
+  }),
 );
 
 app.use(express.json());
@@ -146,7 +146,7 @@ app.use("/visas/bookings", visaRoutes);
 app.use("/accomodations", accommodationRoutes);
 app.use("/accomodations/booking", accomodationBookingRoutes);
 app.use("/scholarships/create", createScholarshipRoutes);
-app.use('/admissions', admissionRoutes);
+app.use("/admissions", admissionRoutes);
 
 app.get("/", (req, res) => {
   res.json({
@@ -182,6 +182,48 @@ app.use((err, req, res, next) => {
    SERVER START (FIXED)
 ======================= */
 
+/* =======================
+   ADMIN EMAIL NOTIFICATION
+======================= */
+
+const sendAdminStartupEmail = async () => {
+  try {
+    if (
+      !process.env.ADMIN_EMAIL ||
+      !process.env.EMAIL_USER ||
+      !process.env.EMAIL_PASS
+    ) {
+      console.log("⚠️ Email credentials not configured");
+      return;
+    }
+
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
+      },
+    });
+
+    const mailOptions = {
+      from: `"Ruziga API" <${process.env.EMAIL_USER}>`,
+      to: process.env.ADMIN_EMAIL,
+      subject: "🚀 Server Started Successfully",
+      html: `
+        <h2>✅ Server Status Notification</h2>
+        <p>Your API server has started successfully.</p>
+        <p><b>Time:</b> ${new Date().toISOString()}</p>
+        <p><b>Environment:</b> ${process.env.NODE_ENV || "development"}</p>
+      `,
+    };
+
+    await transporter.sendMail(mailOptions);
+    console.log("📧 Admin startup email sent successfully");
+  } catch (error) {
+    console.error("❌ Failed to send admin email:", error.message);
+  }
+};
+
 const PORT = process.env.PORT || 5000;
 
 const startServer = async () => {
@@ -203,6 +245,8 @@ const startServer = async () => {
     if (mongoose.connection.readyState === 1) {
       await mongoose.connection.close();
       console.log("✅ MongoDB connection closed");
+      // Send admin notification
+      await sendAdminStartupEmail();
     }
 
     process.exit(0);
