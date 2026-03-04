@@ -2512,16 +2512,23 @@ async function checkEmailServiceHealth() {
     }
     
     // Test email service connection
-    try {
-      const testTransporter = require('nodemailer').createTransport({
-        host: process.env.SMTP_HOST,
-        port: process.env.SMTP_PORT || 587,
-        secure: process.env.SMTP_SECURE === 'true',
-        auth: {
-          user: process.env.SMTP_USER,
-          pass: process.env.SMTP_PASS
-        }
-      });
+try {
+  const nodemailer = require("nodemailer");
+
+  const port = parseInt(process.env.SMTP_PORT) || 587;
+
+  const testTransporter = nodemailer.createTransport({
+    host: process.env.SMTP_HOST || "smtp.gmail.com",
+    port: port,
+    secure: port === 465, // automatically correct for Gmail
+    auth: {
+      user: process.env.SMTP_USER,
+      pass: process.env.SMTP_PASS,
+    },
+    tls: {
+      rejectUnauthorized: false,
+    },
+  });
       
       await testTransporter.verify();
       console.log('✅ Email service health check passed');
