@@ -59,18 +59,18 @@
 //             <h1>RECAPPLY Booking Confirmation</h1>
 //             <p>Your journey to international education starts here!</p>
 //           </div>
-          
+
 //           <div class="content">
 //             <div class="greeting">
 //               Dear <strong>${booking.customer.fullName}</strong>,
 //             </div>
-            
+
 //             <div class="message">
-//               Thank you for choosing RECAPPLY for your international education journey. 
-//               Your booking for <span class="highlight">${booking.service.name}</span> has been received successfully. 
+//               Thank you for choosing RECAPPLY for your international education journey.
+//               Your booking for <span class="highlight">${booking.service.name}</span> has been received successfully.
 //               Our team will contact you within <strong>24 hours</strong> to begin processing your application.
 //             </div>
-            
+
 //             <div class="booking-details">
 //               <h3>📋 Booking Details</h3>
 //               <div class="detail-row">
@@ -114,7 +114,7 @@
 //                 <span class="detail-value">${moment(booking.bookingDate).format('MMMM Do YYYY, h:mm A')}</span>
 //               </div>
 //             </div>
-            
+
 //             <div class="next-steps">
 //               <h4>📝 Next Steps</h4>
 //               <ul>
@@ -125,7 +125,7 @@
 //                 <li>Regular updates on application progress</li>
 //               </ul>
 //             </div>
-            
+
 //             <div class="contact-info">
 //               <h4>📞 Contact Information</h4>
 //               <div class="contact-item">
@@ -145,20 +145,20 @@
 //                 <span>Kigali – Kicukiro Centre, Sangwa Plaza, 1st Floor</span>
 //               </div>
 //             </div>
-            
+
 //             <div class="message">
-//               <strong>Important:</strong> Please keep this email for your records. 
+//               <strong>Important:</strong> Please keep this email for your records.
 //               Your booking reference will be required for all future communications regarding this service.
 //             </div>
 //           </div>
-          
+
 //           <div class="footer">
 //             <p>RECAPPLY International Education Services</p>
 //             <p>Comprehensive support from application to arrival</p>
 //             <div class="social-links">
-//               <a href="#">Website</a> • 
-//               <a href="#">Facebook</a> • 
-//               <a href="#">Twitter</a> • 
+//               <a href="#">Website</a> •
+//               <a href="#">Facebook</a> •
+//               <a href="#">Twitter</a> •
 //               <a href="#">LinkedIn</a>
 //             </div>
 //             <p>© ${new Date().getFullYear()} RECAPPLY. All rights reserved.</p>
@@ -199,7 +199,7 @@
 //             <div class="alert-box">
 //               <strong>New booking received!</strong> Please review and assign a consultant.
 //             </div>
-            
+
 //             <div class="booking-info">
 //               <h3>Customer Details</h3>
 //               <div class="info-row">
@@ -214,7 +214,7 @@
 //                 <span class="info-label">Phone:</span>
 //                 <span class="info-value">${booking.customer.phone}</span>
 //               </div>
-              
+
 //               <h3>Service Details</h3>
 //               <div class="info-row">
 //                 <span class="info-label">Service:</span>
@@ -241,12 +241,12 @@
 //                 <span class="info-value">${moment(booking.bookingDate).format('MMMM Do YYYY, h:mm A')}</span>
 //               </div>
 //             </div>
-            
+
 //             <div class="actions">
 //               <a href="${process.env.ADMIN_URL}/bookings/${booking._id}" class="btn">View Booking</a>
 //               <a href="mailto:${booking.customer.email}" class="btn">Contact Customer</a>
 //             </div>
-            
+
 //             <p><strong>Booking Reference:</strong> ${booking._id.toString().slice(-8).toUpperCase()}</p>
 //           </div>
 //         </div>
@@ -283,7 +283,7 @@
 //               <div class="status-text">${getStatusText(newStatus)}</div>
 //               <p>Your booking status has been updated</p>
 //             </div>
-            
+
 //             <div class="info">
 //               <p><strong>Booking:</strong> ${booking.service.name}</p>
 //               <p><strong>Reference:</strong> ${booking._id.toString().slice(-8).toUpperCase()}</p>
@@ -291,7 +291,7 @@
 //               <p><strong>New Status:</strong> ${getStatusText(newStatus)}</p>
 //               <p><strong>Updated:</strong> ${moment().format('MMMM Do YYYY, h:mm A')}</p>
 //             </div>
-            
+
 //             <p>For any questions, please contact our support team.</p>
 //           </div>
 //         </div>
@@ -390,10 +390,10 @@
 // const sendAdminNotification = async (booking) => {
 //   try {
 //     const template = emailTemplates.adminNotification(booking);
-//     const adminEmails = process.env.ADMIN_EMAILS ? 
-//       process.env.ADMIN_EMAILS.split(',') : 
+//     const adminEmails = process.env.ADMIN_EMAILS ?
+//       process.env.ADMIN_EMAILS.split(',') :
 //       [process.env.SMTP_USER];
-    
+
 //     for (const email of adminEmails) {
 //       await sendEmail(email, template.subject, template.html);
 //       console.log(`📤 Admin notification sent to ${email}`);
@@ -438,7 +438,7 @@
 //     priceUSD: Joi.string().required(),
 //     priceRWF: Joi.string().required()
 //   }).required(),
-  
+
 //   customer: Joi.object({
 //     fullName: Joi.string().min(2).max(100).required(),
 //     email: Joi.string().email().required(),
@@ -665,13 +665,13 @@
 //     const query = {};
 //     if (status) query.status = status;
 //     if (category) query['service.category'] = category;
-    
+
 //     if (startDate || endDate) {
 //       query.bookingDate = {};
 //       if (startDate) query.bookingDate.$gte = new Date(startDate);
 //       if (endDate) query.bookingDate.$lte = new Date(endDate);
 //     }
-    
+
 //     if (search) {
 //       query.$or = [
 //         { 'customer.fullName': { $regex: search, $options: 'i' } },
@@ -683,7 +683,7 @@
 //     // Pagination
 //     const skip = (parseInt(page) - 1) * parseInt(limit);
 //     const total = await Booking.countDocuments(query);
-    
+
 //     // Sorting
 //     const sort = {};
 //     sort[sortBy] = sortOrder === 'asc' ? 1 : -1;
@@ -734,13 +734,13 @@
 //     const query = { 'customer.email': email.toLowerCase() };
 //     if (status) query.status = status;
 //     if (category) query['service.category'] = category;
-    
+
 //     if (startDate || endDate) {
 //       query.bookingDate = {};
 //       if (startDate) query.bookingDate.$gte = new Date(startDate);
 //       if (endDate) query.bookingDate.$lte = new Date(endDate);
 //     }
-    
+
 //     if (search) {
 //       query.$or = [
 //         { 'customer.fullName': { $regex: search, $options: 'i' } },
@@ -783,12 +783,11 @@
 //   }
 // };
 
-
 // // 3. Get Booking by ID
 // exports.getBookingById = async (req, res) => {
 //   try {
 //     const booking = await Booking.findById(req.params.id);
-    
+
 //     if (!booking) {
 //       return res.status(404).json({
 //         success: false,
@@ -864,7 +863,7 @@
 // exports.addNoteToBooking = async (req, res) => {
 //   try {
 //     const { content } = req.body;
-    
+
 //     if (!content || content.trim().length === 0) {
 //       return res.status(400).json({
 //         success: false,
@@ -873,7 +872,7 @@
 //     }
 
 //     const booking = await Booking.findById(req.params.id);
-    
+
 //     if (!booking) {
 //       return res.status(404).json({
 //         success: false,
@@ -885,7 +884,7 @@
 //       content: content.trim(),
 //       addedBy: req.user?.name || 'admin'
 //     });
-    
+
 //     booking.updatedAt = Date.now();
 //     await booking.save();
 
@@ -908,7 +907,7 @@
 // exports.getStatistics = async (req, res) => {
 //   try {
 //     const stats = await calculateStatistics();
-    
+
 //     res.status(200).json({
 //       success: true,
 //       data: stats
@@ -927,7 +926,7 @@
 // exports.getBookingsByDateRange = async (req, res) => {
 //   try {
 //     const { startDate, endDate, groupBy = 'day' } = req.query;
-    
+
 //     if (!startDate || !endDate) {
 //       return res.status(400).json({
 //         success: false,
@@ -937,7 +936,7 @@
 
 //     const start = new Date(startDate);
 //     const end = new Date(endDate);
-    
+
 //     let groupStage;
 //     switch (groupBy) {
 //       case 'day':
@@ -1073,7 +1072,7 @@
 //     // Set response headers
 //     res.setHeader('Content-Type', 'text/csv');
 //     res.setHeader('Content-Disposition', `attachment; filename=recapply-bookings-${Date.now()}.csv`);
-    
+
 //     res.status(200).send(csvContent);
 
 //   } catch (error) {
@@ -1089,7 +1088,7 @@
 // exports.searchBookings = async (req, res) => {
 //   try {
 //     const { q, limit = 10 } = req.query;
-    
+
 //     if (!q || q.trim().length < 2) {
 //       return res.status(400).json({
 //         success: false,
@@ -1124,7 +1123,7 @@
 // exports.deleteBooking = async (req, res) => {
 //   try {
 //     const booking = await Booking.findById(req.params.id);
-    
+
 //     if (!booking) {
 //       return res.status(404).json({
 //         success: false,
@@ -1139,7 +1138,7 @@
 //       addedBy: 'admin'
 //     });
 //     booking.updatedAt = Date.now();
-    
+
 //     await booking.save();
 
 //     // Send cancellation email
@@ -1167,7 +1166,7 @@
 // exports.sendTestEmail = async (req, res) => {
 //   try {
 //     const { email } = req.body;
-    
+
 //     if (!email) {
 //       return res.status(400).json({
 //         success: false,
@@ -1251,41 +1250,28 @@
 
 // module.exports = exports;
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-const Booking = require('../models/Services');
-const Joi = require('joi');
-const moment = require('moment');
-const nodemailer = require('nodemailer');
+const Booking = require("../models/Services");
+const Joi = require("joi");
+const moment = require("moment");
+const nodemailer = require("nodemailer");
 
 // Email Configuration - ALWAYS INITIALIZE
+const port = parseInt(process.env.SMTP_PORT) || 587;
+
 const emailTransporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST || 'smtp.gmail.com',
-  port: parseInt(process.env.SMTP_PORT) || 587,
-  secure: false,
+  host: process.env.SMTP_HOST || "smtp.gmail.com",
+  port,
+  secure: port === 465, // automatically correct
   auth: {
     user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASS,
   },
   tls: {
-    rejectUnauthorized: false
+    rejectUnauthorized: false,
   },
   pool: true,
   maxConnections: 5,
-  maxMessages: 100
+  maxMessages: 100,
 });
 
 // Email Templates Generator
@@ -1377,7 +1363,7 @@ const emailTemplates = {
               </div>
               <div class="detail-row">
                 <span class="detail-label">Preferred Start:</span>
-                <span class="detail-value">${moment(booking.customer.startDate).format('MMMM YYYY')}</span>
+                <span class="detail-value">${moment(booking.customer.startDate).format("MMMM YYYY")}</span>
               </div>
               <div class="detail-row">
                 <span class="detail-label">Status:</span>
@@ -1385,7 +1371,7 @@ const emailTemplates = {
               </div>
               <div class="detail-row">
                 <span class="detail-label">Booking Date:</span>
-                <span class="detail-value">${moment(booking.bookingDate).format('MMMM Do YYYY, h:mm A')}</span>
+                <span class="detail-value">${moment(booking.bookingDate).format("MMMM Do YYYY, h:mm A")}</span>
               </div>
             </div>
             
@@ -1441,7 +1427,7 @@ const emailTemplates = {
         </div>
       </body>
       </html>
-    `
+    `,
   }),
 
   adminNotification: (booking) => ({
@@ -1508,16 +1494,16 @@ const emailTemplates = {
               </div>
               <div class="info-row">
                 <span class="info-label">Start Date:</span>
-                <span class="info-value">${moment(booking.customer.startDate).format('MMMM YYYY')}</span>
+                <span class="info-value">${moment(booking.customer.startDate).format("MMMM YYYY")}</span>
               </div>
               <div class="info-row">
                 <span class="info-label">Booking Time:</span>
-                <span class="info-value">${moment(booking.bookingDate).format('MMMM Do YYYY, h:mm A')}</span>
+                <span class="info-value">${moment(booking.bookingDate).format("MMMM Do YYYY, h:mm A")}</span>
               </div>
             </div>
             
             <div class="actions">
-              <a href="${process.env.ADMIN_URL || '#'}/bookings/${booking._id}" class="btn">View Booking</a>
+              <a href="${process.env.ADMIN_URL || "#"}/bookings/${booking._id}" class="btn">View Booking</a>
               <a href="mailto:${booking.customer.email}" class="btn">Contact Customer</a>
             </div>
             
@@ -1526,7 +1512,7 @@ const emailTemplates = {
         </div>
       </body>
       </html>
-    `
+    `,
   }),
 
   statusUpdate: (booking, newStatus) => ({
@@ -1563,7 +1549,7 @@ const emailTemplates = {
               <p><strong>Reference:</strong> ${booking._id.toString().slice(-8).toUpperCase()}</p>
               <p><strong>Previous Status:</strong> ${getStatusText(booking.status)}</p>
               <p><strong>New Status:</strong> ${getStatusText(newStatus)}</p>
-              <p><strong>Updated:</strong> ${moment().format('MMMM Do YYYY, h:mm A')}</p>
+              <p><strong>Updated:</strong> ${moment().format("MMMM Do YYYY, h:mm A")}</p>
             </div>
             
             <p>For any questions, please contact our support team.</p>
@@ -1571,11 +1557,11 @@ const emailTemplates = {
         </div>
       </body>
       </html>
-    `
+    `,
   }),
 
   cancellation: (booking) => ({
-    subject: 'RECAPPLY Booking Cancellation',
+    subject: "RECAPPLY Booking Cancellation",
     html: `
       <!DOCTYPE html>
       <html>
@@ -1603,28 +1589,28 @@ const emailTemplates = {
         </div>
       </body>
       </html>
-    `
-  })
+    `,
+  }),
 };
 
 // Helper functions
 const getCategoryName = (category) => {
   const categories = {
-    'admissions': 'Admissions Services',
-    'scholarship': 'Scholarship Services',
-    'visa': 'Visa & Immigration',
-    'support': 'Student Support'
+    admissions: "Admissions Services",
+    scholarship: "Scholarship Services",
+    visa: "Visa & Immigration",
+    support: "Student Support",
   };
   return categories[category] || category;
 };
 
 const getStatusText = (status) => {
   const statusMap = {
-    'pending': 'Pending Review',
-    'contacted': 'Contacted',
-    'in_progress': 'In Progress',
-    'completed': 'Completed',
-    'cancelled': 'Cancelled'
+    pending: "Pending Review",
+    contacted: "Contacted",
+    in_progress: "In Progress",
+    completed: "Completed",
+    cancelled: "Cancelled",
   };
   return statusMap[status] || status;
 };
@@ -1633,13 +1619,13 @@ const getStatusText = (status) => {
 const sendEmail = async (to, subject, html, attachments = []) => {
   try {
     console.log(`📧 Attempting to send email to: ${to} - Subject: ${subject}`);
-    
+
     const mailOptions = {
       from: `"RECAPPLY Services" <${process.env.EMAIL_FROM || process.env.SMTP_USER}>`,
       to,
       subject,
       html,
-      attachments
+      attachments,
     };
 
     const info = await emailTransporter.sendMail(mailOptions);
@@ -1655,15 +1641,21 @@ const sendEmail = async (to, subject, html, attachments = []) => {
 const sendBookingConfirmation = async (booking) => {
   try {
     const template = emailTemplates.bookingConfirmation(booking);
-    const result = await sendEmail(booking.customer.email, template.subject, template.html);
+    const result = await sendEmail(
+      booking.customer.email,
+      template.subject,
+      template.html,
+    );
     if (result.success) {
       console.log(`✅ Confirmation email sent to ${booking.customer.email}`);
     } else {
-      console.log(`❌ Failed to send confirmation email to ${booking.customer.email}`);
+      console.log(
+        `❌ Failed to send confirmation email to ${booking.customer.email}`,
+      );
     }
     return result;
   } catch (error) {
-    console.error('❌ Error in sendBookingConfirmation:', error.message);
+    console.error("❌ Error in sendBookingConfirmation:", error.message);
     return { success: false, error: error.message };
   }
 };
@@ -1671,15 +1663,17 @@ const sendBookingConfirmation = async (booking) => {
 const sendAdminNotification = async (booking) => {
   try {
     const template = emailTemplates.adminNotification(booking);
-    const adminEmails = process.env.ADMIN_EMAILS ? 
-      process.env.ADMIN_EMAILS.split(',') : 
-      [process.env.ADMIN_EMAIL || process.env.SMTP_USER].filter(Boolean);
-    
+    const adminEmails = process.env.ADMIN_EMAILS
+      ? process.env.ADMIN_EMAILS.split(",")
+      : [process.env.ADMIN_EMAIL || process.env.SMTP_USER].filter(Boolean);
+
     if (adminEmails.length === 0) {
-      console.log('⚠️ No admin emails configured - skipping admin notification');
+      console.log(
+        "⚠️ No admin emails configured - skipping admin notification",
+      );
       return { success: false, skipped: true };
     }
-    
+
     const results = [];
     for (const email of adminEmails) {
       const result = await sendEmail(email, template.subject, template.html);
@@ -1690,7 +1684,7 @@ const sendAdminNotification = async (booking) => {
     }
     return { success: true, results };
   } catch (error) {
-    console.error('❌ Error in sendAdminNotification:', error.message);
+    console.error("❌ Error in sendAdminNotification:", error.message);
     return { success: false, error: error.message };
   }
 };
@@ -1698,13 +1692,17 @@ const sendAdminNotification = async (booking) => {
 const sendStatusUpdate = async (booking, newStatus) => {
   try {
     const template = emailTemplates.statusUpdate(booking, newStatus);
-    const result = await sendEmail(booking.customer.email, template.subject, template.html);
+    const result = await sendEmail(
+      booking.customer.email,
+      template.subject,
+      template.html,
+    );
     if (result.success) {
       console.log(`🔄 Status update email sent for booking ${booking._id}`);
     }
     return result;
   } catch (error) {
-    console.error('❌ Error in sendStatusUpdate:', error.message);
+    console.error("❌ Error in sendStatusUpdate:", error.message);
     return { success: false, error: error.message };
   }
 };
@@ -1712,13 +1710,17 @@ const sendStatusUpdate = async (booking, newStatus) => {
 const sendCancellationEmail = async (booking) => {
   try {
     const template = emailTemplates.cancellation(booking);
-    const result = await sendEmail(booking.customer.email, template.subject, template.html);
+    const result = await sendEmail(
+      booking.customer.email,
+      template.subject,
+      template.html,
+    );
     if (result.success) {
       console.log(`❌ Cancellation email sent for booking ${booking._id}`);
     }
     return result;
   } catch (error) {
-    console.error('❌ Error in sendCancellationEmail:', error.message);
+    console.error("❌ Error in sendCancellationEmail:", error.message);
     return { success: false, error: error.message };
   }
 };
@@ -1728,30 +1730,48 @@ const bookingSchema = Joi.object({
   service: Joi.object({
     id: Joi.number().required(),
     name: Joi.string().required(),
-    category: Joi.string().valid('admissions', 'scholarship', 'visa', 'support').required(),
+    category: Joi.string()
+      .valid("admissions", "scholarship", "visa", "support")
+      .required(),
     priceUSD: Joi.string().required(),
-    priceRWF: Joi.string().required()
+    priceRWF: Joi.string().required(),
   }).required(),
-  
+
   customer: Joi.object({
     fullName: Joi.string().min(2).max(100).required(),
     email: Joi.string().email().required(),
     phone: Joi.string().required(),
-    targetCountry: Joi.string().valid('China', 'Canada', 'Germany', 'USA', 'UK', 'Australia', 'Poland', 'Turkey', 'Other').required(),
+    targetCountry: Joi.string()
+      .valid(
+        "China",
+        "Canada",
+        "Germany",
+        "USA",
+        "UK",
+        "Australia",
+        "Poland",
+        "Turkey",
+        "Other",
+      )
+      .required(),
     program: Joi.string().required(),
     startDate: Joi.date().required(),
-    educationLevel: Joi.string().valid('highschool', 'bachelor', 'master', 'phd', '').optional(),
-    budget: Joi.string().valid('low', 'medium', 'high', 'premium', '').optional(),
-    requirements: Joi.string().max(1000).optional()
-  }).required()
+    educationLevel: Joi.string()
+      .valid("highschool", "bachelor", "master", "phd", "")
+      .optional(),
+    budget: Joi.string()
+      .valid("low", "medium", "high", "premium", "")
+      .optional(),
+    requirements: Joi.string().max(1000).optional(),
+  }).required(),
 });
 
 // Statistics calculation
 const calculateStatistics = async () => {
   try {
-    const today = moment().startOf('day');
-    const weekStart = moment().startOf('week');
-    const monthStart = moment().startOf('month');
+    const today = moment().startOf("day");
+    const weekStart = moment().startOf("week");
+    const monthStart = moment().startOf("month");
 
     const [
       totalBookings,
@@ -1762,15 +1782,19 @@ const calculateStatistics = async () => {
       bookingsByCategory,
       bookingsByCountry,
       revenueStats,
-      emailStats
+      emailStats,
     ] = await Promise.all([
       Booking.countDocuments(),
       Booking.countDocuments({ bookingDate: { $gte: today.toDate() } }),
       Booking.countDocuments({ bookingDate: { $gte: weekStart.toDate() } }),
       Booking.countDocuments({ bookingDate: { $gte: monthStart.toDate() } }),
-      Booking.aggregate([{ $group: { _id: '$status', count: { $sum: 1 } } }]),
-      Booking.aggregate([{ $group: { _id: '$service.category', count: { $sum: 1 } } }]),
-      Booking.aggregate([{ $group: { _id: '$customer.targetCountry', count: { $sum: 1 } } }]),
+      Booking.aggregate([{ $group: { _id: "$status", count: { $sum: 1 } } }]),
+      Booking.aggregate([
+        { $group: { _id: "$service.category", count: { $sum: 1 } } },
+      ]),
+      Booking.aggregate([
+        { $group: { _id: "$customer.targetCountry", count: { $sum: 1 } } },
+      ]),
       Booking.aggregate([
         {
           $group: {
@@ -1778,32 +1802,34 @@ const calculateStatistics = async () => {
             totalRevenue: {
               $sum: {
                 $toDouble: {
-                  $arrayElemAt: [{ $split: ['$service.priceUSD', '$'] }, 1]
-                }
-              }
+                  $arrayElemAt: [{ $split: ["$service.priceUSD", "$"] }, 1],
+                },
+              },
             },
             avgRevenue: {
               $avg: {
                 $toDouble: {
-                  $arrayElemAt: [{ $split: ['$service.priceUSD', '$'] }, 1]
-                }
-              }
-            }
-          }
-        }
-      ])
+                  $arrayElemAt: [{ $split: ["$service.priceUSD", "$"] }, 1],
+                },
+              },
+            },
+          },
+        },
+      ]),
     ]);
 
     const recentBookings = await Booking.find()
       .sort({ bookingDate: -1 })
       .limit(5)
-      .select('customer.fullName customer.email service.name status bookingDate')
+      .select(
+        "customer.fullName customer.email service.name status bookingDate",
+      )
       .lean();
 
     const popularServices = await Booking.aggregate([
-      { $group: { _id: '$service.name', count: { $sum: 1 } } },
+      { $group: { _id: "$service.name", count: { $sum: 1 } } },
       { $sort: { count: -1 } },
-      { $limit: 5 }
+      { $limit: 5 },
     ]);
 
     return {
@@ -1813,7 +1839,7 @@ const calculateStatistics = async () => {
         weekBookings,
         monthBookings,
         totalRevenue: revenueStats[0]?.totalRevenue || 0,
-        averageRevenue: revenueStats[0]?.avgRevenue || 0
+        averageRevenue: revenueStats[0]?.avgRevenue || 0,
       },
       distribution: {
         byStatus: bookingsByStatus.reduce((acc, item) => {
@@ -1827,14 +1853,14 @@ const calculateStatistics = async () => {
         byCountry: bookingsByCountry.reduce((acc, item) => {
           acc[item._id] = item.count;
           return acc;
-        }, {})
+        }, {}),
       },
       recentBookings,
       popularServices,
-      generatedAt: new Date().toISOString()
+      generatedAt: new Date().toISOString(),
     };
   } catch (error) {
-    console.error('Statistics calculation error:', error);
+    console.error("Statistics calculation error:", error);
     throw error;
   }
 };
@@ -1856,22 +1882,22 @@ exports.createBooking = async (req, res) => {
     ) {
       return res.status(400).json({
         success: false,
-        message: 'Missing required booking fields'
+        message: "Missing required booking fields",
       });
     }
 
     // Client info
     const clientInfo = {
       ipAddress: req.ip || req.connection?.remoteAddress,
-      userAgent: req.headers['user-agent']
+      userAgent: req.headers["user-agent"],
     };
 
     // Normalize booking data (safe defaults)
     const bookingData = {
       service: {
-        id: body.service.id || '1',
+        id: body.service.id || "1",
         name: body.service.name,
-        category: body.service.category || 'general'
+        category: body.service.category || "general",
       },
 
       customer: {
@@ -1879,18 +1905,18 @@ exports.createBooking = async (req, res) => {
         email: body.customer.email,
         phone: body.customer.phone,
         targetCountry: body.customer.targetCountry,
-        program: body.customer.program || '',
-        educationLevel: body.customer.educationLevel || '',
-        budget: body.customer.budget || '',
-        priceUSD: body.customer.priceUSD || '500',
+        program: body.customer.program || "",
+        educationLevel: body.customer.educationLevel || "",
+        budget: body.customer.budget || "",
+        priceUSD: body.customer.priceUSD || "500",
         startDate: body.customer.startDate
           ? new Date(body.customer.startDate)
           : new Date(),
-        requirements: body.customer.requirements || ''
+        requirements: body.customer.requirements || "",
       },
 
       ipAddress: clientInfo.ipAddress,
-      userAgent: clientInfo.userAgent
+      userAgent: clientInfo.userAgent,
     };
 
     // Save booking
@@ -1899,52 +1925,68 @@ exports.createBooking = async (req, res) => {
     // Send emails (non-blocking - fire and forget)
     Promise.allSettled([
       sendBookingConfirmation(booking),
-      sendAdminNotification(booking)
-    ]).then(results => {
-      console.log(`📧 Email results for booking ${booking._id}:`, 
-        results.map(r => r.status === 'fulfilled' ? r.value?.success ? 'sent' : 'failed' : 'rejected'));
-      
-      // Update notes with email status
-      const emailStatus = results.map((r, i) => {
-        const type = i === 0 ? 'confirmation' : 'admin';
-        const success = r.status === 'fulfilled' && r.value?.success;
-        return `${type}: ${success ? 'sent' : 'failed'}`;
-      }).join(', ');
-      
-      booking.notes.push({
-        content: `Email sending completed - ${emailStatus}`,
-        addedBy: 'system'
+      sendAdminNotification(booking),
+    ])
+      .then((results) => {
+        console.log(
+          `📧 Email results for booking ${booking._id}:`,
+          results.map((r) =>
+            r.status === "fulfilled"
+              ? r.value?.success
+                ? "sent"
+                : "failed"
+              : "rejected",
+          ),
+        );
+
+        // Update notes with email status
+        const emailStatus = results
+          .map((r, i) => {
+            const type = i === 0 ? "confirmation" : "admin";
+            const success = r.status === "fulfilled" && r.value?.success;
+            return `${type}: ${success ? "sent" : "failed"}`;
+          })
+          .join(", ");
+
+        booking.notes.push({
+          content: `Email sending completed - ${emailStatus}`,
+          addedBy: "system",
+        });
+        booking
+          .save()
+          .catch((err) =>
+            console.error("Failed to update booking notes:", err),
+          );
+      })
+      .catch((err) => {
+        console.error("❌ Email sending failed for booking:", err);
+
+        booking.notes.push({
+          content: "Email sending failed but booking was saved",
+          addedBy: "system",
+        });
+        booking
+          .save()
+          .catch((saveErr) =>
+            console.error("Failed to update booking notes:", saveErr),
+          );
       });
-      booking.save().catch(err => console.error('Failed to update booking notes:', err));
-    }).catch(err => {
-      console.error('❌ Email sending failed for booking:', err);
-      
-      booking.notes.push({
-        content: 'Email sending failed but booking was saved',
-        addedBy: 'system'
-      });
-      booking.save().catch(saveErr => console.error('Failed to update booking notes:', saveErr));
-    });
 
     return res.status(201).json({
       success: true,
-      message: 'Booking created successfully',
+      message: "Booking created successfully",
       data: {
         booking,
-        reference: booking._id.toString().slice(-8).toUpperCase()
-      }
+        reference: booking._id.toString().slice(-8).toUpperCase(),
+      },
     });
-
   } catch (error) {
-    console.error('❌ Create booking error:', error);
+    console.error("❌ Create booking error:", error);
 
     return res.status(500).json({
       success: false,
-      message: 'Failed to create booking',
-      error:
-        process.env.NODE_ENV === 'development'
-          ? error.message
-          : undefined
+      message: "Failed to create booking",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
     });
   }
 };
@@ -1960,36 +2002,36 @@ exports.getAllBookings = async (req, res) => {
       startDate,
       endDate,
       search,
-      sortBy = 'bookingDate',
-      sortOrder = 'desc'
+      sortBy = "bookingDate",
+      sortOrder = "desc",
     } = req.query;
 
     // Build query
     const query = {};
     if (status) query.status = status;
-    if (category) query['service.category'] = category;
-    
+    if (category) query["service.category"] = category;
+
     if (startDate || endDate) {
       query.bookingDate = {};
       if (startDate) query.bookingDate.$gte = new Date(startDate);
       if (endDate) query.bookingDate.$lte = new Date(endDate);
     }
-    
+
     if (search) {
       query.$or = [
-        { 'customer.fullName': { $regex: search, $options: 'i' } },
-        { 'customer.email': { $regex: search, $options: 'i' } },
-        { 'service.name': { $regex: search, $options: 'i' } }
+        { "customer.fullName": { $regex: search, $options: "i" } },
+        { "customer.email": { $regex: search, $options: "i" } },
+        { "service.name": { $regex: search, $options: "i" } },
       ];
     }
 
     // Pagination
     const skip = (parseInt(page) - 1) * parseInt(limit);
     const total = await Booking.countDocuments(query);
-    
+
     // Sorting
     const sort = {};
-    sort[sortBy] = sortOrder === 'asc' ? 1 : -1;
+    sort[sortBy] = sortOrder === "asc" ? 1 : -1;
 
     // Execute query
     const bookings = await Booking.find(query)
@@ -2005,15 +2047,14 @@ exports.getAllBookings = async (req, res) => {
         page: parseInt(page),
         limit: parseInt(limit),
         total,
-        pages: Math.ceil(total / parseInt(limit))
-      }
+        pages: Math.ceil(total / parseInt(limit)),
+      },
     });
-
   } catch (error) {
-    console.error('❌ Get bookings error:', error);
+    console.error("❌ Get bookings error:", error);
     res.status(500).json({
       success: false,
-      message: 'Failed to fetch bookings'
+      message: "Failed to fetch bookings",
     });
   }
 };
@@ -2029,25 +2070,25 @@ exports.getBookingsByEmail = async (req, res) => {
       startDate,
       endDate,
       search,
-      sortBy = 'bookingDate',
-      sortOrder = 'desc'
+      sortBy = "bookingDate",
+      sortOrder = "desc",
     } = req.query;
 
     // Build query
-    const query = { 'customer.email': email.toLowerCase() };
+    const query = { "customer.email": email.toLowerCase() };
     if (status) query.status = status;
-    if (category) query['service.category'] = category;
-    
+    if (category) query["service.category"] = category;
+
     if (startDate || endDate) {
       query.bookingDate = {};
       if (startDate) query.bookingDate.$gte = new Date(startDate);
       if (endDate) query.bookingDate.$lte = new Date(endDate);
     }
-    
+
     if (search) {
       query.$or = [
-        { 'customer.fullName': { $regex: search, $options: 'i' } },
-        { 'service.name': { $regex: search, $options: 'i' } }
+        { "customer.fullName": { $regex: search, $options: "i" } },
+        { "service.name": { $regex: search, $options: "i" } },
       ];
     }
 
@@ -2057,7 +2098,7 @@ exports.getBookingsByEmail = async (req, res) => {
 
     // Sorting
     const sort = {};
-    sort[sortBy] = sortOrder === 'asc' ? 1 : -1;
+    sort[sortBy] = sortOrder === "asc" ? 1 : -1;
 
     // Execute query
     const bookings = await Booking.find(query)
@@ -2073,15 +2114,14 @@ exports.getBookingsByEmail = async (req, res) => {
         page: parseInt(page),
         limit: parseInt(limit),
         total,
-        pages: Math.ceil(total / parseInt(limit))
-      }
+        pages: Math.ceil(total / parseInt(limit)),
+      },
     });
-
   } catch (error) {
-    console.error('❌ Get bookings by email error:', error);
+    console.error("❌ Get bookings by email error:", error);
     res.status(500).json({
       success: false,
-      message: 'Failed to fetch bookings by email'
+      message: "Failed to fetch bookings by email",
     });
   }
 };
@@ -2090,24 +2130,23 @@ exports.getBookingsByEmail = async (req, res) => {
 exports.getBookingById = async (req, res) => {
   try {
     const booking = await Booking.findById(req.params.id);
-    
+
     if (!booking) {
       return res.status(404).json({
         success: false,
-        message: 'Booking not found'
+        message: "Booking not found",
       });
     }
 
     res.status(200).json({
       success: true,
-      data: booking
+      data: booking,
     });
-
   } catch (error) {
-    console.error('❌ Get booking error:', error);
+    console.error("❌ Get booking error:", error);
     res.status(500).json({
       success: false,
-      message: 'Failed to fetch booking'
+      message: "Failed to fetch booking",
     });
   }
 };
@@ -2118,18 +2157,18 @@ exports.updateBookingStatus = async (req, res) => {
     const { status } = req.body;
 
     const validStatuses = [
-      'pending',
-      'contacted',
-      'in_progress',
-      'completed',
-      'cancelled'
+      "pending",
+      "contacted",
+      "in_progress",
+      "completed",
+      "cancelled",
     ];
 
     // Validate status
     if (!status || !validStatuses.includes(status)) {
       return res.status(400).json({
         success: false,
-        message: 'Invalid or missing status value'
+        message: "Invalid or missing status value",
       });
     }
 
@@ -2138,7 +2177,7 @@ exports.updateBookingStatus = async (req, res) => {
     if (!currentBooking) {
       return res.status(404).json({
         success: false,
-        message: 'Booking not found'
+        message: "Booking not found",
       });
     }
 
@@ -2148,28 +2187,27 @@ exports.updateBookingStatus = async (req, res) => {
     const booking = await Booking.findByIdAndUpdate(
       req.params.id,
       { status },
-      { new: true }
+      { new: true },
     );
 
     // Send status update email if status changed (fire and forget)
-    if (status !== oldStatus && status !== 'cancelled') {
-      sendStatusUpdate(booking, status).catch(err => 
-        console.error('Failed to send status update email:', err)
+    if (status !== oldStatus && status !== "cancelled") {
+      sendStatusUpdate(booking, status).catch((err) =>
+        console.error("Failed to send status update email:", err),
       );
     }
 
     return res.status(200).json({
       success: true,
-      message: 'Booking status updated successfully',
-      data: booking
+      message: "Booking status updated successfully",
+      data: booking,
     });
-
   } catch (error) {
-    console.error('❌ Update booking status error:', error);
+    console.error("❌ Update booking status error:", error);
 
     return res.status(500).json({
       success: false,
-      message: 'Failed to update booking status'
+      message: "Failed to update booking status",
     });
   }
 };
@@ -2178,42 +2216,41 @@ exports.updateBookingStatus = async (req, res) => {
 exports.addNoteToBooking = async (req, res) => {
   try {
     const { content } = req.body;
-    
+
     if (!content || content.trim().length === 0) {
       return res.status(400).json({
         success: false,
-        message: 'Note content is required'
+        message: "Note content is required",
       });
     }
 
     const booking = await Booking.findById(req.params.id);
-    
+
     if (!booking) {
       return res.status(404).json({
         success: false,
-        message: 'Booking not found'
+        message: "Booking not found",
       });
     }
 
     booking.notes.push({
       content: content.trim(),
-      addedBy: req.user?.name || 'admin'
+      addedBy: req.user?.name || "admin",
     });
-    
+
     booking.updatedAt = Date.now();
     await booking.save();
 
     res.status(200).json({
       success: true,
-      message: 'Note added successfully',
-      data: booking.notes
+      message: "Note added successfully",
+      data: booking.notes,
     });
-
   } catch (error) {
-    console.error('❌ Add note error:', error);
+    console.error("❌ Add note error:", error);
     res.status(500).json({
       success: false,
-      message: 'Failed to add note'
+      message: "Failed to add note",
     });
   }
 };
@@ -2222,17 +2259,16 @@ exports.addNoteToBooking = async (req, res) => {
 exports.getStatistics = async (req, res) => {
   try {
     const stats = await calculateStatistics();
-    
+
     res.status(200).json({
       success: true,
-      data: stats
+      data: stats,
     });
-
   } catch (error) {
-    console.error('❌ Get statistics error:', error);
+    console.error("❌ Get statistics error:", error);
     res.status(500).json({
       success: false,
-      message: 'Failed to fetch statistics'
+      message: "Failed to fetch statistics",
     });
   }
 };
@@ -2240,52 +2276,52 @@ exports.getStatistics = async (req, res) => {
 // 7. Get Bookings by Date Range
 exports.getBookingsByDateRange = async (req, res) => {
   try {
-    const { startDate, endDate, groupBy = 'day' } = req.query;
-    
+    const { startDate, endDate, groupBy = "day" } = req.query;
+
     if (!startDate || !endDate) {
       return res.status(400).json({
         success: false,
-        message: 'startDate and endDate are required'
+        message: "startDate and endDate are required",
       });
     }
 
     const start = new Date(startDate);
     const end = new Date(endDate);
-    
+
     let groupStage;
     switch (groupBy) {
-      case 'day':
+      case "day":
         groupStage = {
           _id: {
-            year: { $year: '$bookingDate' },
-            month: { $month: '$bookingDate' },
-            day: { $dayOfMonth: '$bookingDate' }
-          }
+            year: { $year: "$bookingDate" },
+            month: { $month: "$bookingDate" },
+            day: { $dayOfMonth: "$bookingDate" },
+          },
         };
         break;
-      case 'month':
+      case "month":
         groupStage = {
           _id: {
-            year: { $year: '$bookingDate' },
-            month: { $month: '$bookingDate' }
-          }
+            year: { $year: "$bookingDate" },
+            month: { $month: "$bookingDate" },
+          },
         };
         break;
-      case 'week':
+      case "week":
         groupStage = {
           _id: {
-            year: { $year: '$bookingDate' },
-            week: { $week: '$bookingDate' }
-          }
+            year: { $year: "$bookingDate" },
+            week: { $week: "$bookingDate" },
+          },
         };
         break;
       default:
         groupStage = {
           _id: {
-            year: { $year: '$bookingDate' },
-            month: { $month: '$bookingDate' },
-            day: { $dayOfMonth: '$bookingDate' }
-          }
+            year: { $year: "$bookingDate" },
+            month: { $month: "$bookingDate" },
+            day: { $dayOfMonth: "$bookingDate" },
+          },
         };
     }
 
@@ -2294,40 +2330,36 @@ exports.getBookingsByDateRange = async (req, res) => {
         $match: {
           bookingDate: {
             $gte: start,
-            $lte: end
-          }
-        }
+            $lte: end,
+          },
+        },
       },
       {
         $group: {
           ...groupStage,
           count: { $sum: 1 },
-          services: { $addToSet: '$service.name' },
+          services: { $addToSet: "$service.name" },
           totalRevenue: {
             $sum: {
               $toDouble: {
-                $arrayElemAt: [
-                  { $split: ['$service.priceUSD', '$'] },
-                  1
-                ]
-              }
-            }
-          }
-        }
+                $arrayElemAt: [{ $split: ["$service.priceUSD", "$"] }, 1],
+              },
+            },
+          },
+        },
       },
-      { $sort: { '_id.year': 1, '_id.month': 1, '_id.day': 1, '_id.week': 1 } }
+      { $sort: { "_id.year": 1, "_id.month": 1, "_id.day": 1, "_id.week": 1 } },
     ]);
 
     res.status(200).json({
       success: true,
-      data: bookings
+      data: bookings,
     });
-
   } catch (error) {
-    console.error('❌ Date range bookings error:', error);
+    console.error("❌ Date range bookings error:", error);
     res.status(500).json({
       success: false,
-      message: 'Failed to fetch bookings by date range'
+      message: "Failed to fetch bookings by date range",
     });
   }
 };
@@ -2335,32 +2367,30 @@ exports.getBookingsByDateRange = async (req, res) => {
 // 8. Export Bookings to CSV
 exports.exportBookings = async (req, res) => {
   try {
-    const bookings = await Booking.find()
-      .sort({ bookingDate: -1 })
-      .lean();
+    const bookings = await Booking.find().sort({ bookingDate: -1 }).lean();
 
     // CSV headers
     const headers = [
-      'Booking ID',
-      'Customer Name',
-      'Customer Email',
-      'Customer Phone',
-      'Service',
-      'Category',
-      'Price (USD)',
-      'Price (RWF)',
-      'Target Country',
-      'Program',
-      'Start Date',
-      'Education Level',
-      'Budget',
-      'Status',
-      'Booking Date',
-      'Created At'
+      "Booking ID",
+      "Customer Name",
+      "Customer Email",
+      "Customer Phone",
+      "Service",
+      "Category",
+      "Price (USD)",
+      "Price (RWF)",
+      "Target Country",
+      "Program",
+      "Start Date",
+      "Education Level",
+      "Budget",
+      "Status",
+      "Booking Date",
+      "Created At",
     ];
 
     // CSV rows
-    const rows = bookings.map(booking => [
+    const rows = bookings.map((booking) => [
       booking._id,
       `"${booking.customer.fullName}"`,
       booking.customer.email,
@@ -2371,30 +2401,32 @@ exports.exportBookings = async (req, res) => {
       booking.service.priceRWF,
       booking.customer.targetCountry,
       `"${booking.customer.program}"`,
-      new Date(booking.customer.startDate).toISOString().split('T')[0],
-      booking.customer.educationLevel || '',
-      booking.customer.budget || '',
+      new Date(booking.customer.startDate).toISOString().split("T")[0],
+      booking.customer.educationLevel || "",
+      booking.customer.budget || "",
       booking.status,
       new Date(booking.bookingDate).toISOString(),
-      new Date(booking.createdAt).toISOString()
+      new Date(booking.createdAt).toISOString(),
     ]);
 
     const csvContent = [
-      headers.join(','),
-      ...rows.map(row => row.join(','))
-    ].join('\n');
+      headers.join(","),
+      ...rows.map((row) => row.join(",")),
+    ].join("\n");
 
     // Set response headers
-    res.setHeader('Content-Type', 'text/csv');
-    res.setHeader('Content-Disposition', `attachment; filename=recapply-bookings-${Date.now()}.csv`);
-    
-    res.status(200).send(csvContent);
+    res.setHeader("Content-Type", "text/csv");
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename=recapply-bookings-${Date.now()}.csv`,
+    );
 
+    res.status(200).send(csvContent);
   } catch (error) {
-    console.error('❌ Export bookings error:', error);
+    console.error("❌ Export bookings error:", error);
     res.status(500).json({
       success: false,
-      message: 'Failed to export bookings'
+      message: "Failed to export bookings",
     });
   }
 };
@@ -2403,33 +2435,34 @@ exports.exportBookings = async (req, res) => {
 exports.searchBookings = async (req, res) => {
   try {
     const { q, limit = 10 } = req.query;
-    
+
     if (!q || q.trim().length < 2) {
       return res.status(400).json({
         success: false,
-        message: 'Search query must be at least 2 characters'
+        message: "Search query must be at least 2 characters",
       });
     }
 
     const bookings = await Booking.find(
       { $text: { $search: q } },
-      { score: { $meta: 'textScore' } }
+      { score: { $meta: "textScore" } },
     )
-    .sort({ score: { $meta: 'textScore' } })
-    .limit(parseInt(limit))
-    .select('customer.fullName customer.email service.name service.category status bookingDate')
-    .lean();
+      .sort({ score: { $meta: "textScore" } })
+      .limit(parseInt(limit))
+      .select(
+        "customer.fullName customer.email service.name service.category status bookingDate",
+      )
+      .lean();
 
     res.status(200).json({
       success: true,
-      data: bookings
+      data: bookings,
     });
-
   } catch (error) {
-    console.error('❌ Search bookings error:', error);
+    console.error("❌ Search bookings error:", error);
     res.status(500).json({
       success: false,
-      message: 'Failed to search bookings'
+      message: "Failed to search bookings",
     });
   }
 };
@@ -2438,39 +2471,38 @@ exports.searchBookings = async (req, res) => {
 exports.deleteBooking = async (req, res) => {
   try {
     const booking = await Booking.findById(req.params.id);
-    
+
     if (!booking) {
       return res.status(404).json({
         success: false,
-        message: 'Booking not found'
+        message: "Booking not found",
       });
     }
 
     // Update status to cancelled
-    booking.status = 'cancelled';
+    booking.status = "cancelled";
     booking.notes.push({
-      content: 'Booking cancelled by admin',
-      addedBy: 'admin'
+      content: "Booking cancelled by admin",
+      addedBy: "admin",
     });
     booking.updatedAt = Date.now();
-    
+
     await booking.save();
 
     // Send cancellation email (fire and forget)
-    sendCancellationEmail(booking).catch(err => 
-      console.error('Cancellation email failed:', err)
+    sendCancellationEmail(booking).catch((err) =>
+      console.error("Cancellation email failed:", err),
     );
 
     res.status(200).json({
       success: true,
-      message: 'Booking cancelled successfully'
+      message: "Booking cancelled successfully",
     });
-
   } catch (error) {
-    console.error('❌ Delete booking error:', error);
+    console.error("❌ Delete booking error:", error);
     res.status(500).json({
       success: false,
-      message: 'Failed to cancel booking'
+      message: "Failed to cancel booking",
     });
   }
 };
@@ -2479,16 +2511,16 @@ exports.deleteBooking = async (req, res) => {
 exports.sendTestEmail = async (req, res) => {
   try {
     const { email } = req.body;
-    
+
     if (!email) {
       return res.status(400).json({
         success: false,
-        message: 'Email address is required'
+        message: "Email address is required",
       });
     }
 
     const testTemplate = {
-      subject: 'RECAPPLY Test Email',
+      subject: "RECAPPLY Test Email",
       html: `
         <div style="font-family: Arial, sans-serif; padding: 20px;">
           <h2>✅ RECAPPLY Email Test Successful</h2>
@@ -2496,30 +2528,33 @@ exports.sendTestEmail = async (req, res) => {
           <p>If you're receiving this, email configuration is working correctly.</p>
           <p>Sent at: ${new Date().toISOString()}</p>
         </div>
-      `
+      `,
     };
 
-    const result = await sendEmail(email, testTemplate.subject, testTemplate.html);
-    
+    const result = await sendEmail(
+      email,
+      testTemplate.subject,
+      testTemplate.html,
+    );
+
     if (result.success) {
       res.status(200).json({
         success: true,
-        message: 'Test email sent successfully'
+        message: "Test email sent successfully",
       });
     } else {
       res.status(500).json({
         success: false,
-        message: 'Failed to send test email',
-        error: result.error
+        message: "Failed to send test email",
+        error: result.error,
       });
     }
-
   } catch (error) {
-    console.error('❌ Test email error:', error);
+    console.error("❌ Test email error:", error);
     res.status(500).json({
       success: false,
-      message: 'Failed to send test email',
-      error: error.message
+      message: "Failed to send test email",
+      error: error.message,
     });
   }
 };
@@ -2529,42 +2564,42 @@ exports.getEmailTemplates = async (req, res) => {
   try {
     // Create a sample booking for template preview
     const sampleBooking = {
-      _id: '507f1f77bcf86cd799439011',
+      _id: "507f1f77bcf86cd799439011",
       service: {
-        name: 'University Admissions',
-        category: 'admissions',
-        priceUSD: 'Starting from $299',
-        priceRWF: 'Starting from Fr 388,700'
+        name: "University Admissions",
+        category: "admissions",
+        priceUSD: "Starting from $299",
+        priceRWF: "Starting from Fr 388,700",
       },
       customer: {
-        fullName: 'John Doe',
-        email: 'john@example.com',
-        phone: '+250 783 408 617',
-        targetCountry: 'Canada',
-        program: 'Computer Science',
-        startDate: new Date('2024-09-01')
+        fullName: "John Doe",
+        email: "john@example.com",
+        phone: "+250 783 408 617",
+        targetCountry: "Canada",
+        program: "Computer Science",
+        startDate: new Date("2024-09-01"),
       },
       bookingDate: new Date(),
-      status: 'pending'
+      status: "pending",
     };
 
     const templates = {
       confirmation: emailTemplates.bookingConfirmation(sampleBooking).html,
       admin: emailTemplates.adminNotification(sampleBooking).html,
-      statusUpdate: emailTemplates.statusUpdate(sampleBooking, 'in_progress').html,
-      cancellation: emailTemplates.cancellation(sampleBooking).html
+      statusUpdate: emailTemplates.statusUpdate(sampleBooking, "in_progress")
+        .html,
+      cancellation: emailTemplates.cancellation(sampleBooking).html,
     };
 
     res.status(200).json({
       success: true,
-      data: templates
+      data: templates,
     });
-
   } catch (error) {
-    console.error('❌ Get templates error:', error);
+    console.error("❌ Get templates error:", error);
     res.status(500).json({
       success: false,
-      message: 'Failed to fetch email templates'
+      message: "Failed to fetch email templates",
     });
   }
 };
@@ -2573,7 +2608,7 @@ exports.getEmailTemplates = async (req, res) => {
 exports.emailHealthCheck = async (req, res) => {
   try {
     const transporterHealthy = emailTransporter ? true : false;
-    
+
     // Try to verify connection
     let verified = false;
     if (transporterHealthy) {
@@ -2581,7 +2616,7 @@ exports.emailHealthCheck = async (req, res) => {
         await emailTransporter.verify();
         verified = true;
       } catch (err) {
-        console.error('Email verification failed:', err.message);
+        console.error("Email verification failed:", err.message);
       }
     }
 
@@ -2591,17 +2626,19 @@ exports.emailHealthCheck = async (req, res) => {
         transporterInitialized: transporterHealthy,
         verified,
         smtpConfigured: !!(process.env.SMTP_USER && process.env.SMTP_PASS),
-        smtpHost: process.env.SMTP_HOST || 'smtp.gmail.com',
+        smtpHost: process.env.SMTP_HOST || "smtp.gmail.com",
         smtpPort: process.env.SMTP_PORT || 587,
-        adminEmailsConfigured: !!(process.env.ADMIN_EMAILS || process.env.ADMIN_EMAIL)
-      }
+        adminEmailsConfigured: !!(
+          process.env.ADMIN_EMAILS || process.env.ADMIN_EMAIL
+        ),
+      },
     });
   } catch (error) {
-    console.error('❌ Email health check error:', error);
+    console.error("❌ Email health check error:", error);
     res.status(500).json({
       success: false,
-      message: 'Failed to check email health',
-      error: error.message
+      message: "Failed to check email health",
+      error: error.message,
     });
   }
 };
