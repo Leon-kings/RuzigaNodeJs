@@ -436,12 +436,61 @@ const accommodationSchema = new mongoose.Schema(
 /* ======================================
    BOOKING SCHEMA
 ====================================== */
+// const bookingSchema = new mongoose.Schema(
+//   {
+//     accommodation: {
+//       type: mongoose.Schema.Types.ObjectId,
+//       ref: 'Accommodation',
+//       required: true
+//     },
+
+//     firstName: { type: String, required: true, trim: true },
+//     lastName: { type: String, required: true, trim: true },
+//     email: { type: String, required: true, lowercase: true, trim: true },
+//     phone: { type: String, required: true },
+
+//     nationality: { type: String, required: true },
+//     university: { type: String, required: true },
+//     course: { type: String, required: true },
+
+//     arrivalDate: { type: Date, required: true },
+//     departureDate: { type: Date, required: true },
+//     duration: { type: String, required: true },
+
+//     numberOfOccupants: { type: Number, min: 1, default: 1 },
+//     specialRequirements: { type: String },
+
+//     emergencyContact: { type: String, required: true },
+
+//     preferredPayment: {
+//       type: String,
+//       enum: ['Credit Card', 'Bank Transfer', 'PayPal', 'Cash'],
+//       required: true
+//     },
+
+//     additionalInfo: { type: String },
+
+//     status: {
+//       type: String,
+//       enum: ['Pending', 'Confirmed', 'Cancelled', 'Completed'],
+//       default: 'Pending'
+//     },
+
+//     bookingReference: {
+//       type: String,
+//       unique: true,
+//       index: true
+//     }
+//   },
+//   { timestamps: true }
+// );
+
 const bookingSchema = new mongoose.Schema(
   {
     accommodation: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'Accommodation',
-      required: true
+      ref: "Accommodation",
+      required: true,
     },
 
     firstName: { type: String, required: true, trim: true },
@@ -457,33 +506,33 @@ const bookingSchema = new mongoose.Schema(
     departureDate: { type: Date, required: true },
     duration: { type: String, required: true },
 
-    numberOfOccupants: { type: Number, min: 1, default: 1 },
-    specialRequirements: { type: String },
+    numberOfOccupants: { type: Number, default: 1 },
 
+    specialRequirements: { type: String },
     emergencyContact: { type: String, required: true },
 
     preferredPayment: {
       type: String,
-      enum: ['Credit Card', 'Bank Transfer', 'PayPal', 'Cash'],
-      required: true
+      enum: ["Credit Card", "Bank Transfer", "PayPal", "Cash"],
+      required: true,
     },
 
     additionalInfo: { type: String },
 
     status: {
       type: String,
-      enum: ['Pending', 'Confirmed', 'Cancelled', 'Completed'],
-      default: 'Pending'
+      enum: ["Pending", "Confirmed", "Cancelled", "Completed"],
+      default: "Pending",
     },
 
     bookingReference: {
       type: String,
       unique: true,
-      index: true
-    }
+    },
   },
   { timestamps: true }
 );
+
 
 /* ======================================
    BOOKING PRE-SAVE HOOK

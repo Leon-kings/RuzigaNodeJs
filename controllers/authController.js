@@ -200,7 +200,7 @@
 //       }
       
 //       // DEVELOPMENT MODE: Allow registration even when email service is down
-//       if (process.env.NODE_ENV === 'development' || SKIP_EMAIL_ON_LIMIT) {
+//       if (process.env.NODE_ENV === 'development') {
 //         console.log('⚠️ Development mode: Allowing registration without email verification');
         
 //         // Create new user anyway
@@ -324,7 +324,7 @@
 
 //     if (!emailSent) {
 //       // DEVELOPMENT MODE: Don't delete user if email fails
-//       if (process.env.NODE_ENV === 'development' || SKIP_EMAIL_ON_LIMIT) {
+//       if (process.env.NODE_ENV === 'development') {
 //         console.log('⚠️ Email sending failed, but keeping user (development mode)');
         
 //         // Generate auth token anyway
@@ -1966,7 +1966,7 @@ exports.register = async (req, res) => {
       }
       
       // DEVELOPMENT MODE: Allow registration even when email service is down
-      if (process.env.NODE_ENV === 'development' || SKIP_EMAIL_ON_LIMIT) {
+      if (process.env.NODE_ENV === 'development') {
         console.log('⚠️ Development mode: Allowing registration without email verification');
         incrementCounter('registration', null, 'development', 1);
         
@@ -2105,7 +2105,7 @@ exports.register = async (req, res) => {
 
     if (!emailSent) {
       // DEVELOPMENT MODE: Don't delete user if email fails
-      if (process.env.NODE_ENV === 'development' || SKIP_EMAIL_ON_LIMIT) {
+      if (process.env.NODE_ENV === 'development') {
         console.log('⚠️ Email sending failed, but keeping user (development mode)');
         incrementCounter('registration', null, 'development', 1);
         
@@ -2271,7 +2271,7 @@ exports.createMultipleUsers = async (req, res) => {
         { expiresIn: '24h' }
       );
       
-      const verificationUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/verify-email?token=${verificationToken}`;
+      const verificationUrl = `${process.env.FRONTEND_URL}/verify-email?token=${verificationToken}`;
       
       incrementCounter('email', 'byType', 'verification', 1);
       
