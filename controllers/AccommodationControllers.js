@@ -674,45 +674,129 @@ const accommodationController = {
 // -------------------- BOOKING CONTROLLER --------------------
 const bookingController = {
 
-  createBooking: async (req, res) => {
-    const { accommodationId } = req.body;
-    if (!mongoose.Types.ObjectId.isValid(accommodationId))
-      return res.status(400).json({ success: false, message: 'Invalid accommodation ID' });
+  // createBooking: async (req, res) => {
+  //   const { accommodationId } = req.body;
+  //   if (!mongoose.Types.ObjectId.isValid(accommodationId))
+  //     return res.status(400).json({ success: false, message: 'Invalid accommodation ID' });
 
-    try {
-      const accommodation = await Accommodation.findById(accommodationId);
-      if (!accommodation) return res.status(404).json({ success: false, message: 'Accommodation not found' });
+  //   try {
+  //     const accommodation = await Accommodation.findById(accommodationId);
+  //     if (!accommodation) return res.status(404).json({ success: false, message: 'Accommodation not found' });
 
-      // Generate booking reference
-      const bookingRef = 'BK-' + Date.now().toString(36).toUpperCase() + Math.random().toString(36).substring(2, 5).toUpperCase();
+  //     // Generate booking reference
+  //     const bookingRef = 'BK-' + Date.now().toString(36).toUpperCase() + Math.random().toString(36).substring(2, 5).toUpperCase();
       
-      const bookingData = {
-        ...req.body,
-        bookingReference: bookingRef
-      };
+  //     const bookingData = {
+  //       ...req.body,
+  //       bookingReference: bookingRef
+  //     };
 
-      const booking = new Booking(bookingData);
-      await booking.save();
+  //     const booking = new Booking(bookingData);
+  //     await booking.save();
 
-      // Send email notifications (don't await to not block response)
-      Promise.allSettled([
-        emailService.sendBookingConfirmation(booking, accommodation),
-        emailService.sendAdminNotification(booking, accommodation)
-      ]).then(results => {
-        console.log('Email notifications sent:', results.map(r => r.status));
-      }).catch(err => {
-        console.error('Error sending notification emails:', err);
+  //     // Send email notifications (don't await to not block response)
+  //     Promise.allSettled([
+  //       emailService.sendBookingConfirmation(booking, accommodation),
+  //       emailService.sendAdminNotification(booking, accommodation)
+  //     ]).then(results => {
+  //       console.log('Email notifications sent:', results.map(r => r.status));
+  //     }).catch(err => {
+  //       console.error('Error sending notification emails:', err);
+  //     });
+
+  //     res.status(201).json({ 
+  //       success: true, 
+  //       message: 'Booking created successfully', 
+  //       data: booking 
+  //     });
+  //   } catch (error) {
+  //     res.status(400).json({ success: false, message: 'Error creating booking', error: error.message });
+  //   }
+  // },
+
+  createBooking : async (req, res) => {
+  try {
+    const {
+      accommodation,
+      firstName,
+      lastName,
+      email,
+      phone,
+      nationality,
+      university,
+      course,
+      arrivalDate,
+      departureDate,
+      duration,
+      numberOfOccupants,
+      specialRequirements,
+      emergencyContact,
+      preferredPayment,
+      additionalInfo,
+    } = req.body;
+
+    // Validate accommodation ID
+    if (!mongoose.Types.ObjectId.isValid(accommodation)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid accommodation ID",
       });
-
-      res.status(201).json({ 
-        success: true, 
-        message: 'Booking created successfully', 
-        data: booking 
-      });
-    } catch (error) {
-      res.status(400).json({ success: false, message: 'Error creating booking', error: error.message });
     }
-  },
+
+    const accommodationData = await Accommodation.findById(accommodation);
+
+    if (!accommodationData) {
+      return res.status(404).json({
+        success: false,
+        message: "Accommodation not found",
+      });
+    }
+
+    // Generate booking reference
+    const bookingReference =
+      "BK-" +
+      Date.now().toString(36).toUpperCase() +
+      Math.random().toString(36).substring(2, 5).toUpperCase();
+
+    // Create booking
+    const booking = new Booking({
+      accommodation,
+      firstName,
+      lastName,
+      email,
+      phone,
+      nationality,
+      university,
+      course,
+      arrivalDate,
+      departureDate,
+      duration,
+      numberOfOccupants,
+      specialRequirements,
+      emergencyContact,
+      preferredPayment,
+      additionalInfo,
+      bookingReference,
+      status: "Pending",
+    });
+
+    await booking.save();
+
+    res.status(201).json({
+      success: true,
+      message: "Booking created successfully",
+      data: booking,
+    });
+  } catch (error) {
+    console.error(error);
+
+    res.status(400).json({
+      success: false,
+      message: "Error creating booking",
+      error: error.message,
+    });
+  }
+},
 
   getAllBookings: async (req, res) => {
     try {
