@@ -4,7 +4,7 @@ const cors = require("cors");
 const helmet = require("helmet");
 require("dotenv").config();
 const path = require("path");
-
+const nodemailer = require('nodemailer');
 // Routes
 const authRoutes = require("./routes/authRoutes");
 const statisticsRoutes = require("./routes/statisticsRoutes");

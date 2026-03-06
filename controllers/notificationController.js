@@ -11,7 +11,7 @@ const Notification = require('../models/Notification');
 exports.getMyNotifications = async (req, res) => {
   try {
     const { range = 'all', unread } = req.query;
-    const userId = req.user.id;
+    const userId = req.user._id;
     const now = new Date();
 
     const query = { userId };
