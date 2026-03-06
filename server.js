@@ -69,6 +69,7 @@ const connectDB = async () => {
     console.log("🌍 Host:", mongoose.connection.host);
   } catch (error) {
     console.error("❌ MongoDB connection failed:", error.message);
+    console.log(error);
     process.exit(1); // ⛔ NEVER continue without DB
   }
 };
