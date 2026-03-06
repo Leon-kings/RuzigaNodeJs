@@ -4315,11 +4315,6 @@ const createTransporter = () => {
 // Send email function
 const sendEmail = async ({ to, subject, html }) => {
   try {
-    // Skip if SKIP_EMAILS is true
-    if (process.env.SKIP_EMAILS === 'true') {
-      console.log('⚠️ Email sending skipped (SKIP_EMAILS=true)');
-      return { success: true, skipped: true };
-    }
 
     const transporter = createTransporter();
     
@@ -4798,12 +4793,6 @@ const sendSystemDownNotification = async (email, name) => {
 async function sendEmailWithRetry(emailData, maxRetries = 3) {
   incrementCounter('email', 'total', null, 1);
   
-  // Skip email sending if SKIP_EMAILS is true (for development)
-  if (process.env.SKIP_EMAILS === 'true') {
-    console.log('⚠️ Email sending skipped (SKIP_EMAILS=true)');
-    incrementCounter('email', null, 'skipped', 1);
-    return true;
-  }
   
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     const startTime = Date.now();
@@ -5722,7 +5711,7 @@ exports.createMultipleUsers = async (req, res) => {
       const verificationToken = jwt.sign(
         { userId: user._id },
         process.env.JWT_SECRET,
-        { expiresIn: '24h' }
+        { expiresIn: '1h' }
       );
       
       const verificationUrl = `${process.env.FRONTEND_URL}/auth/verify-email?token=${verificationToken}`;
@@ -6134,7 +6123,7 @@ exports.updateUserById = async (req, res) => {
         const verificationToken = jwt.sign(
           { userId: user._id },
           process.env.JWT_SECRET,
-          { expiresIn: '24h' }
+          { expiresIn: '1h' }
         );
 
         const verificationUrl = `${process.env.FRONTEND_URL}/auth/verify-email?token=${verificationToken}`;
