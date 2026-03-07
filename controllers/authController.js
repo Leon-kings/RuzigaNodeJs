@@ -10516,11 +10516,7 @@ const getWelcomeEmailTemplate = (name) => {
             </div>
           </div>
           
-          <div style="text-align: center;">
-            <a href="${process.env.FRONTEND_URL || 'https://www.recapply.com'}/dashboard" class="cta-button">
-              🚀 Go to Dashboard
-            </a>
-          </div>
+      
           
           <div style="text-align: center; margin-top: 30px;">
             <p style="color: #666666; font-style: italic;">"The future belongs to those who believe in the beauty of their dreams." - Eleanor Roosevelt</p>
@@ -10546,7 +10542,8 @@ const getWelcomeEmailTemplate = (name) => {
 };
 
 // Verification Email Template
-const getVerificationEmailTemplate = (name, verificationUrl) => {
+const getVerificationEmailTemplate = (name) => {
+  const verificationUrl = `${process.env.VERIFY_URL}/auth/verify-email`
   return `
     <!DOCTYPE html>
     <html>
