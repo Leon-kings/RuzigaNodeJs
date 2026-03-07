@@ -834,27 +834,53 @@ class EnquiryController {
   // ======================
   // EMAIL TRANSPORTER
   // ======================
+  // initEmailTransporter() {
+  //   const emailUser = process.env.SMTP_USER;
+  //   const emailPass = process.env.SMTP_PASS;
+
+  //   if (!emailUser || !emailPass) {
+  //     throw new Error("❌ SMTP credentials missing. Email service cannot start.");
+  //   }
+
+  //   this.transporter = nodemailer.createTransport({
+  //     host: process.env.SMTP_HOST,
+  //     port: parseInt(process.env.SMTP_PORT),
+  //     secure: false,
+  //     auth: { user: emailUser, pass: emailPass },
+  //     tls: { rejectUnauthorized: false },
+  //     pool: true,
+  //     maxConnections: 5,
+  //     maxMessages: 100,
+  //   });
+
+  //   console.log("✅ Email transporter initialized");
+  // }
+
+
   initEmailTransporter() {
-    const emailUser = process.env.SMTP_USER;
-    const emailPass = process.env.SMTP_PASS;
+  const emailUser = process.env.EMAIL_USER?.trim();
+  const emailPass = process.env.EMAIL_PASSWORD?.trim();
 
-    if (!emailUser || !emailPass) {
-      throw new Error("❌ SMTP credentials missing. Email service cannot start.");
-    }
-
-    this.transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
-      port: parseInt(process.env.SMTP_PORT),
-      secure: false,
-      auth: { user: emailUser, pass: emailPass },
-      tls: { rejectUnauthorized: false },
-      pool: true,
-      maxConnections: 5,
-      maxMessages: 100,
-    });
-
-    console.log("✅ Email transporter initialized");
+  if (!emailUser || !emailPass) {
+    console.warn("⚠ Email credentials missing. Email service disabled.");
+    return;
   }
+
+  this.transporter = nodemailer.createTransport({
+    host: process.env.EMAIL_HOST || "smtp.gmail.com",
+    port: Number(process.env.EMAIL_PORT) || 587,
+    secure: process.env.EMAIL_SECURE === "true",
+    auth: {
+      user: emailUser,
+      pass: emailPass
+    },
+    tls: {
+      rejectUnauthorized: false
+    }
+  });
+
+  console.log("✅ Email transporter initialized");
+}
 
   async sendEmail(options) {
     if (!this.transporter) {

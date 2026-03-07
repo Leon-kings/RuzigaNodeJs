@@ -1925,33 +1925,59 @@ class MainController {
     this.initEmailTransporter();
   }
 
-  initEmailTransporter() {
-    const emailUser = process.env.EMAIL_USER;
-    const emailPass = process.env.EMAIL_PASSWORD;
+  // initEmailTransporter() {
+  //   const emailUser = process.env.EMAIL_USER;
+  //   const emailPass = process.env.EMAIL_PASSWORD;
 
-    if (!emailUser || !emailPass) {
-      throw new Error("❌ Email credentials missing. Email service cannot start.");
-    }
+  //   if (!emailUser || !emailPass) {
+  //     throw new Error("❌ Email credentials missing. Email service cannot start.");
+  //   }
 
-    this.transporter = nodemailer.createTransport({
-      host: process.env.EMAIL_HOST || 'smtp.gmail.com',
-      port: process.env.EMAIL_PORT || 587,
-      secure: process.env.EMAIL_SECURE === 'true',
-      auth: {
-        user: emailUser,
-        pass: emailPass
-      },
-      tls: {
-        rejectUnauthorized: false
-      }
-    });
+  //   this.transporter = nodemailer.createTransport({
+  //     host: process.env.EMAIL_HOST || 'smtp.gmail.com',
+  //     port: process.env.EMAIL_PORT || 587,
+  //     secure: process.env.EMAIL_SECURE === 'true',
+  //     auth: {
+  //       user: emailUser,
+  //       pass: emailPass
+  //     },
+  //     tls: {
+  //       rejectUnauthorized: false
+  //     }
+  //   });
 
-    console.log("✅ Email transporter initialized");
-  }
+  //   console.log("✅ Email transporter initialized");
+  // }
 
   // ==================== CRUD Operations ====================
   
   // CREATE - Create new form submission
+  
+  initEmailTransporter() {
+  const emailUser = process.env.EMAIL_USER?.trim();
+  const emailPass = process.env.EMAIL_PASSWORD?.trim();
+
+  if (!emailUser || !emailPass) {
+    console.warn("⚠ Email credentials missing. Email service disabled.");
+    return;
+  }
+
+  this.transporter = nodemailer.createTransport({
+    host: process.env.EMAIL_HOST || "smtp.gmail.com",
+    port: Number(process.env.EMAIL_PORT) || 587,
+    secure: process.env.EMAIL_SECURE === "true",
+    auth: {
+      user: emailUser,
+      pass: emailPass
+    },
+    tls: {
+      rejectUnauthorized: false
+    }
+  });
+
+  console.log("✅ Email transporter initialized");
+}
+  
   async createFormData(req, res) {
     try {
       // Validate request
