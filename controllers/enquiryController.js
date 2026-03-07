@@ -827,10 +827,6 @@ const moment = require("moment");
 const nodemailer = require("nodemailer");
 
 class EnquiryController {
-  constructor() {
-    this.initEmailTransporter();
-  }
-
   // ======================
   // EMAIL TRANSPORTER
   // ======================
@@ -880,6 +876,8 @@ initEmailTransporter() {
     tls: {
       rejectUnauthorized: false
     },
+
+    // Prevent SMTP timeout
     connectionTimeout: 20000,
     socketTimeout: 30000
   });
