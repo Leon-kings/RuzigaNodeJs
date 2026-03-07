@@ -1376,7 +1376,7 @@ class NewsletterController {
       console.log(`📧 Attempting to send email to: ${to} - Subject: ${subject}`);
       
       const info = await transporter.sendMail({
-        from: `"${process.env.COMPANY_NAME || 'REC APPLY'} Newsletter" <${process.env.EMAIL_FROM || process.env.SMTP_USER}>`,
+        from: `"${process.env.COMPANY_NAME || 'REC APPLY'} Newsletter" <${process.env.EMAIL_FROM }>`,
         to,
         subject,
         html

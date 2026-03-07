@@ -1918,21 +1918,39 @@ const nodemailer = require("nodemailer");
 class TestimonialController {
   constructor() {
     // Nodemailer transporter - ALWAYS INITIALIZE
-    this.mailer = nodemailer.createTransport({
-      host: process.env.SMTP_HOST || 'smtp.gmail.com',
-      port: parseInt(process.env.SMTP_PORT) || 587,
-      secure: false,
-      auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
-      },
-      tls: {
-        rejectUnauthorized: false
-      },
-      pool: true,
-      maxConnections: 5,
-      maxMessages: 100
-    });
+    // this.mailer = nodemailer.createTransport({
+    //   host: process.env.SMTP_HOST || 'smtp.gmail.com',
+    //   port: parseInt(process.env.SMTP_PORT) || 587,
+    //   secure: false,
+    //   auth: {
+    //     user: process.env.SMTP_USER,
+    //     pass: process.env.SMTP_PASS,
+    //   },
+    //   tls: {
+    //     rejectUnauthorized: false
+    //   },
+    //   pool: true,
+    //   maxConnections: 5,
+    //   maxMessages: 100
+    // });
+
+this.mailer = nodemailer.createTransport({
+  host: process.env.SMTP_HOST,
+  port: parseInt(process.env.SMTP_PORT) || 587,
+  secure: process.env.SMTP_PORT == 465,
+  auth: {
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASS
+  },
+  tls: {
+    rejectUnauthorized: false
+  },
+
+  connectionTimeout: 20000,
+  greetingTimeout: 20000,
+  socketTimeout: 30000,
+  pool: true
+});
     
     this.companyName = process.env.COMPANY_NAME || "REC APPLY";
     this.adminEmail = process.env.ADMIN_EMAIL || "r.educationalconsultance@gmail.com";
@@ -1942,25 +1960,48 @@ class TestimonialController {
   }
 
   // ================== Email Helper with Beautiful Templates ==================
-  sendEmail = async (to, subject, html) => {
-    try {
-      console.log(`📧 Attempting to send email to: ${to} - Subject: ${subject}`);
-      
-      const info = await this.mailer.sendMail({
-        from: `"${this.companyName}" <${process.env.EMAIL_FROM || process.env.SMTP_USER}>`,
-        to,
-        subject,
-        html,
-      });
-      
-      console.log(`✅ Email sent successfully to: ${to} - Message ID: ${info.messageId}`);
-      return { success: true, messageId: info.messageId, to, subject };
-    } catch (error) {
-      console.error(`❌ Email sending failed to ${to}:`, error.message);
-      // Return failure but don't throw - emails are non-blocking
-      return { success: false, error: error.message, to, subject };
-    }
-  };
+sendEmail = async (to, subject, html) => {
+  try {
+    console.log(`📧 Attempting to send email to: ${to} - Subject: ${subject}`);
+
+    const info = await this.mailer.sendMail({
+      from: `"${this.companyName}" <${process.env.EMAIL_FROM || process.env.SMTP_USER}>`,
+      to,
+      subject,
+      html,
+
+      // ⭐ Prevent long SMTP hanging
+      envelope: {
+        from: process.env.EMAIL_FROM || process.env.SMTP_USER,
+        to
+      }
+    });
+
+    console.log(`✅ Email sent successfully to: ${to} - Message ID: ${info.messageId}`);
+
+    return {
+      success: true,
+      messageId: info.messageId,
+      to,
+      subject
+    };
+
+  } catch (error) {
+    console.error(`❌ Email sending failed to ${to}:`, {
+      message: error.message,
+      code: error.code,
+      command: error.command
+    });
+
+    // Emails should not crash the app
+    return {
+      success: false,
+      error: error.message,
+      to,
+      subject
+    };
+  }
+};
 
   getUserTestimonialConfirmationEmail = (userName, testimonialData) => {
     const { university, program, rating, content } = testimonialData;
