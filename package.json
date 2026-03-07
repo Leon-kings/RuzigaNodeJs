@@ -29,6 +29,7 @@
     "multer-storage-cloudinary": "^4.0.0",
     "nodemailer": "^7.0.13",
     "nodemon": "^3.1.14",
+    "p-queue": "^9.1.0",
     "pdfkit": "^0.17.2",
     "rate-limit": "^0.1.1",
     "streamifier": "^0.1.1",
