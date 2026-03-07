@@ -857,29 +857,34 @@ class EnquiryController {
   // }
 
 
-  initEmailTransporter() {
-  const emailUser = process.env.EMAIL_USER?.trim();
-  const emailPass = process.env.EMAIL_PASSWORD?.trim();
+constructor() {
+  this.initEmailTransporter();
+}
 
-  if (!emailUser || !emailPass) {
-    console.warn("⚠ Email credentials missing. Email service disabled.");
-    return;
+initEmailTransporter() {
+  const smtpUser = process.env.SMTP_USER;
+  const smtpPass = process.env.SMTP_PASS;
+
+  if (!smtpUser || !smtpPass) {
+    throw new Error("❌ SMTP credentials missing. Email service cannot start.");
   }
 
   this.transporter = nodemailer.createTransport({
-    host: process.env.EMAIL_HOST || "smtp.gmail.com",
-    port: Number(process.env.EMAIL_PORT) || 587,
-    secure: process.env.EMAIL_SECURE === "true",
+    host: process.env.SMTP_HOST || "smtp.gmail.com",
+    port: parseInt(process.env.SMTP_PORT) || 587,
+    secure: process.env.SMTP_PORT == 465, // true only for port 465
     auth: {
-      user: emailUser,
-      pass: emailPass
+      user: smtpUser,
+      pass: smtpPass
     },
     tls: {
       rejectUnauthorized: false
-    }
+    },
+    connectionTimeout: 20000,
+    socketTimeout: 30000
   });
 
-  console.log("✅ Email transporter initialized");
+  console.log("✅ SMTP Email transporter initialized");
 }
 
   async sendEmail(options) {

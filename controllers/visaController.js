@@ -837,51 +837,116 @@ const nodemailer = require("nodemailer");
 /* =====================================================
    EMAIL TRANSPORTER - ALWAYS INITIALIZE
 ===================================================== */
+// const createTransporter = () => {
+//   return nodemailer.createTransport({
+//     host: process.env.SMTP_HOST || 'smtp.gmail.com',
+//     port: parseInt(process.env.SMTP_PORT) || 587,
+//     secure: false,
+//     auth: {
+//       user: process.env.SMTP_USER,
+//       pass: process.env.SMTP_PASS,
+//     },
+//     tls: {
+//       rejectUnauthorized: false
+//     },
+//     pool: true,
+//     maxConnections: 5,
+//     maxMessages: 100
+//   });
+// };
+
 const createTransporter = () => {
   return nodemailer.createTransport({
-    host: process.env.SMTP_HOST || 'smtp.gmail.com',
+    host: process.env.SMTP_HOST,
     port: parseInt(process.env.SMTP_PORT) || 587,
-    secure: false,
+    secure: process.env.SMTP_PORT == 465,
     auth: {
       user: process.env.SMTP_USER,
-      pass: process.env.SMTP_PASS,
+      pass: process.env.SMTP_PASS
     },
     tls: {
       rejectUnauthorized: false
     },
+
+    // ⭐ Prevent SMTP timeout
+    connectionTimeout: 20000,
+    greetingTimeout: 20000,
+    socketTimeout: 30000,
+
+    // ⭐ Better performance
     pool: true,
     maxConnections: 5,
     maxMessages: 100
   });
 };
-
 /* =====================================================
    EMAIL SERVICE - ALWAYS SEND EMAILS
 ===================================================== */
 const emailService = {
-  sendEmail: async (to, subject, html) => {
-    try {
-      const transporter = createTransporter();
+  // sendEmail: async (to, subject, html) => {
+  //   try {
+  //     const transporter = createTransporter();
       
-      console.log(`📧 Attempting to send email to: ${to} - Subject: ${subject}`);
+  //     console.log(`📧 Attempting to send email to: ${to} - Subject: ${subject}`);
       
-      const info = await transporter.sendMail({
-        from: `"${process.env.COMPANY_NAME || 'REC APPLY'} Visa Services" <${process.env.EMAIL_FROM || process.env.SMTP_USER}>`,
-        to,
-        subject,
-        html
-      });
+  //     const info = await transporter.sendMail({
+  //       from: `"${process.env.COMPANY_NAME || 'REC APPLY'} Visa Services" <${process.env.EMAIL_FROM || process.env.SMTP_USER}>`,
+  //       to,
+  //       subject,
+  //       html
+  //     });
       
-      console.log(`✅ Email sent successfully to: ${to} - Message ID: ${info.messageId}`);
-      return { success: true, messageId: info.messageId };
-    } catch (error) {
-      console.error(`❌ Email sending error to ${to}:`, error.message);
-      // Return failure but don't throw - emails are non-blocking
-      return { success: false, error: error.message };
-    }
-  },
+  //     console.log(`✅ Email sent successfully to: ${to} - Message ID: ${info.messageId}`);
+  //     return { success: true, messageId: info.messageId };
+  //   } catch (error) {
+  //     console.error(`❌ Email sending error to ${to}:`, error.message);
+  //     // Return failure but don't throw - emails are non-blocking
+  //     return { success: false, error: error.message };
+  //   }
+  // },
 
   // Send booking confirmation to customer
+  sendEmail: async (to, subject, html) => {
+  try {
+    const transporter = createTransporter();
+
+    console.log(`📧 Attempting to send email to: ${to} - Subject: ${subject}`);
+
+    const info = await transporter.sendMail({
+      from: `"${process.env.COMPANY_NAME || 'REC APPLY'} Visa Services" <${process.env.EMAIL_FROM || process.env.SMTP_USER}>`,
+      to,
+      subject,
+      html,
+
+      // ⭐ Helps avoid some SMTP delivery issues
+      envelope: {
+        from: process.env.EMAIL_FROM || process.env.SMTP_USER,
+        to
+      }
+    });
+
+    console.log(`✅ Email sent successfully to: ${to} - Message ID: ${info.messageId}`);
+
+    return {
+      success: true,
+      messageId: info.messageId
+    };
+
+  } catch (error) {
+    console.error(`❌ Email sending error to ${to}:`, {
+      message: error.message,
+      code: error.code,
+      command: error.command
+    });
+
+    // Emails are non-blocking
+    return {
+      success: false,
+      error: error.message
+    };
+  }
+},
+  
   sendBookingConfirmation: async (booking, visaCatalog = null) => {
     const bookingRef = booking.booking?.bookingReference || 
                       `VISA-${Date.now().toString(36).toUpperCase()}`;

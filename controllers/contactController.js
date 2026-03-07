@@ -2277,37 +2277,90 @@ const nodemailer = require('nodemailer');
 class ContactController {
   constructor() {
     // Initialize email transporter
+    // this.createTransporter = () => {
+    //   return nodemailer.createTransport({
+    //     host: process.env.SMTP_HOST,
+    //     port: parseInt(process.env.SMTP_PORT),
+    //     secure: false,
+    //     auth: {
+    //       user: process.env.SMTP_USER,
+    //       pass: process.env.SMTP_PASS,
+    //     },
+    //     tls: {
+    //       rejectUnauthorized: false
+    //     }
+    //   });
+    // };
     this.createTransporter = () => {
-      return nodemailer.createTransport({
-        host: process.env.SMTP_HOST,
-        port: parseInt(process.env.SMTP_PORT),
-        secure: false,
-        auth: {
-          user: process.env.SMTP_USER,
-          pass: process.env.SMTP_PASS,
-        },
-        tls: {
-          rejectUnauthorized: false
-        }
-      });
-    };
+  return nodemailer.createTransport({
+    host: process.env.SMTP_HOST,
+    port: parseInt(process.env.SMTP_PORT) || 587,
+    secure: process.env.SMTP_PORT == 465,
+    auth: {
+      user: process.env.SMTP_USER,
+      pass: process.env.SMTP_PASS,
+    },
+    tls: {
+      rejectUnauthorized: false
+    },
+
+    // ⭐ Prevent SMTP timeout issues
+    connectionTimeout: 20000,
+    greetingTimeout: 20000,
+    socketTimeout: 30000,
+
+    // ⭐ Improve performance
+    pool: true,
+    maxConnections: 5,
+    maxMessages: 100
+  });
+};
   }
 
   // ========== EMAIL SERVICE METHODS ==========
   
-  async sendEmail(to, subject, html) {
-    const transporter = this.createTransporter();
+  // async sendEmail(to, subject, html) {
+  //   const transporter = this.createTransporter();
     
+  //   const info = await transporter.sendMail({
+  //     from: `"${process.env.COMPANY_NAME || 'REC APPLY'} Support" <${process.env.EMAIL_FROM}>`,
+  //     to,
+  //     subject,
+  //     html
+  //   });
+    
+  //   console.log('Email sent successfully to:', to, 'Message ID:', info.messageId);
+  //   return { success: true, messageId: info.messageId };
+  // }
+
+  async sendEmail(to, subject, html) {
+  try {
+    const transporter = this.createTransporter();
+
     const info = await transporter.sendMail({
       from: `"${process.env.COMPANY_NAME || 'REC APPLY'} Support" <${process.env.EMAIL_FROM}>`,
       to,
       subject,
       html
     });
-    
+
     console.log('Email sent successfully to:', to, 'Message ID:', info.messageId);
-    return { success: true, messageId: info.messageId };
+
+    return {
+      success: true,
+      messageId: info.messageId
+    };
+
+  } catch (error) {
+    console.error('❌ Email sending failed:', {
+      message: error.message,
+      code: error.code,
+      command: error.command
+    });
+
+    throw error;
   }
+}
 
   async sendContactNotification(contactData) {
     const { name, email, subject, message } = contactData;

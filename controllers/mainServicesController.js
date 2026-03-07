@@ -571,12 +571,12 @@
 //     try {
 //       // Create transporter
 //       const transporter = nodemailer.createTransport({
-//         host: process.env.EMAIL_HOST || 'smtp.gmail.com',
-//         port: process.env.EMAIL_PORT || 587,
-//         secure: process.env.EMAIL_SECURE === 'true',
+//         host: process.env.SMTP_HOST || 'smtp.gmail.com',
+//         port: process.env.SMTP_PORT || 587,
+//         secure: process.env.SMTP_SECURE === 'true',
 //         auth: {
-//           user: process.env.EMAIL_USER,
-//           pass: process.env.EMAIL_PASSWORD
+//           user: process.env.SMTP_USER,
+//           pass: process.env.SMTP_PASS
 //         },
 //         tls: {
 //           rejectUnauthorized: false
@@ -594,7 +594,7 @@
 //         subject: emailData.subject,
 //         html: emailData.html,
 //         text: emailData.text || this.stripHtml(emailData.html),
-//         replyTo: process.env.EMAIL_REPLY_TO || process.env.EMAIL_USER
+//         replyTo: process.env.EMAIL_REPLY_TO || process.env.SMTP_USER
 //       };
 
 //       const info = await transporter.sendMail(mailOptions);
@@ -1529,12 +1529,12 @@
 //     try {
 //       // Create transporter
 //       const transporter = nodemailer.createTransport({
-//         host: process.env.EMAIL_HOST || 'smtp.gmail.com',
-//         port: process.env.EMAIL_PORT || 587,
-//         secure: process.env.EMAIL_SECURE === 'true',
+//         host: process.env.SMTP_HOST || 'smtp.gmail.com',
+//         port: process.env.SMTP_PORT || 587,
+//         secure: process.env.SMTP_SECURE === 'true',
 //         auth: {
-//           user: process.env.EMAIL_USER,
-//           pass: process.env.EMAIL_PASSWORD
+//           user: process.env.SMTP_USER,
+//           pass: process.env.SMTP_PASS
 //         },
 //         tls: {
 //           rejectUnauthorized: false
@@ -1552,7 +1552,7 @@
 //         subject: emailData.subject,
 //         html: emailData.html,
 //         text: emailData.text || this.stripHtml(emailData.html),
-//         replyTo: process.env.EMAIL_REPLY_TO || process.env.EMAIL_USER
+//         replyTo: process.env.EMAIL_REPLY_TO || process.env.SMTP_USER
 //       };
 
 //       const info = await transporter.sendMail(mailOptions);
@@ -1926,17 +1926,17 @@ class MainController {
   }
 
   // initEmailTransporter() {
-  //   const emailUser = process.env.EMAIL_USER;
-  //   const emailPass = process.env.EMAIL_PASSWORD;
+  //   const emailUser = process.env.SMTP_USER;
+  //   const emailPass = process.env.SMTP_PASS;
 
   //   if (!emailUser || !emailPass) {
   //     throw new Error("❌ Email credentials missing. Email service cannot start.");
   //   }
 
   //   this.transporter = nodemailer.createTransport({
-  //     host: process.env.EMAIL_HOST || 'smtp.gmail.com',
-  //     port: process.env.EMAIL_PORT || 587,
-  //     secure: process.env.EMAIL_SECURE === 'true',
+  //     host: process.env.SMTP_HOST || 'smtp.gmail.com',
+  //     port: process.env.SMTP_PORT || 587,
+  //     secure: process.env.SMTP_SECURE === 'true',
   //     auth: {
   //       user: emailUser,
   //       pass: emailPass
@@ -1954,8 +1954,8 @@ class MainController {
   // CREATE - Create new form submission
   
   initEmailTransporter() {
-  const emailUser = process.env.EMAIL_USER?.trim();
-  const emailPass = process.env.EMAIL_PASSWORD?.trim();
+  const emailUser = process.env.SMTP_USER?.trim();
+  const emailPass = process.env.SMTP_PASS?.trim();
 
   if (!emailUser || !emailPass) {
     console.warn("⚠ Email credentials missing. Email service disabled.");
@@ -1963,9 +1963,9 @@ class MainController {
   }
 
   this.transporter = nodemailer.createTransport({
-    host: process.env.EMAIL_HOST || "smtp.gmail.com",
-    port: Number(process.env.EMAIL_PORT) || 587,
-    secure: process.env.EMAIL_SECURE === "true",
+    host: process.env.SMTP_HOST || "smtp.gmail.com",
+    port: Number(process.env.SMTP_PORT) || 587,
+    secure: process.env.SMTP_SECURE === "true",
     auth: {
       user: emailUser,
       pass: emailPass
@@ -2538,7 +2538,7 @@ class MainController {
       subject: emailData.subject,
       html: emailData.html,
       text: emailData.text || this.stripHtml(emailData.html),
-      replyTo: process.env.EMAIL_REPLY_TO || process.env.EMAIL_USER
+      replyTo: process.env.EMAIL_REPLY_TO || process.env.SMTP_USER
     };
 
     const info = await this.transporter.sendMail(mailOptions);

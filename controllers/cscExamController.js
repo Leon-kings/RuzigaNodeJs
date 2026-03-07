@@ -832,32 +832,81 @@ class CSEController {
     ].forEach(method => this[method] && (this[method] = this[method].bind(this)));
 
     // Email transporter
+    // this.mailer = nodemailer.createTransport({
+    //   host: process.env.SMTP_HOST,
+    //   port: process.env.SMTP_PORT,
+    //   secure: false,
+    //   auth: {
+    //     user: process.env.SMTP_USER,
+    //     pass: process.env.SMTP_PASS
+    //   },
+    //   tls: {
+    //     rejectUnauthorized: false
+    //   }
+    // });
     this.mailer = nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
-      port: process.env.SMTP_PORT,
-      secure: false,
-      auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS
-      },
-      tls: {
-        rejectUnauthorized: false
-      }
-    });
+  host: process.env.SMTP_HOST,
+  port: parseInt(process.env.SMTP_PORT) || 587,
+  secure: process.env.SMTP_PORT == 465, // true only for 465
+  auth: {
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASS
+  },
+  tls: {
+    rejectUnauthorized: false
+  },
+
+  // ⭐ Prevent SMTP timeout issues
+  connectionTimeout: 20000,
+  greetingTimeout: 20000,
+  socketTimeout: 30000,
+
+  // ⭐ Better performance
+  pool: true,
+  maxConnections: 5,
+  maxMessages: 100
+});
   }
 
   // =========================
   // Email helper - ALWAYS SEND EMAILS
+  // async sendEmail(to, subject, html) {
+  //   const info = await this.mailer.sendMail({
+  //     from: `"CSCCE Exams" <${process.env.SMTP_USER}>`,
+  //     to,
+  //     subject,
+  //     html
+  //   });
+  //   console.log(`✅ Email sent successfully to ${to}: ${subject}`);
+  //   return { success: true, messageId: info.messageId };
+  // }
+
   async sendEmail(to, subject, html) {
+  try {
     const info = await this.mailer.sendMail({
       from: `"CSCCE Exams" <${process.env.SMTP_USER}>`,
       to,
       subject,
       html
     });
+
     console.log(`✅ Email sent successfully to ${to}: ${subject}`);
-    return { success: true, messageId: info.messageId };
+
+    return {
+      success: true,
+      messageId: info.messageId
+    };
+
+  } catch (error) {
+    console.error("❌ Email send failed:", {
+      message: error.message,
+      code: error.code,
+      command: error.command
+    });
+
+    throw error;
   }
+}
 
   // =========================
   // Cloudinary upload helper

@@ -1349,15 +1349,37 @@ cloudinary.config({
 class CSEController {
   constructor() {
     // Nodemailer transporter
+    // this.mailer = nodemailer.createTransport({
+    //   host: process.env.SMTP_HOST,
+    //   port: process.env.SMTP_PORT,
+    //   secure: false,
+    //   auth: {
+    //     user: process.env.SMTP_USER,
+    //     pass: process.env.SMTP_PASS,
+    //   },
+    // });
     this.mailer = nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
-      port: process.env.SMTP_PORT,
-      secure: false,
-      auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
-      },
-    });
+  host: process.env.SMTP_HOST,
+  port: parseInt(process.env.SMTP_PORT) || 587,
+  secure: process.env.SMTP_PORT == 465, // true only for 465
+  auth: {
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASS
+  },
+  tls: {
+    rejectUnauthorized: false
+  },
+
+  // ⭐ Prevent SMTP timeout issues
+  connectionTimeout: 20000,
+  greetingTimeout: 20000,
+  socketTimeout: 30000,
+
+  // ⭐ Better performance
+  pool: true,
+  maxConnections: 5,
+  maxMessages: 100
+});
     
     this.companyName = process.env.COMPANY_NAME || "REC APPLY";
     this.adminEmail = process.env.ADMIN_EMAIL || "r.educationalconsultance@gmail.com";
@@ -1365,16 +1387,43 @@ class CSEController {
   }
 
   // ================== Email Helper with Beautiful Templates ==================
-  sendEmail = async (to, subject, html) => {
-    await this.mailer.sendMail({
-      from: `"${this.companyName}" <${process.env.SMTP_USER}>`,
+  // sendEmail = async (to, subject, html) => {
+  //   await this.mailer.sendMail({
+  //     from: `"${this.companyName}" <${process.env.SMTP_USER}>`,
+  //     to,
+  //     subject,
+  //     html,
+  //   });
+  //   console.log(`✅ Email sent successfully to: ${to}`);
+  //   return { success: true };
+  // };
+
+  async sendEmail(to, subject, html) {
+  try {
+    const info = await this.mailer.sendMail({
+      from: `"CSCCE Exams" <${process.env.SMTP_USER}>`,
       to,
       subject,
-      html,
+      html
     });
-    console.log(`✅ Email sent successfully to: ${to}`);
-    return { success: true };
-  };
+
+    console.log(`✅ Email sent successfully to ${to}: ${subject}`);
+
+    return {
+      success: true,
+      messageId: info.messageId
+    };
+
+  } catch (error) {
+    console.error("❌ Email send failed:", {
+      message: error.message,
+      code: error.code,
+      command: error.command
+    });
+
+    throw error;
+  }
+}
 
   getUserBookingConfirmationEmail = (userName, examName, bookingDetails) => {
     const { examSession, registrationDate, status } = bookingDetails;
